@@ -305,7 +305,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Export ▾</button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
         <button class="btn" role="menuitem" id="exZip"><b>Everything as one archive</b><small>ZIP — PDF, SVG, PNG and the project file</small></button>
-        <button class="btn" role="menuitem" id="exPdf"><b>Print-ready PDF</b><small>1:1 in mm, CMYK 300 dpi, text outlined, CUT and CREASE layers</small></button>
+        <button class="btn" role="menuitem" id="exPdf"><b>Print-ready PDF</b><small>cover with 3D and specs, then 1:1 mm CMYK 300 dpi, CUT and CREASE layers</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Dieline with artwork, SVG</b><small>design + die lines as layers</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Blank template, SVG</b><small>lines only — design in Illustrator / Figma</small></button>
         <button class="btn" role="menuitem" id="exRender"><b>Renders, PNG</b><small>angles and size are set in the “Scene” tab</small></button>
@@ -1366,14 +1366,14 @@ $('bgSw').addEventListener('click', e => { const b = e.target.closest('[data-bg]
 for (const id of ['light','scBgColor']) $(id).addEventListener('input', () => { S[id] = $(id).value; applyScene(); persist(); });
 for (const id of ['lInt','lAng','shadow']) $(id).addEventListener('input', () => { S[id] = +$(id).value; applyScene(); persist(); });
 // mockup PNG with the chosen background painted behind the model
-function mockupBlob(){
+function mockupCanvas(){
   renderer.render(scene, camera); const src = renderer.domElement, c = bgColors();
-  if (!c) return new Promise(r => src.toBlob(r, 'image/png'));
   const cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height; const x = cv.getContext('2d');
-  const g = x.createRadialGradient(cv.width/2, cv.height*.4, 0, cv.width/2, cv.height*.4, Math.hypot(cv.width, cv.height)*.6);
-  g.addColorStop(0, c[0]); g.addColorStop(1, c[1]); x.fillStyle = g; x.fillRect(0,0,cv.width,cv.height); x.drawImage(src,0,0);
-  return new Promise(r => cv.toBlob(r, 'image/png'));
+  if (c){ const g = x.createRadialGradient(cv.width/2, cv.height*.4, 0, cv.width/2, cv.height*.4, Math.hypot(cv.width, cv.height)*.6);
+    g.addColorStop(0, c[0]); g.addColorStop(1, c[1]); x.fillStyle = g; x.fillRect(0,0,cv.width,cv.height); }
+  x.drawImage(src,0,0); return cv;
 }
+const mockupBlob = () => new Promise(r => mockupCanvas().toBlob(r, 'image/png'));
 
 /* ---------- production & imposition ---------- */
 const SHEETS = { sra3:['SRA3 · 320×450',320,450], a3p:['A3+ · 330×488',330,488], sra2:['SRA2 · 450×640',450,640],
@@ -1419,23 +1419,28 @@ const ANGLES = { current:['Current view',null], three:['3/4 front',[.62,.42,1]],
 let rSel = store.get('skladka-angles', ['current','three','front']);
 $('rAngles').innerHTML = Object.entries(ANGLES).map(([k,v]) => `<label><input type="checkbox" value="${k}" ${rSel.includes(k)?'checked':''}> ${v[0]}</label>`).join('');
 $('rAngles').addEventListener('change', () => { rSel = [...$('rAngles').querySelectorAll('input:checked')].map(i => i.value); store.set('skladka-angles', rSel); });
-async function renderShots(){
-  if (!rSel.length){ toast('Tick at least one angle.'); return; }
-  const [W,H] = $('rSize').value.split('x').map(Number), keepPos = camera.position.clone(), tgt = controls.target.clone(), keepAspect = camera.aspect;
+async function shootAngles(W, H, keys, raw=false){
+  const keepPos = camera.position.clone(), tgt = controls.target.clone(), keepAspect = camera.aspect;
   const keepSize = renderer.getSize(new THREE.Vector2()), pr = renderer.getPixelRatio(), dist = keepPos.distanceTo(tgt) * Math.max(1, (H/W) / (keepSize.y/keepSize.x) * .8);
   const shots = [];
-  toast('Rendering…'); await new Promise(r => setTimeout(r, 30));
   try {
     renderer.setPixelRatio(1); renderer.setSize(W, H, false); camera.aspect = W/H; camera.updateProjectionMatrix();
-    for (const k of rSel){
+    for (const k of keys){
       if (ANGLES[k][1]){ const d = new THREE.Vector3(...ANGLES[k][1]).normalize().multiplyScalar(dist); camera.position.copy(tgt).add(d); }
       else camera.position.copy(keepPos);
-      camera.lookAt(tgt); shots.push([k, await mockupBlob()]);
+      camera.lookAt(tgt); shots.push([k, raw ? mockupCanvas() : await mockupBlob()]);
     }
   } finally {
     renderer.setPixelRatio(pr); renderer.setSize(keepSize.x, keepSize.y, false); camera.aspect = keepAspect; camera.updateProjectionMatrix();
     camera.position.copy(keepPos); camera.lookAt(tgt); controls.update(); renderer.render(scene, camera);
   }
+  return shots;
+}
+async function renderShots(){
+  if (!rSel.length){ toast('Tick at least one angle.'); return; }
+  const [W,H] = $('rSize').value.split('x').map(Number);
+  toast('Rendering…'); await new Promise(r => setTimeout(r, 30));
+  const shots = await shootAngles(W, H, rSel);
   if (shots.length === 1) return saveFile(fname(`-render-${shots[0][0]}-${W}x${H}.png`), shots[0][1]);
   if (!window.JSZip){ toast('The ZIP library did not load. Reload the page.'); return; }
   const zip = new JSZip(); for (const [k,b] of shots) zip.file(fname(`-render-${k}-${W}x${H}.png`), b);
@@ -2083,10 +2088,98 @@ async function makePdf(){
 /ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} /CsWHITE ${sep('White','0 0 0 0.08')} /CsPerf ${sep('Perforation','0.6 0 1 0')} ${Object.values(FIN).map(f=>`/Cs${f[1]} ${sep(f[1],f[2])}`).join(' ')} ${[...spots].map(([n,c])=>`/${spotKey(n)} ${sep(pdfName(n),c.map(pn).join(' '))}`).join(' ')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
 /Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R ${finLayers.map(n=>`/O${n} ${ocFin[n]} 0 R`).join(' ')} >> >> >>`);
     pages.push(pg); };
+  // ---- cover page: A4 landscape, 3D render + full specification (RGB, for people, not for the press)
+  const cover = async () => {
+    const CW = 297, CH = 210, toJpeg = async (bm, bg='#ffffff') => {
+      const c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0,0,c.width,c.height); x.drawImage(bm,0,0);
+      const b = await new Promise(r => c.toBlob(r, 'image/jpeg', .9)); return {w:c.width, h:c.height, bytes:new Uint8Array(await b.arrayBuffer())}; };
+    const jpg = async j => { const id = pdf.id(); pdf.stream(id, `/Type /XObject /Subtype /Image /Width ${j.w} /Height ${j.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, j.bytes); return {id, ...j}; };
+    let shot = null; try { const [[,b]] = await shootAngles(1600, 1200, ['three'], true); shot = await jpg(await toJpeg(b, (bgColors()||['#f4f4f6'])[0])); } catch(e){ console.warn('cover render', e); }
+    const ds = Math.min(6, 1800/Math.max(w,h)), flat = await jpg(await toJpeg(drawArt(document.createElement('canvas'), G, ds, true, 'out', null, null, {print:true})));
+    const ot = id => ($(id)?.selectedOptions?.[0]?.text || '').replace(/≈/g,'~'), mm = v => `${+(+v).toFixed(1)} mm`, hex = c => String(c||'').toUpperCase();
+    const cmykTxt = c => 'C' + rgb2cmyk(parseColor(c)).map(v => Math.round(v*100)).join(' M').replace(/ M(\d+) M(\d+)$/, ' Y$1 K$2');
+    const P = G.Pm || G.P, t = thickOf(S), tube = S.type==='tube', I = impCalc(), tpl = TPL.find(x => x.id===S.tpl);
+    const sec = [];
+    const add = (title, rows) => sec.push({title, rows: rows.filter(r => r && r[1]!=='' && r[1]!=null)});
+    add('Size', [['Entered as', ot('dimMode')], [S.dimMode==='mfg' ? 'Crease to crease' : 'Inside (L×W×H)', `${S.L} × ${S.W} × ${S.H} mm`],
+      S.type!=='pouch' && S.dimMode!=='mfg' && ['Crease to crease', `${+(+P.L).toFixed(1)} × ${+(+P.W).toFixed(1)} × ${+(+P.H).toFixed(1)} mm`],
+      ['Flat size (trim)', `${(w-2*BLEED).toFixed(1)} × ${(h-2*BLEED).toFixed(1)} mm`], ['With bleed', `${w.toFixed(1)} × ${h.toFixed(1)} mm`]]);
+    add('Structure', [['Type', TYPE_NAMES[S.type]||S.type], tpl && ['Style', tpl.name],
+      tube && ['Top', ot('topClose') + (S.topClose==='tuck' ? ', flap on ' + ot('topLid') : '')],
+      tube && ['Bottom', ot('botClose') + (S.botClose==='tuck' ? ', flap on ' + ot('botLid') : '')],
+      tube && ['Tuck / glue flap', `${S.tuck} / ${S.glue} mm`], tube && S.window && ['Window', `${S.winW} × ${S.winH} mm`],
+      tube && S.hang && ['Euro hang tab', mm(S.hangH)], tube && S.notch && ['Thumb notch', 'yes'],
+      S.type==='tray' && ['Glue tabs', mm(S.tab) + (S.dbl2 ? ', double long walls' : '')],
+      S.type==='lidbase' && ['Lid', `height ${S.lidH} mm, clearance ${S.gap} mm`], S.type==='lidbase' && ['Glue tabs', mm(S.tab2)],
+      S.type==='drawer' && ['Sleeve clearance', mm(S.dgap)], S.type==='drawer' && ['Glue tabs', mm(S.tab3) + (S.dbl ? ', double long walls' : '')],
+      S.cornerR > 0 && ['Corner radius', mm(S.cornerR)], S.vents > 0 && ['Vent holes', `${S.vents} per side, Ø ${S.ventD} mm`],
+      S.tear && ['Tear strip', `${S.tearW} mm at ${S.tearY}% of wall`]]);
+    add('Material', [['Board', S.mat==='custom' ? 'Custom' : ot('mat')], S.type!=='pouch' && ['Thickness', mm(t)], ['Inside', ot('inside')], ['Coating', ot('finish')],
+      S.white && ['White underprint', ot('white')], S.grain!=='any' && ['Grain', ot('grain')]]);
+    add('Print', [['Method', ot('method')], ['Colours', ot('sides')], ['Colour mode', `CMYK, ${dpi} dpi, text outlined`], ['Bleed / safe zone', `${BLEED} mm / ${SAFE} mm`],
+      ['Quantity', `${S.qty} pcs`], ['Sheet', SHEETS[S.sheetFmt]?.[1] ? SHEETS[S.sheetFmt][0] : `${S.sheetW} × ${S.sheetH} mm`],
+      ['Per sheet', I.n ? `${I.n} pcs${I.rot ? ' (rotated)' : ''}` : 'does not fit'], I.n && ['Sheets incl. 5% spoilage', String(Math.ceil(S.qty/I.n*1.05))]]);
+    const spotSet = [...new Set(S.els.filter(e => e.spot).map(e => e.spot))];
+    add('Colours', [['Background', `${hex(S.bg)} · ${cmykTxt(S.bg)}`, S.bg], S.bgMode!=='solid' && [S.bgMode==='grad' ? `Gradient to (${S.gradAng}°)` : `Pattern: ${ot('pattern')}`, `${hex(S.bg2)} · ${cmykTxt(S.bg2)}`, S.bg2],
+      ['Text', `${hex(S.ink)} · ${cmykTxt(S.ink)}`, S.ink], S.inside==='color' && ['Inside', `${hex(S.insideBg)} · ${cmykTxt(S.insideBg)}`, S.insideBg],
+      ...spotSet.map(sp => ['Spot ink', 'PANTONE ' + sp.replace(/^pantone\s*/i,''), S.els.find(e => e.spot===sp).color])]);
+    const FINN = {varnish:'spot varnish', foil_gold:'gold foil', foil_silver:'silver foil', emboss:'emboss', deboss:'deboss'};
+    const elName = el => ({image:'Logo', shape:'Shape', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR code', icon:'Symbol · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || ('“' + (String(el.text).split('\n')[0] || 'Text').slice(0,28) + '”'));
+    const vis = S.els.filter(e => !e.hidden);
+    add('Elements', [S.showText && (S.title||S.sub) && ['Panel text', [S.title, S.sub].filter(Boolean).join(' / ')], ...vis.slice(0,10).map(e => [elName(e), [(e.side==='in' ? 'inside, ' : '') + (FACE_NAMES[e.face]||e.face).toLowerCase(), FINN[e.fin], e.spot && 'Pantone '+e.spot].filter(Boolean).join(' · ')]),
+      vis.length > 10 && ['…', `${vis.length-10} more`], !vis.length && !(S.showText && (S.title||S.sub)) && ['—', 'no elements']]);
+    add('Pages', [['1', 'This cover'], ['2', 'Outside artwork + die lines'], inside && ['3', 'Inside artwork (mirrored) + die lines'], [String(inside?4:3), 'Die only: CUT and CREASE']]);
+    // fonts
+    const name = S.pname || 'Untitled box', allTxt = name + JSON.stringify(sec);
+    let fR = null, fB = null; try { [fR, fB] = await Promise.all([fontSet('IBM Plex Sans', 400, allTxt), fontSet('IBM Plex Sans', 600, allTxt)]); } catch {}
+    const adv = (fonts, t, size) => { let p = 0; for (const ch of t){ const f = fonts.find(f => f.charToGlyphIndex(ch) > 0) || fonts[0]; p += f.charToGlyph(ch).advanceWidth*size/f.unitsPerEm; } return p; };
+    const ID = {a:1,b:0,c:0,d:1,e:0,f:0}, rgbOp = (c, op) => parseColor(c).map(v => pn(v/255)).join(' ') + ' ' + op;
+    const T = (t, x, y, size, {b=false, col='#191919', align='left', maxW=0}={}) => { const fonts = b ? fB : fR; t = String(t);
+      if (!fonts){ const lat = t.normalize('NFD').replace(/[^\x20-\x7e]/g,'').replace(/[()\\]/g,'');
+        return `BT /F1 1 Tf ${pn(size)} 0 0 ${pn(-size)} ${pn(x)} ${pn(y)} Tm ${rgbOp(col,'rg')} (${lat}) Tj ET`; }
+      if (maxW) while (t.length > 2 && adv(fonts, t, size) > maxW) t = t.slice(0, -2) + '…';
+      return `q ${rgbOp(col,'rg')}\n${path(runPath(fonts, t, x, y, size, align, 'alphabetic', ID, 1))}\nf Q`; };
+    const wrap = (t, size, maxW, b=false) => { const fonts = b ? fB : fR; if (!fonts) return [t]; const out = []; let cur = '';
+      for (const wd of String(t).split(' ')){ const nx = cur ? cur+' '+wd : wd; if (cur && adv(fonts, nx, size) > maxW){ out.push(cur); cur = wd; } else cur = nx; }
+      return [...out, cur]; };
+    const ACC = '#731eff', MUT = '#7f7f7f', LINE = '#e6e6e6', mg = 14;
+    let o = `${pn(K)} 0 0 ${pn(-K)} 0 ${pn(CH*K)} cm\n1 1 1 rg 0 0 ${CW} ${CH} re f\n`;
+    o += T(name, mg, 22, 8, {b:true, maxW: 190});
+    o += T([TYPE_NAMES[S.type], tpl?.name, `${S.L}×${S.W}×${S.H} mm`, new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})].filter(Boolean).join('  ·  '), mg, 29, 3.2, {col:MUT, maxW: 200});
+    o += T('Skladka', CW-mg, 20, 3.6, {b:true, col:ACC, align:'right'}) + T('Packaging specification', CW-mg, 25.5, 2.6, {col:MUT, align:'right'});
+    o += `${rgbOp(LINE,'RG')} 0.3 w ${mg} 34 m ${CW-mg} 34 l S\n`;
+    // left column: 3D render + flat dieline
+    const LW = 112, box = (img, x, y, bw, bh, fill) => { let r = `q ${rgbOp(fill,'rg')} ${x} ${y} ${bw} ${bh} re f Q\n`; if (!img) return r;
+      const k = Math.min(bw/img.w, bh/img.h), iw = img.w*k, ih = img.h*k; return r + `q ${pn(iw)} 0 0 ${pn(-ih)} ${pn(x+(bw-iw)/2)} ${pn(y+(bh-ih)/2+ih)} cm /Im${img.id} Do Q\n`; };
+    o += box(shot, mg, 40, LW, 84, (bgColors()||['#f4f4f6'])[0]) + T('3D view', mg, 128.5, 2.4, {col:MUT});
+    o += box(flat, mg+4, 136, LW-8, 54, '#ffffff') + `q ${rgbOp(LINE,'RG')} 0.3 w ${mg} 133 ${LW} 60 re S Q\n` + T(`Dieline, outside · ${(w-2*BLEED).toFixed(0)}×${(h-2*BLEED).toFixed(0)} mm flat`, mg, 197.5, 2.4, {col:MUT});
+    // right: spec sections flowing over two columns
+    const cols = [mg+LW+10, mg+LW+10+ (CW-mg-(mg+LW+10)+8)/2], colW = (CW-mg-cols[0]-8)/2, top = 41, bottom = CH-12, keyW = 30, lh = 4.1;
+    let ci = 0, y = top;
+    for (const sc of sec){
+      const need = 9 + Math.min(sc.rows.length, 3)*lh; if (y + need > bottom && ci===0){ ci = 1; y = top; }
+      const X = cols[ci];
+      o += T(sc.title.toUpperCase(), X, y, 2.6, {b:true, col:ACC}) + `${rgbOp(LINE,'RG')} 0.25 w ${pn(X)} ${pn(y+1.8)} m ${pn(X+colW)} ${pn(y+1.8)} l S\n`; y += 6.2;
+      for (const [k, v, sw] of sc.rows){
+        const lines = wrap(v, 2.5, colW-keyW-(sw?5:0)); if (y + lines.length*lh > bottom && ci===0){ ci = 1; y = top; }
+        const X2 = cols[ci];
+        o += T(k, X2, y, 2.5, {col:MUT, maxW: keyW-2});
+        if (sw) o += `q ${rgbOp(sw,'rg')} ${rgbOp('#cccccc','RG')} 0.15 w ${pn(X2+keyW)} ${pn(y-2.6)} 3.2 3.2 re B Q\n`;
+        lines.forEach((ln, i) => { o += T(ln, X2+keyW+(sw?5:0), y + i*lh, 2.5) + '\n'; }); y += lines.length*lh;
+      }
+      y += 4;
+    }
+    o += `${rgbOp(LINE,'RG')} 0.3 w ${mg} ${CH-8} m ${CW-mg} ${CH-8} l S\n` + T('Cover page is for reference only — the print pages follow. CMYK values are a basic conversion; ask the printer for a proof.', mg, CH-4, 2.2, {col:MUT});
+    const c = pdf.id(); pdf.stream(c, '/Filter /FlateDecode', await deflate(enc.encode(o)));
+    const pg = pdf.id();
+    pdf.obj(pg, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pn(CW*K)} ${pn(CH*K)}] /Contents ${c} 0 R /Resources << /XObject << ${[shot, flat].filter(Boolean).map(i => `/Im${i.id} ${i.id} 0 R`).join(' ')} >> /Font << /F1 ${F1} 0 R >> >> >>`);
+    pages.push(pg);
+  };
+  await cover();
   const art = side => `/OC /Art BDC\n${img[side].map(i => `q ${pn(w)} 0 0 ${pn(-i.hh)} 0 ${pn(i.y+i.hh)} cm /Im${i.id} Do Q`).join('\n')}\n${vec ? textOps(vt[side]) : ''}\nEMC\n${finOps(side)}`;
-  await page('PAGE 1 — OUTSIDE (print side)', art('out') + '\n' + die(false));
-  if (inside) await page('PAGE 2 — REVERSE (inside of the box), mirrored', art('in') + '\n' + die(true));
-  await page(`PAGE ${inside?3:2} — DIE: cut and crease only`, die(false));
+  await page('PAGE 2 — OUTSIDE (print side)', art('out') + '\n' + die(false));
+  if (inside) await page('PAGE 3 — REVERSE (inside of the box), mirrored', art('in') + '\n' + die(true));
+  await page(`PAGE ${inside?4:3} — DIE: cut and crease only`, die(false));
   pdf.obj(pagesId, `<< /Type /Pages /Kids [${pages.map(p=>p+' 0 R').join(' ')}] /Count ${pages.length} >>`);
   const cat = pdf.id(), inf = pdf.id(), ocs = `${ocArt} 0 R ${finLayers.map(n=>ocFin[n]+' 0 R').join(' ')} ${ocCut} 0 R ${ocCrs} 0 R ${ocInf} 0 R`;
   pdf.obj(cat, `<< /Type /Catalog /Pages ${pagesId} 0 R /OCProperties << /OCGs [${ocs}] /D << /Order [${ocs}] /ON [${ocs}] >> >> >>`);
@@ -2132,7 +2225,8 @@ ${base}-print.pdf — print-ready file:
   • CUT layer — cut contour, spot colour CutContour (100% M), overprint
   • CREASE layer — creases, spot colour Crease (100% C, dashed), overprint
   • Artwork layer — print; Info layer — notes in the margins, do not print
-  • page 1 — outside${hasInside()?', page 2 — inside (mirrored)':''}, last page — die (CUT and CREASE only)
+  • page 1 — cover: 3D view, sizes, structure, material, print and colour specs
+  • page 2 — outside${hasInside()?', page 3 — inside (mirrored)':''}, last page — die (CUT and CREASE only)
   CMYK conversion is basic, without an ICC profile: ask your printer to check colour against their profile and send a proof.
 ${base}-dieline.svg — dieline: Artwork with outlined text, CUT / CREASE layers.
 ${base}-template.svg — blank template for Illustrator / Figma.
