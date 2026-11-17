@@ -92,8 +92,13 @@ main{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;backgr
 #view2d{min-height:0;overflow:auto;padding:16px;background:var(--stage2)}
 #view2d svg{display:block;margin:auto;max-width:100%;height:auto;max-height:calc(100% - 30px);background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
-.legend i{display:inline-block;width:22px;border-top:2px solid var(--cut);vertical-align:middle;margin-right:6px}
-.legend i.c{border-top:2px dashed var(--crease)}
+.legend i{display:inline-block;width:22px;border-top:2px solid #ec008c;vertical-align:middle;margin-right:6px}
+.legend i.c{border-top:2px dashed #00aeef}
+.legend i.s{border-top:2px dashed #22a04b}
+.legend i.b{border-top:2px solid #7fbf3f}
+.warn{font-size:12px;line-height:1.4;margin:0;padding:6px 8px;border-radius:6px;background:var(--accent-soft);color:var(--fg)}
+.warn.bad{background:color-mix(in srgb,var(--cut) 16%,transparent)}
+.fold[hidden]{display:none!important}
 .fold{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
 .fold input{flex:1;min-width:0;accent-color:var(--accent)}
 .fold output{font:500 12px var(--mono);width:84px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -114,6 +119,31 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .cap{font-size:12px;color:var(--muted);text-align:center;margin:16px 0 8px}
 #view2d svg{touch-action:none}
 #view2d.placing svg{cursor:crosshair}
+/* home */
+#home{min-height:100%;padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.home-in{max-width:1180px;margin:0 auto;display:grid;gap:28px}
+.home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.home-head h1{margin:0;font-size:34px;letter-spacing:-.02em;font-weight:700}
+.home-head p{margin:6px 0 0;color:var(--muted);font-size:15px;max-width:60ch;line-height:1.45}
+.home-sec{display:grid;gap:12px}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card{display:grid;grid-template-rows:auto 1fr;border:1px solid var(--line);background:var(--panel);border-radius:12px;overflow:hidden;text-align:left;color:var(--fg);font:inherit;cursor:pointer;padding:0}
+button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card .pic{background:var(--stage);padding:14px;height:150px;display:grid;place-items:center}
+.card .pic svg{width:100%;height:100%}
+.card .txt{padding:12px 14px 14px;display:grid;gap:4px;align-content:start}
+.card b{font-size:14.5px;font-weight:600}
+.card span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.card .mm{font:12px var(--mono);color:var(--muted)}
+.card.blank{cursor:default;border-style:dashed;border-width:1.5px}
+.card.blank .txt{gap:10px}
+.card.blank .pic{font-size:44px;color:var(--accent);font-weight:300}
+.zoom{display:flex;align-items:center;gap:4px;margin-left:8px}
+.zoom button{width:30px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;cursor:pointer;font:600 15px var(--sans)}
+.zoom button.wide{width:auto;padding:0 10px;font-size:12.5px;font-weight:500}
+.zoom output{font:12px var(--mono);width:46px;text-align:center;color:var(--muted)}
+#view2d.zoomed svg{width:calc(var(--z,1)*100%);max-width:none;max-height:none}
+#view2d.panning svg{cursor:grabbing}
 @media (max-width:860px){
   html,body{height:auto}
   .app{grid-template-columns:minmax(0,1fr);height:auto}
@@ -123,8 +153,47 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
 
-<div class="app">
+<div id="home" hidden>
+  <div class="home-in">
+    <div class="home-head">
+      <div>
+        <h1>Складка</h1>
+        <p>Выберите шаблон или начните с пустого проекта. Размеры, логотипы и надписи меняются в редакторе; развёртку для типографии и 3D-мокап можно скачать в любой момент.</p>
+      </div>
+      <button class="btn" id="homeContinue" hidden>Продолжить последний проект →</button>
+    </div>
+    <div class="home-sec">
+      <h2>Начать</h2>
+      <div class="home-grid">
+        <div class="card blank">
+          <div class="pic" aria-hidden="true">+</div>
+          <div class="txt">
+            <b>Пустой проект</b>
+            <label class="f">Тип упаковки<select id="nbType"></select></label>
+            <div class="row">
+              <label class="f"><span id="nbLL">Длина</span><input id="nbL" type="number" min="10" max="800" value="100"></label>
+              <label class="f"><span id="nbLW">Ширина</span><input id="nbW" type="number" min="10" max="800" value="60"></label>
+              <label class="f"><span id="nbLH">Высота</span><input id="nbH" type="number" min="5" max="800" value="150"></label>
+            </div>
+            <button class="btn pri" id="nbGo" style="text-align:center">Создать</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="home-sec" id="homeMineSec" hidden>
+      <h2>Мои шаблоны</h2>
+      <div class="home-grid" id="homeMine"></div>
+    </div>
+    <div class="home-sec">
+      <h2>Шаблоны</h2>
+      <div class="home-grid" id="homeTpls"></div>
+    </div>
+  </div>
+</div>
+
+<div class="app" hidden>
   <header>
+    <button class="btn" id="goHome">← Все шаблоны</button>
     <div class="brand"><b>Складка</b><span>развёртки и 3D-мокапы коробок</span></div>
     <div class="sp"></div>
     <button class="btn" id="saveProj">Сохранить проект</button>
@@ -140,9 +209,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <section>
       <h2>Размеры, мм (внутренние)</h2>
       <div class="row">
-        <label class="f">Длина<input id="L" type="number" min="10" max="800" step="1"></label>
-        <label class="f">Ширина<input id="W" type="number" min="10" max="800" step="1"></label>
-        <label class="f">Высота<input id="H" type="number" min="5" max="800" step="1"></label>
+        <label class="f"><span id="lL">Длина</span><input id="L" type="number" min="10" max="800" step="1"></label>
+        <label class="f"><span id="lW">Ширина</span><input id="W" type="number" min="10" max="800" step="1"></label>
+        <label class="f"><span id="lH">Высота</span><input id="H" type="number" min="5" max="800" step="1"></label>
       </div>
       <div class="presets" id="presets"></div>
     </section>
@@ -179,7 +248,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       </div>
       <div data-for="tray" class="sub" style="padding-left:0">
         <label class="f">Уголки для склейки, мм<input id="tab" type="number" min="5" max="60" step="1"></label>
-        <p class="note">Уголки приклеиваются изнутри к боковым стенкам.</p>
+        <label class="chk"><input id="dbl2" type="checkbox"> Двойные длинные стенки</label>
+        <p class="note">Уголки приклеиваются изнутри к боковым стенкам. Двойная стенка загибается внутрь и закрывает уголки.</p>
+      </div>
+      <div data-for="drawer" class="sub" style="padding-left:0">
+        <div class="row2">
+          <label class="f">Ящик выдвинут, %<input id="pull" type="number" min="0" max="80" step="5"></label>
+          <label class="f">Зазор обечайки<input id="dgap" type="number" min="0" max="10" step="0.5"></label>
+        </div>
+        <label class="f">Уголки для склейки, мм<input id="tab3" type="number" min="5" max="60" step="1"></label>
+        <label class="chk"><input id="dbl" type="checkbox"> Двойные длинные стенки</label>
+        <p class="note">Лоток и обечайка на одном листе. Обечайка = размер лотка + зазор. Логотип обычно ставят на «Верх» обечайки.</p>
+      </div>
+      <div data-for="pouch" class="sub" style="padding-left:0">
+        <p class="note">Это 3D-мокап пакета для показа дизайна. Развёртка — раскладка сторон для вёрстки, не штамп: точный шаблон для печати выдаёт производитель пакетов. Для пакета подходят покрытия «Глянец», «Мат» и «Металлик».</p>
       </div>
       <div data-for="lidbase" class="sub" style="padding-left:0">
         <div class="row2">
@@ -244,7 +326,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <button class="btn" id="elDup" style="text-align:center">Дублировать</button>
           <button class="btn" id="elDel" style="text-align:center">Удалить</button>
         </div>
-        <p class="note">На вкладке «Развёртка» выбранный элемент можно перетаскивать мышкой — и снаружи, и на обороте.</p>
+        <p class="warn" id="elWarn"></p>
+        <p class="note">На вкладке «Развёртка» выбранный элемент можно перетаскивать мышкой — и снаружи, и на обороте. Чтобы двигать сам лист, снимите выделение с элемента.</p>
       </div>
       <p class="note" id="elHint">Логотип — PNG с прозрачным фоном или SVG. Внутри можно напечатать, например, «Спасибо за заказ!» на крышке.</p>
     </section>
@@ -253,18 +336,19 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="row2">
         <label class="f">Внутри<select id="inside"><option value="white">Белый картон</option><option value="kraft">Крафт</option><option value="color">Печать цветом</option></select></label>
         <label class="f" id="insideBgWrap">Цвет внутри<input id="insideBg" type="color"></label>
-        <label class="f">Покрытие<select id="finish"><option value="matte">Матовое</option><option value="gloss">Глянец</option></select></label>
+        <label class="f">Покрытие<select id="finish"><option value="matte">Матовое</option><option value="gloss">Глянец</option><option value="metal">Металлик (фольга)</option></select></label>
       </div>
       <label class="chk"><input id="showLines" type="checkbox"> Показывать линии реза и биговки на 3D</label>
     </section>
     <section>
       <h2>Экспорт</h2>
       <div class="btns">
-        <button class="btn pri" id="exPdf">Развёртка PDF<small>дизайн + контур, 1:1 в мм, для типографии</small></button>
+        <button class="btn pri" id="exPdf">PDF для типографии<small>1:1 в мм: макет с контуром, печать снаружи, печать внутри, штамп отдельно; метки реза</small></button>
         <button class="btn" id="exSvgArt">Развёртка SVG<small>дизайн + контур слоями</small></button>
         <button class="btn" id="exSvg">Шаблон SVG<small>только линии — рисовать поверх в Illustrator / Figma</small></button>
         <button class="btn" id="exPng">Мокап PNG<small>текущий ракурс, прозрачный фон</small></button>
       </div>
+      <p class="note">По правилам печати: вылеты 3 мм за линию реза, зона безопасности 3 мм, метки реза. Контур реза — 100% Magenta (CutContour), биговка — 100% Cyan пунктиром, отдельными слоями. Картинки в RGB — типография переведёт в CMYK; для фирменного цвета укажите ей Pantone.</p>
     </section>
   </aside>
 
@@ -272,6 +356,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="t3d" aria-selected="true">3D</button>
       <button class="tab" role="tab" id="t2d" aria-selected="false">Развёртка</button>
+      <span class="zoom" id="zoomBar" hidden>
+        <button id="zOut" aria-label="Уменьшить">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Увеличить">+</button>
+        <button id="zFit" class="wide">Вписать</button>
+      </span>
       <span class="dims" id="sheet"></span>
     </div>
     <div id="view3d"></div>
@@ -298,11 +386,14 @@ const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
 const ease = p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
 const lerp = (a,b,k) => a + (b-a)*k;
 const DEG = Math.PI/180, PI = Math.PI;
-const BLEED = 3;
+const BLEED = 3;   // вылет под обрез, мм
+const SAFE = 3;    // зона безопасности от линии реза/сгиба, мм
+let WARN = {};
 
 /* ---------- settings & templates ---------- */
 const TYPE_DIMS = {
-  tube:{L:70,W:70,H:110}, tray:{L:160,W:110,H:40}, lidbase:{L:150,W:150,H:50,lidH:30}, mailer:{L:220,W:160,H:70}
+  tube:{L:70,W:70,H:110}, tray:{L:160,W:110,H:40}, lidbase:{L:150,W:150,H:50,lidH:30}, mailer:{L:220,W:160,H:70},
+  drawer:{L:200,W:100,H:50}, pouch:{L:140,W:80,H:220}
 };
 const TUBE_BASE = {topClose:'tuck',topLid:'back',botClose:'tuck',botLid:'front',window:false,hang:false,notch:true};
 const TPL = [
@@ -316,15 +407,34 @@ const TPL = [
   {id:'tray',  type:'tray', name:'Лоток',                   set:{}},
   {id:'lidbase',type:'lidbase', name:'Крышка-дно',          set:{}},
   {id:'mailer',type:'mailer', name:'Самосборная для доставки', set:{}},
+  {id:'drawer',type:'drawer', name:'Ящик с обечайкой', set:{dbl:true}},
+  {id:'pouch', type:'pouch',  name:'Дой-пак с плоским дном', set:{finish:'gloss'}},
 ];
+const TPL_DESC = {
+  rte:'Классика для косметики, чая, лекарств. Верхний и нижний клапаны с разных сторон.',
+  ste:'Оба клапана на задней стороне — удобнее для упаковки на линии.',
+  seal:'Клапаны склеиваются, как у коробки хлопьев. Прочно, для тяжёлого.',
+  mix:'Открывается сверху, дно склеено — держит вес.',
+  hang:'Высокая задняя панель с отверстием для крючка на витрине.',
+  win:'Вырез на лицевой стороне, чтобы было видно товар.',
+  sleeve:'Обечайка без клапанов — надевается на другую коробку или продукт.',
+  tray:'Открытый лоток с уголками на склейку. Для конфет, печенья, выкладки.',
+  lidbase:'Две детали: дно и крышка. Подарочная упаковка.',
+  mailer:'Самосборная с откидной крышкой, без клея. Для доставки и подписок.',
+  drawer:'Лоток выдвигается из обечайки, как спичечный коробок.',
+  pouch:'Пакет с плоским дном и zip-замком. 3D-мокап для дизайна.'
+};
+const TYPE_NAMES = {tube:'Коробка с клапанами', tray:'Лоток', lidbase:'Крышка-дно', mailer:'Самосборная для доставки', drawer:'Ящик с обечайкой', pouch:'Дой-пак'};
 const SIZE_CHIPS = {
   tube:[['Чай','70,70,110'],['Крем','50,50,130'],['Флакон','60,40,160'],['Мыло','90,30,60'],['Свеча','85,85,95']],
   tray:[['Конфеты','160,110,40'],['Печенье','200,140,50'],['Подарок','250,200,60']],
   lidbase:[['Подарок','150,150,50'],['Свеча','100,100,80'],['Обувь','300,180,110'],['Пряники','220,160,40']],
   mailer:[['S','220,160,70'],['M','300,220,100'],['L','400,300,120']],
+  drawer:[['Конфеты','200,100,50'],['Чай','150,100,40'],['Украшения','100,100,35']],
+  pouch:[['250 г','130,70,200'],['500 г','160,90,250'],['1 кг','190,110,300']],
 };
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
-  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2,
+  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false,
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[] };
 const S = {...DEFAULTS};
@@ -333,11 +443,13 @@ const ELIMG = {};
 const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|Montserrat','Montserrat'],['700|Montserrat','Montserrat жирный'],
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
 const uid = () => Math.random().toString(36).slice(2,9);
-const FACE_NAMES = {front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
-const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap'];
+const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
+const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull'];
+const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
+const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
 const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish'];
-const CHK = ['notch','window','hang','showText','showLines'];
-const STRUCT = ['type','tpl','L','W','H',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap'];
+const CHK = ['notch','window','hang','showText','showLines','dbl'];
+const STRUCT = ['type','tpl','L','W','H',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
 
 const store = {
   get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -353,6 +465,8 @@ const AX = {x:new THREE.Vector3(1,0,0), y:new THREE.Vector3(0,1,0)};
 function qOf(...rots){ const q = new THREE.Quaternion(); for (const [a,ang] of rots) q.premultiply(new THREE.Quaternion().setFromAxisAngle(AX[a],ang)); return q; }
 const Q_UP = qOf(['x',PI/2],['y',PI]);   // flat piece → lying on the ground, opening up, front wall towards viewer
 const Q_LID = qOf(['x',-PI/2]);          // flat piece → opening down (lid)
+// sleeve: tube axis (flat y) → world x, flat x → world z, print side → up
+const Q_SLV = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0,0,1), new THREE.Vector3(1,0,0), new THREE.Vector3(0,1,0)));
 
 function rect(x0,y0,x1,y1){ return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]]; }
 function arc(cx,cy,r,a0,a1,n){ const p=[]; for (let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+r*Math.cos(a), cy+r*Math.sin(a)]); } return p; }
@@ -386,7 +500,7 @@ function sideTab(hx,y0,y1,dx,taper){
 function maker(){
   const N=[], faces=[];
   return { N, faces,
-    add(id,parent,origin,axis,angle,stage,poly,extra={}){ N.push({id,parent,origin,axis,angle,stage,poly,holes:extra.holes||[],final:extra.final}); },
+    add(id,parent,origin,axis,angle,stage,poly,extra={}){ N.push({id,parent,origin,axis,angle,stage,poly,holes:extra.holes||[],final:extra.final,flat:extra.flat}); },
     face(key,r,rot=0){ faces.push({key,r,rot}); } };
 }
 
@@ -431,7 +545,7 @@ function buildTube(P, B){
   end(false, P.botClose, P.botLid);
   return {fold:'tube'};
 }
-function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces){
+function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces, dbl){
   const id = k => pre+k, t = clamp(tab,5,Math.max(5,Math.min(60,W*.45,L*.45))), ti = Math.min(3,H*.1);
   const sideStage = [.5,.85];
   B.add(id('base'),null,[ox,0],null,0,null,rect(ox,0,ox+L,W),{final});
@@ -443,6 +557,9 @@ function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces){
   B.add(id('tbr'),id('back'),[ox+L,W],'y',92*DEG,[.35,.55],sideTab(ox+L,W,W+H,t,ti));
   B.add(id('wl'),id('base'),[ox,0],'y',-90*DEG,sideStage,rect(ox-H,0,ox,W));
   B.add(id('wr'),id('base'),[ox+L,0],'y',90*DEG,sideStage,rect(ox+L,0,ox+L+H,W));
+  if (dbl){ const sh = 1.5;
+    B.add(id('fi'),id('front'),[ox,-H],'x',177*DEG,[.78,.97],rect(ox,-2*H+sh,ox+L,-H));
+    B.add(id('bi'),id('back'),[ox,W+H],'x',-177*DEG,[.78,.97],rect(ox,W+H,ox+L,W+2*H-sh)); }
   if (!withFaces) return;
   if (!lid){
     B.face('bottom',[ox,0,ox+L,W]); B.face('front',[ox,-H,ox+L,0],PI); B.face('back',[ox,W,ox+L,W+H]);
@@ -452,13 +569,37 @@ function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces){
     B.face('side2',[ox-H,0,ox,W],PI/2); B.face('side1',[ox+L,0,ox+L+H,W],-PI/2);
   }
 }
-function buildTray(P,B){ addTray(B,'',0,P.L,P.W,P.H,P.tab,false,{p:[0,0,0],q:Q_UP},true); return {}; }
+function buildTray(P,B){ addTray(B,'',0,P.L,P.W,P.H,P.tab,false,{p:[0,0,0],q:Q_UP},true,P.dbl); return {}; }
+function buildDrawer(P,B){
+  const L=P.L, W=P.W, H=P.H, g=clamp(P.gap,0,10), Ws=W+2*g, Hs=H+g, gl=12, gi=Math.min(gl*.8,L*.12);
+  addTray(B,'t',0,L,W,H,P.tab,false,{p:[0,0,0],q:Q_UP},false,P.dbl);
+  B.face('drawer',[0,0,L,W]); B.face('pull',[L,0,L+H,W],PI/2);
+  const ox = L + H + 15 + gl, o = L*clamp(P.pull,0,80)/100;
+  B.add('s1',null,[ox,0],null,0,null,rect(ox,0,ox+Ws,L),{final:{p:[-L+o, H+g/2, -W-g], q:Q_SLV}, flat:{p:[o+30, Hs+1, -W-g], q:Q_SLV}});
+  B.add('sg','s1',[ox,0],'y',-92*DEG,[0,.3],[[ox,0],[ox,L],[ox-gl,L-gi],[ox-gl,gi]]);
+  B.add('s2','s1',[ox+Ws,0],'y',90*DEG,[0,.35],rect(ox+Ws,0,ox+Ws+Hs,L));
+  B.add('s3','s2',[ox+Ws+Hs,0],'y',90*DEG,[.05,.4],rect(ox+Ws+Hs,0,ox+2*Ws+Hs,L));
+  B.add('s4','s3',[ox+2*Ws+Hs,0],'y',90*DEG,[.1,.45],rect(ox+2*Ws+Hs,0,ox+2*Ws+2*Hs,L));
+  B.face('top',[ox,0,ox+Ws,L],-PI/2); B.face('front',[ox+Ws,0,ox+Ws+Hs,L],-PI/2);
+  B.face('bottom',[ox+Ws+Hs,0,ox+2*Ws+Hs,L],PI/2); B.face('back',[ox+2*Ws+Hs,0,ox+2*Ws+2*Hs,L],PI/2);
+  return {};
+}
+function buildPouch(P,B){
+  const W=P.L, D=P.W, H=P.H, q={final:{p:[0,0,0],q:QI}};
+  // print layout only: front | side | back | side, bottom under the front
+  B.add('pf',null,[0,0],null,0,null,rect(0,0,W,H),q); B.add('ps1',null,[W,0],null,0,null,rect(W,0,W+D,H),q);
+  B.add('pb',null,[W+D,0],null,0,null,rect(W+D,0,2*W+D,H),q); B.add('ps2',null,[2*W+D,0],null,0,null,rect(2*W+D,0,2*W+2*D,H),q);
+  B.add('pbo',null,[0,-D],null,0,null,rect(0,-D,W,0),q);
+  B.face('front',[0,0,W,H]); B.face('side1',[W,0,W+D,H]); B.face('back',[W+D,0,2*W+D,H]); B.face('side2',[2*W+D,0,2*W+2*D,H]); B.face('bottom',[0,-D,W,0]);
+  return {pouch:{W,D,H,seal:Math.min(25,H*.09)}};
+}
 function buildLidBase(P,B){
   const L=P.L, W=P.W, H=P.H, gp=clamp(P.gap,0,10), Ll=L+2*gp, Wl=W+2*gp, Hl=clamp(P.lidH,8,Math.max(8,H+20));
-  addTray(B,'b',0,L,W,H,P.tab,false,{p:[0,0,0],q:Q_UP},false);
+  addTray(B,'b',0,L,W,H,P.tab,false,{p:[0,0,0],q:Q_UP},false,false);
   B.face('bottom',[0,0,L,W]);
   const ox = L + H + Hl + 12;
-  addTray(B,'l',ox,Ll,Wl,Hl,P.tab,true,{p:[-L/2-Ll/2, H+.6, -W/2+Wl/2], q:Q_LID},true);
+  addTray(B,'l',ox,Ll,Wl,Hl,P.tab,true,{p:[-L/2-Ll/2, H+.6, -W/2+Wl/2], q:Q_LID},true,false);
+  B.N.find(n=>n.id==='lbase').flat = {p:[-L/2-Ll/2 - (L+2*H)/2 - (Ll+2*Hl)/2 - 20, Hl+.6, -W/2+Wl/2], q:Q_LID};
   return {};
 }
 function buildMailer(P,B){
@@ -503,7 +644,7 @@ function buildMailer(P,B){
 function build(P){
   P = {...P}; for (const k of NUM) P[k] = +P[k];
   const B = maker();
-  ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer}[P.type] || buildTube)(P,B);
+  const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, drawer:buildDrawer, pouch:buildPouch}[P.type] || buildTube)(P,B) || {};
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   for (const n of B.N) for (const [x,y] of n.poly){ minX=Math.min(minX,x); minY=Math.min(minY,y); maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); }
   minX-=BLEED; minY-=BLEED; maxX+=BLEED; maxY+=BLEED;
@@ -514,7 +655,14 @@ function build(P){
   for (const n of B.N){ addLoop(n.poly); n.holes.forEach(addLoop); }
   const cuts=[], creases=[];
   for (const e of m.values()) (e.c>1 ? creases : cuts).push([e.a,e.b]);
-  return { N:B.N, faces:B.faces, cuts, creases, P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY} };
+  // artwork extends 3 mm past cut edges, but stops exactly at creases (so it doesn't spill onto the neighbouring panel)
+  const ov = (a0,a1,b0,b1) => Math.min(Math.max(a0,a1),Math.max(b0,b1)) - Math.max(Math.min(a0,a1),Math.min(b0,b1));
+  const onCrease = (x0,y0,x1,y1) => creases.some(([a,b]) => x0===x1
+    ? Math.abs(a[0]-x0)<.01 && Math.abs(b[0]-x0)<.01 && ov(a[1],b[1],y0,y1) > 1
+    : Math.abs(a[1]-y0)<.01 && Math.abs(b[1]-y0)<.01 && ov(a[0],b[0],x0,x1) > 1);
+  for (const f of B.faces){ const [x0,y0,x1,y1] = f.r;
+    f.clip = [x0-(onCrease(x0,y0,x0,y1)?0:BLEED), y0-(onCrease(x0,y0,x1,y0)?0:BLEED), x1+(onCrease(x1,y0,x1,y1)?0:BLEED), y1+(onCrease(x0,y1,x1,y1)?0:BLEED)]; }
+  return { ...extra, N:B.N, faces:B.faces, cuts, creases, P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY} };
 }
 
 /* ---------- artwork ---------- */
@@ -566,7 +714,11 @@ function drawEl(ctx, el, s){
   let mw = 0; lines.forEach((ln,i)=>{ ctx.fillText(ln,0,(i-(lines.length-1)/2)*lh); mw=Math.max(mw,ctx.measureText(ln).width); });
   return [mw, lh*lines.length];
 }
-function drawArt(canvas, G, s, lines, side='out', hl=null){
+function clipFace(ctx, G, f, s, side){
+  const [a,b,c,d] = f.clip || f.r, {minX,maxX,maxY} = G.b;
+  ctx.beginPath(); ctx.rect(side==='in' ? (maxX-c)*s : (a-minX)*s, (maxY-d)*s, (c-a)*s, (d-b)*s); ctx.clip();
+}
+function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null){
   const {minX,maxX,maxY,w,h} = G.b; canvas.width = Math.max(1,Math.round(w*s)); canvas.height = Math.max(1,Math.round(h*s));
   const ctx = canvas.getContext('2d'), X = side==='in' ? x=>(maxX-x)*s : x=>(x-minX)*s, Y = y=>(maxY-y)*s;
   ctx.fillStyle = side==='in' ? insideColor() : S.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -575,18 +727,26 @@ function drawArt(canvas, G, s, lines, side='out', hl=null){
     for (const f of G.faces){
       if (!IMGS[f.key] && (!S.showText || IMGS.layout)) continue;
       const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
-      ctx.save(); ctx.beginPath(); ctx.rect(cx-cw/2,cy-ch/2,cw,ch); ctx.clip(); ctx.translate(cx,cy); ctx.rotate(rot);
-      if (IMGS[f.key]){ const img=IMGS[f.key].img, iw=img.naturalWidth, ih=img.naturalHeight, k=Math.max(lw/iw,lh/ih); ctx.drawImage(img,-iw*k/2,-ih*k/2,iw*k,ih*k); }
+      ctx.save(); clipFace(ctx,G,f,s,side); ctx.translate(cx,cy); ctx.rotate(rot);
+      if (IMGS[f.key]){ const img=IMGS[f.key].img, iw=img.naturalWidth, ih=img.naturalHeight, k=Math.max((lw+2*BLEED*s)/iw,(lh+2*BLEED*s)/ih); ctx.drawImage(img,-iw*k/2,-ih*k/2,iw*k,ih*k); }
       else placeholder(ctx,f.key,lw,lh,s);
       ctx.restore();
+    }
+    if (G.pouch){ const {W,D,H,seal} = G.pouch;
+      for (const x0 of [0, W+D]){ ctx.fillStyle='rgba(0,0,0,.07)'; ctx.fillRect(X(x0),Y(H),W*s,seal*s);
+        ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=.8*s; ctx.beginPath(); ctx.moveTo(X(x0+2),Y(H-seal-12)); ctx.lineTo(X(x0+W-2),Y(H-seal-12)); ctx.stroke();
+        ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=.4*s; ctx.beginPath(); ctx.moveTo(X(x0+2),Y(H-seal-12)+.9*s); ctx.lineTo(X(x0+W-2),Y(H-seal-12)+.9*s); ctx.stroke(); }
     }
   }
   for (const el of S.els){
     if (el.side!==side) continue; const f = G.faces.find(f=>f.key===el.face); if (!f) continue;
     const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
-    ctx.save(); ctx.beginPath(); ctx.rect(cx-cw/2,cy-ch/2,cw,ch); ctx.clip();
+    ctx.save(); clipFace(ctx,G,f,s,side);
     ctx.translate(cx,cy); ctx.rotate(rot); ctx.translate((el.x-.5)*lw,(el.y-.5)*lh); ctx.rotate(el.rot*DEG);
     const bb = drawEl(ctx,el,s);
+    if (bb && warn){ const r=el.rot*DEG, c=Math.abs(Math.cos(r)), sn=Math.abs(Math.sin(r));
+      const hw=bb[0]/2*c+bb[1]/2*sn, hh=bb[0]/2*sn+bb[1]/2*c, m=SAFE*s;
+      warn[el.id] = Math.abs((el.x-.5)*lw)+hw > lw/2-m || Math.abs((el.y-.5)*lh)+hh > lh/2-m; }
     if (bb && hl===el.id){ ctx.setLineDash([2*s,1.2*s]); ctx.lineWidth=Math.max(1,.4*s); ctx.strokeStyle='#ff2d87'; ctx.strokeRect(-bb[0]/2-s,-bb[1]/2-s,bb[0]+2*s,bb[1]+2*s); ctx.setLineDash([]); }
     ctx.restore();
   }
@@ -601,14 +761,27 @@ function drawArt(canvas, G, s, lines, side='out', hl=null){
 
 /* ---------- SVG / PDF ---------- */
 const f2 = v => (+v.toFixed(3)).toString();
-function svgDoc(G, artHref, mirror){
-  const {minX,maxX,maxY,w,h} = G.b, X = mirror ? x=>f2(maxX-x) : x=>f2(x-minX), Y = y=>f2(maxY-y);
-  const lines = l => l.map(([a,b])=>`<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}"/>`).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${f2(w)}mm" height="${f2(h)}mm" viewBox="0 0 ${f2(w)} ${f2(h)}">
-<title>Развёртка ${G.P.L}×${G.P.W}×${G.P.H} мм</title>
-${artHref ? `<g id="artwork"><image x="0" y="0" width="${f2(w)}" height="${f2(h)}" preserveAspectRatio="none" href="${artHref}" xlink:href="${artHref}"/></g>` : `<rect id="bleed-area" x="0" y="0" width="${f2(w)}" height="${f2(h)}" fill="none" stroke="#99aaaa" stroke-width="0.15" stroke-dasharray="1 1"/>`}
-<g id="crease" fill="none" stroke="#0090ff" stroke-width="0.3" stroke-dasharray="3 1.5">${lines(G.creases)}</g>
-<g id="cut" fill="none" stroke="#e4002b" stroke-width="0.3">${lines(G.cuts)}</g>
+function svgDoc(G, artHref, mirror, guides){
+  const {minX,maxX,maxY,w,h} = G.b, X = mirror ? x=>maxX-x : x=>x-minX, Y = y=>maxY-y;
+  const lines = l => l.map(([a,b])=>`<line x1="${f2(X(a[0]))}" y1="${f2(Y(a[1]))}" x2="${f2(X(b[0]))}" y2="${f2(Y(b[1]))}"/>`).join('');
+  const L = (id, attrs, body) => `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${id}" ${attrs}>${body}</g>`;
+  let g = '';
+  if (guides){
+    const fs = Math.max(w,h)/75, seen = new Set();
+    g += L('Safe zone','fill="none" stroke="#22a04b" stroke-width="0.2" stroke-dasharray="1.5 1"', G.faces.map(f=>{ const [x0,y0,x1,y1]=f.r;
+      if (x1-x0<=2*SAFE || y1-y0<=2*SAFE) return ''; const xa=Math.min(X(x0),X(x1));
+      return `<rect x="${f2(xa+SAFE)}" y="${f2(Y(y1)+SAFE)}" width="${f2(x1-x0-2*SAFE)}" height="${f2(y1-y0-2*SAFE)}"/>`; }).join(''));
+    g += L('Dimensions',`font-size="${f2(fs)}" font-family="IBM Plex Mono, monospace" fill="#2f6fdb" text-anchor="middle"`, G.faces.map(f=>{ const [x0,y0,x1,y1]=f.r, k=x0+','+y0;
+      if (seen.has(k)) return ''; seen.add(k);
+      return `<text x="${f2((X(x0)+X(x1))/2)}" y="${f2(Y(y0)-fs*.7)}" paint-order="stroke" stroke="#ffffff" stroke-width="${f2(fs*.25)}">${+(x1-x0).toFixed(1)} × ${+(y1-y0).toFixed(1)}</text>`; }).join(''));
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(w)}mm" height="${f2(h)}mm" viewBox="0 0 ${f2(w)} ${f2(h)}">
+<title>Развёртка ${G.P.L}×${G.P.W}×${G.P.H} мм${mirror?' — оборот':''}</title>
+${artHref ? L('Artwork','',`<image x="0" y="0" width="${f2(w)}" height="${f2(h)}" preserveAspectRatio="none" href="${artHref}" xlink:href="${artHref}"/>`) : ''}
+${L('Bleed','fill="none" stroke="#7fbf3f" stroke-width="0.2"',`<rect x="0.1" y="0.1" width="${f2(w-.2)}" height="${f2(h-.2)}"/>`)}
+${g}
+${L('Crease','fill="none" stroke="#00aeef" stroke-width="0.25" stroke-dasharray="3 1.5"', lines(G.creases))}
+${L('CutContour','fill="none" stroke="#ec008c" stroke-width="0.25"', lines(G.cuts))}
 </svg>`;
 }
 function thumbSvg(G){
@@ -657,6 +830,7 @@ const wrapper = new THREE.Group(); scene.add(wrapper);
 const texCanvas = document.createElement('canvas'), texInCanvas = document.createElement('canvas');
 const outMat = new THREE.MeshStandardMaterial({roughness:.8, metalness:0});
 const inMat = new THREE.MeshStandardMaterial({roughness:.95, side:THREE.BackSide});
+const pouchMat = new THREE.MeshPhysicalMaterial({roughness:.25, metalness:0, clearcoat:.8, clearcoatRoughness:.15, side:THREE.DoubleSide});
 // a canvas texture can't change size after upload, so recreate it when the sheet size changes
 function updTex(mat, canvas, inside){
   const t = mat.map;
@@ -668,17 +842,51 @@ function updTex(mat, canvas, inside){
 }
 
 let G = null, groups = [], roots = [], T = 1;
-const c0 = new THREE.Vector3(), c1 = new THREE.Vector3(), foldedSize = new THREE.Vector3();
+const c0 = new THREE.Vector3(), c1 = new THREE.Vector3(), foldedSize = new THREE.Vector3(), flatSize = new THREE.Vector3();
 const box3 = new THREE.Box3();
+function pouchMeshes(G){
+  const {W,D,H,seal} = G.pouch, {minX,minY,w,h} = G.b, top = H-seal;
+  const sm = (a,b,x) => { const t = clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+  const dep = y => y >= top ? 0 : D*(1-Math.pow(sm(H*.5,top,y),1.2));
+  const bul = (u,y) => y >= top ? 0 : .045*W*Math.sin(PI*u)*Math.pow(Math.sin(PI*clamp(y/top,0,1)),.6);
+  const zf = (u,y) => Math.max(.4, dep(y)/2 + bul(u,y));
+  const surf = (nu, nv, fn, r) => {
+    const pos=[], uv=[], idx=[];
+    for (let j=0;j<=nv;j++) for (let i=0;i<=nu;i++){ const u=i/nu, v=j/nv; pos.push(...fn(u,v));
+      uv.push((r[0]+u*(r[2]-r[0])-minX)/w, (r[1]+v*(r[3]-r[1])-minY)/h); }
+    for (let j=0;j<nv;j++) for (let i=0;i<nu;i++){ const a=j*(nu+1)+i, b=a+1, c=a+nu+1, d=c+1; idx.push(a,b,d,a,d,c); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+  };
+  const fr = G.faces.find(f=>f.key==='front').r, bk = G.faces.find(f=>f.key==='back').r,
+        s1 = G.faces.find(f=>f.key==='side1').r, s2 = G.faces.find(f=>f.key==='side2').r, bo = G.faces.find(f=>f.key==='bottom').r;
+  return [
+    surf(40,80,(u,v)=>[(u-.5)*W, v*H, zf(u,v*H)], fr),
+    surf(40,80,(u,v)=>[(.5-u)*W, v*H, -zf(1-u,v*H)], bk),
+    surf(12,80,(u,v)=>{ const y=v*H, d=Math.max(.4,dep(y)/2); return [W/2, y, d-2*d*u]; }, s1),
+    surf(12,80,(u,v)=>{ const y=v*H, d=Math.max(.4,dep(y)/2); return [-W/2, y, -d+2*d*u]; }, s2),
+    surf(20,12,(u,v)=>[(u-.5)*W, 0, (v-.5)*D], bo),
+  ];
+}
 function rebuild3D(){
   wrapper.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   wrapper.clear(); groups = []; roots = [];
+  if (G.pouch){
+    for (const g of pouchMeshes(G)){ const m = new THREE.Mesh(g,pouchMat); m.castShadow = true; wrapper.add(m); }
+    wrapper.position.set(0,0,0); wrapper.updateMatrixWorld(true);
+    box3.setFromObject(wrapper); box3.getCenter(c1); c0.copy(c1); box3.getSize(foldedSize);
+    const size = foldedSize.length();
+    Object.assign(key.shadow.camera, {left:-size,right:size,top:size,bottom:-size,near:1,far:size*6}); key.shadow.camera.updateProjectionMatrix();
+    key.position.set(-size*.8,size*1.6,size*1.4); fill.position.set(size*1.2,size*.4,-size); ground.scale.set(size*8,size*8,1);
+    return;
+  }
   const by = {}, {minX,minY,maxX,maxY,w,h} = G.b;
   for (const n of G.N){
     const grp = new THREE.Group(); by[n.id] = grp; grp.userData.n = n;
     const p = n.parent ? G.N.find(q=>q.id===n.parent) : null;
     if (p){ by[p.id].add(grp); grp.position.set(n.origin[0]-p.origin[0], n.origin[1]-p.origin[1], 0); groups.push(grp); }
-    else { wrapper.add(grp); grp.userData.p0 = new THREE.Vector3(n.origin[0],n.origin[1],0);
+    else { wrapper.add(grp); const fl = n.flat || n.final;
+      grp.userData.p0 = new THREE.Vector3(...fl.p); grp.userData.q0 = fl.q;
       grp.userData.p1 = new THREE.Vector3(...n.final.p); grp.userData.q1 = n.final.q; roots.push(grp); }
     const [ox,oy] = n.origin, shape = new THREE.Shape(n.poly.map(([x,y])=>new THREE.Vector2(x-ox,y-oy)));
     for (const hl of n.holes) shape.holes.push(new THREE.Path(hl.map(([x,y])=>new THREE.Vector2(x-ox,y-oy))));
@@ -690,9 +898,9 @@ function rebuild3D(){
     a.castShadow = b.castShadow = true; grp.add(a,b);
   }
   // measure the assembled box
-  c0.set((minX+maxX)/2,(minY+maxY)/2,0);
-  setPose(1); wrapper.position.set(0,0,0); wrapper.updateMatrixWorld(true);
-  box3.setFromObject(wrapper); box3.getCenter(c1); box3.getSize(foldedSize);
+  wrapper.position.set(0,0,0);
+  setPose(0); wrapper.updateMatrixWorld(true); box3.setFromObject(wrapper); box3.getSize(flatSize);
+  setPose(1); wrapper.updateMatrixWorld(true); box3.setFromObject(wrapper); box3.getCenter(c1); box3.getSize(foldedSize);
   const size = Math.max(w,h,foldedSize.length());
   Object.assign(key.shadow.camera, {left:-size,right:size,top:size,bottom:-size,near:1,far:size*6});
   key.shadow.camera.updateProjectionMatrix();
@@ -701,12 +909,12 @@ function rebuild3D(){
 }
 function setPose(t){
   for (const g of groups){ const n = g.userData.n, [a,b] = n.stage; g.rotation[n.axis] = n.angle*ease(clamp((t-a)/(b-a),0,1)); }
-  const k = ease(t);
-  for (const r of roots){ r.position.lerpVectors(r.userData.p0, r.userData.p1, k); r.quaternion.slerpQuaternions(QI, r.userData.q1, k); }
+  const km = ease(clamp((t-.8)/.2,0,1));   // separate pieces (lid, sleeve) slide into place at the end
+  for (const r of roots){ r.position.lerpVectors(r.userData.p0, r.userData.p1, km); r.quaternion.slerpQuaternions(r.userData.q0, r.userData.q1, km); }
 }
 function applyFold(t, fitCam){
   T = t; setPose(t);
-  wrapper.position.lerpVectors(c0, c1, ease(t)).negate();
+  wrapper.position.copy(c1).negate();   // the assembled box stays put; the sheet unfolds around it
   wrapper.updateMatrixWorld(true); box3.setFromObject(wrapper);
   ground.position.y = box3.min.y - .3;
   if (fitCam) fitCamera();
@@ -714,9 +922,8 @@ function applyFold(t, fitCam){
 }
 function fitCamera(){
   const aspect = camera.aspect, tanH = Math.tan(camera.fov*DEG/2);
-  const flat = Math.max(G.b.h, G.b.w/aspect)/(2*tanH)*1.12;
-  const diag = foldedSize.length(), folded = Math.max(diag, diag/aspect)/(2*tanH)*1.05;
-  const dist = lerp(flat, folded, ease(T));
+  const fit = v => { const d = v.length(); return Math.max(d, d/aspect)/(2*tanH); };
+  const dist = G.pouch ? fit(foldedSize)*1.2 : Math.max(fit(foldedSize)*1.35, fit(flatSize)*.9);
   const dir = camera.position.clone().sub(controls.target);
   if (dir.lengthSq() < 1e-6) dir.set(.55,.38,1);
   controls.target.set(0,0,0); camera.position.copy(dir.normalize().multiplyScalar(dist));
@@ -728,7 +935,7 @@ function resize(){
 new ResizeObserver(resize).observe(host);
 let anim = null;
 function loop(now){
-  if (anim){ const p = clamp((now-anim.t0)/anim.dur,0,1); const t = lerp(anim.from, anim.to, p); applyFold(t,true); $('t').value = Math.round(t*1000); if (p>=1) anim=null; }
+  if (anim){ const p = clamp((now-anim.t0)/anim.dur,0,1); const t = lerp(anim.from, anim.to, p); applyFold(t,false); $('t').value = Math.round(t*1000); if (p>=1) anim=null; }
   controls.update(); renderer.render(scene,camera); requestAnimationFrame(loop);
 }
 
@@ -743,9 +950,14 @@ function doRefresh(){
     gen++; renderSlots(); renderEls();
   }
   const sTex = Math.min(10, 4096/Math.max(G.b.w,G.b.h));
-  drawArt(texCanvas, G, sTex, S.showLines, 'out'); updTex(outMat, texCanvas, false);
-  drawArt(texInCanvas, G, hasInside() ? sTex : Math.min(sTex, 1), S.showLines, 'in'); updTex(inMat, texInCanvas, true);
-  outMat.roughness = S.finish==='gloss' ? .28 : .82;
+  const wn = {};
+  drawArt(texCanvas, G, sTex, S.showLines, 'out', null, wn); updTex(outMat, texCanvas, false);
+  drawArt(texInCanvas, G, hasInside() ? sTex : Math.min(sTex, 1), S.showLines, 'in', null, wn); updTex(inMat, texInCanvas, true);
+  WARN = wn; updWarn();
+  outMat.roughness = S.finish==='gloss' ? .28 : S.finish==='metal' ? .32 : .82; outMat.metalness = S.finish==='metal' ? .75 : 0;
+  pouchMat.map = outMat.map; pouchMat.roughness = S.finish==='matte' ? .7 : S.finish==='metal' ? .3 : .22;
+  pouchMat.metalness = S.finish==='metal' ? .8 : 0; pouchMat.clearcoat = S.finish==='matte' ? 0 : .8; pouchMat.needsUpdate = true;
+  document.querySelector('.fold').hidden = !!G.pouch || !$('view2d').hidden;
   $('insideBgWrap').hidden = S.inside!=='color';
   if (!$('view2d').hidden) render2D();
 }
@@ -762,9 +974,9 @@ function render2D(){
     return;
   }
   sig2d = sig;
-  v.innerHTML = `<div data-side="out">${svgDoc(G, out)}</div>` +
-    (inside ? `<p class="cap">Оборот — внутренняя сторона (зеркально, как печатается на обороте листа)</p><div data-side="in">${svgDoc(G, inn, true)}</div>` : '') +
-    `<div class="legend"><span><i></i>рез</span><span><i class="c"></i>биговка (сгиб)</span><span>вылеты ${BLEED} мм</span></div>`;
+  v.innerHTML = `<div data-side="out">${svgDoc(G, out, false, true)}</div>` +
+    (inside ? `<p class="cap">Оборот — внутренняя сторона (зеркально, как печатается на обороте листа)</p><div data-side="in">${svgDoc(G, inn, true, true)}</div>` : '') +
+    `<div class="legend"><span><i></i>рез</span><span><i class="c"></i>биговка (сгиб)</span><span><i class="s"></i>зона безопасности ${SAFE} мм</span><span><i class="b"></i>вылеты ${BLEED} мм</span></div>`;
 }
 // drag the selected logo/text on the flat sheet
 let dragging = false;
@@ -783,17 +995,20 @@ function placeAt(e){
 }
 $('view2d').addEventListener('pointerdown', e => {
   if (!e.target.closest('svg')) return;
-  if (!curEl()){ toast('Сначала добавьте или выберите логотип или надпись'); return; }
+  if (!curEl()){ const v = $('view2d'); pan = {x:e.clientX, y:e.clientY, l:v.scrollLeft, t:v.scrollTop};
+    v.classList.add('panning'); e.target.closest('svg').setPointerCapture(e.pointerId); return; }
   dragging = true; e.target.closest('svg').setPointerCapture(e.pointerId); placeAt(e);
 });
-$('view2d').addEventListener('pointermove', e => { if (dragging) placeAt(e); });
-$('view2d').addEventListener('pointerup', () => { dragging = false; renderEls(); });
-$('view2d').addEventListener('pointercancel', () => { dragging = false; });
+$('view2d').addEventListener('pointermove', e => { if (dragging) placeAt(e);
+  else if (pan){ const v = $('view2d'); v.scrollLeft = pan.l-(e.clientX-pan.x); v.scrollTop = pan.t-(e.clientY-pan.y); } });
+$('view2d').addEventListener('pointerup', () => { if (dragging) renderEls(); dragging = false; pan = null; $('view2d').classList.remove('panning'); });
+$('view2d').addEventListener('pointercancel', () => { dragging = false; pan = null; $('view2d').classList.remove('panning'); });
 
 /* ---------- UI ---------- */
 function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
-  $('tab2').value = S.tab;
+  for (const [a,k] of Object.entries(ALIAS)){ const el=$(a); if (el.type==='checkbox') el.checked=!!S[k]; else el.value=S[k]; }
+  const dl = DIM_LABELS[S.type] || ['Длина','Ширина','Высота']; ['lL','lW','lH'].forEach((id,i)=>$(id).textContent=dl[i]);
   for (const id of SEL) $(id).value = S[id];
   for (const id of CHK) $(id).checked = !!S[id];
   document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== S.type);
@@ -821,21 +1036,23 @@ function bindInputs(){
     el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[id]=clamp(v,+el.min,+el.max);
       if (!['L','W','H'].includes(id)) custom(); refresh(true); });
     el.addEventListener('change',()=>{ el.value=S[id]; }); }
-  $('tab2').addEventListener('input',()=>{ const v=parseFloat($('tab2').value); if (!isFinite(v)) return; S.tab=clamp(v,5,60); custom(); refresh(true); });
+  for (const [a,k] of Object.entries(ALIAS)){ const el=$(a);
+    if (el.type==='checkbox') el.addEventListener('change',()=>{ S[k]=el.checked; custom(); syncUI(); refresh(true); });
+    else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
-  for (const id of ['notch','window','hang']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
+  for (const id of ['notch','window','hang','dbl']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
   for (const id of ['bg','ink','title','sub','inside','finish']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
   for (const id of ['showText','showLines']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; refresh(); });
   $('presets').addEventListener('click',e=>{ const d=e.target.closest('[data-d]')?.dataset.d; if(!d) return;
     [S.L,S.W,S.H]=d.split(',').map(Number); syncUI(); refresh(true); });
-  $('t').addEventListener('input',()=>{ anim=null; applyFold($('t').value/1000,true); });
+  $('t').addEventListener('input',()=>{ anim=null; applyFold($('t').value/1000,false); });
   $('play').addEventListener('click',()=>{ const to = T > .5 ? 0 : 1;
     const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 2800*Math.abs(to-T)+200;
     anim = {from:T, to, t0:performance.now(), dur}; });
   const tabs = [$('t3d'),$('t2d')];
   tabs.forEach(tb=>tb.addEventListener('click',()=>{ const is2 = tb.id==='t2d';
     tabs.forEach(x=>x.setAttribute('aria-selected', x===tb)); $('view2d').hidden=!is2; $('view3d').hidden=is2;
-    document.querySelector('.fold').hidden=is2; if (is2) render2D(); else resize(); }));
+    $('zoomBar').hidden=!is2; document.querySelector('.fold').hidden=is2 || !!G.pouch; if (is2) render2D(); else resize(); }));
 }
 function renderSlots(){
   const box = $('slots'); box.innerHTML='';
@@ -886,6 +1103,19 @@ function syncEl(){
   $('elX').value = (el.x*100).toFixed(1); $('elXO').textContent = Math.round(el.x*100)+'%';
   $('elY').value = (el.y*100).toFixed(1); $('elYO').textContent = Math.round(el.y*100)+'%';
   $('elRot').value = el.rot; $('elRotO').textContent = el.rot+'°';
+  updWarn();
+}
+function updWarn(){
+  const el = curEl(), box = $('elWarn'); if (!el || !box) return;
+  const msgs = []; let bad = false;
+  if (WARN[el.id]){ msgs.push(`Заходит в зону ${SAFE} мм от реза или сгиба — край может срезаться или уйти на сгиб.`); bad = true; }
+  if (el.kind==='image' && ELIMG[el.id]){ const dpi = Math.round(ELIMG[el.id].img.naturalWidth/(el.size/25.4));
+    if (ELIMG[el.id].src.startsWith('data:image/svg')) msgs.push('Векторный логотип — качество не теряется.');
+    else if (dpi < 150){ msgs.push(`Разрешение ${dpi} dpi — будет мыльно. Для печати нужно 300 dpi: загрузите картинку крупнее или уменьшите логотип.`); bad = true; }
+    else if (dpi < 300) msgs.push(`Разрешение ${dpi} dpi — допустимо, но лучше 300 dpi.`);
+    else msgs.push(`Разрешение ${dpi} dpi — хорошо для печати.`); }
+  if (!msgs.length) msgs.push('В зоне безопасности.');
+  box.textContent = msgs.join(' '); box.classList.toggle('bad', bad);
 }
 function addEl(el){ S.els.push(el); selId = el.id; renderEls(); syncEl(); refresh(); }
 $('addLogo').addEventListener('change', e => {
@@ -916,6 +1146,59 @@ $('elDup').addEventListener('click', () => { const el = curEl(); if (!el) return
 $('elDel').addEventListener('click', () => { const i = S.els.findIndex(e=>e.id===selId); if (i<0) return;
   delete ELIMG[S.els[i].id]; S.els.splice(i,1); selId = null; renderEls(); syncEl(); refresh(); });
 
+/* ---------- home page ---------- */
+function showView(){
+  const ed = location.hash === '#editor';
+  $('home').hidden = ed; document.querySelector('.app').hidden = !ed;
+  if (ed){ resize(); fitCamera(); } else renderHome();
+  window.scrollTo(0,0);
+}
+function openEditor(){ if (location.hash === '#editor') showView(); else location.hash = 'editor'; }
+function cardHTML(svg, name, desc, mm, attrs){
+  return `<button class="card" ${attrs}><div class="pic">${svg}</div><div class="txt"><b>${name}</b>${desc?`<span>${desc}</span>`:''}<span class="mm">${mm}</span></div></button>`;
+}
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function renderHome(){
+  $('homeTpls').innerHTML = TPL.map(t => { const d = TYPE_DIMS[t.type];
+    const P = {...DEFAULTS, ...d, type:t.type, ...t.set};
+    return cardHTML(thumbSvg(build(P)), t.name, TPL_DESC[t.id]||'', `${d.L}×${d.W}×${d.H} мм`, `data-tpl="${t.id}"`); }).join('');
+  $('homeMineSec').hidden = !mine.length;
+  $('homeMine').innerHTML = mine.map((m,i) => cardHTML(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), TYPE_NAMES[m.s.type]||'', `${m.s.L}×${m.s.W}×${m.s.H} мм`, `data-mine="${i}"`)).join('');
+  $('homeContinue').hidden = !store.get('skladka-settings-2', null);
+}
+$('nbType').innerHTML = Object.entries(TYPE_NAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+const nbSync = () => { const t = $('nbType').value, d = TYPE_DIMS[t], dl = DIM_LABELS[t] || ['Длина','Ширина','Высота'];
+  $('nbL').value = d.L; $('nbW').value = d.W; $('nbH').value = d.H; ['nbLL','nbLW','nbLH'].forEach((id,i)=>$(id).textContent = dl[i]); };
+$('nbType').addEventListener('input', nbSync); nbSync();
+$('nbGo').addEventListener('click', () => {
+  const t = $('nbType').value, v = id => clamp(parseFloat($(id).value)||0, +$(id).min, +$(id).max);
+  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k];
+  Object.assign(S, DEFAULTS, TYPE_DIMS[t], {type:t, tpl:null, L:v('nbL'), W:v('nbW'), H:v('nbH'),
+    title:'', sub:'', showText:false, bg:'#ffffff', ink:'#1b211f', els:[]});
+  if (t==='tube') Object.assign(S, TUBE_BASE);
+  selId = null; syncUI(); syncEl(); refresh(true); openEditor();
+});
+$('homeTpls').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (!b) return; selectTpl(b.dataset.tpl); openEditor(); });
+$('homeMine').addEventListener('click', e => { const b = e.target.closest('[data-mine]'); if (!b) return; Object.assign(S, mine[+b.dataset.mine].s); syncUI(); refresh(true); openEditor(); });
+$('homeContinue').addEventListener('click', openEditor);
+$('goHome').addEventListener('click', () => { location.hash = ''; });
+window.addEventListener('hashchange', showView);
+
+/* ---------- 2D zoom & pan ---------- */
+let z2 = 1, pan = null;
+function setZoom(z, rx, ry){
+  const v = $('view2d'); rx ??= v.clientWidth/2; ry ??= v.clientHeight/2;
+  const fx = (v.scrollLeft+rx)/v.scrollWidth, fy = (v.scrollTop+ry)/v.scrollHeight;
+  z2 = clamp(z, 1, 8); v.style.setProperty('--z', z2); v.classList.toggle('zoomed', z2 > 1.001);
+  v.scrollLeft = fx*v.scrollWidth - rx; v.scrollTop = fy*v.scrollHeight - ry;
+  $('zVal').textContent = Math.round(z2*100)+'%';
+}
+$('zIn').addEventListener('click', () => setZoom(z2*1.4));
+$('zOut').addEventListener('click', () => setZoom(z2/1.4));
+$('zFit').addEventListener('click', () => setZoom(1));
+$('view2d').addEventListener('wheel', e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault();
+  const r = $('view2d').getBoundingClientRect(); setZoom(z2*Math.exp(-e.deltaY*.01), e.clientX-r.left, e.clientY-r.top); }, {passive:false});
+
 /* ---------- my templates ---------- */
 let mine = store.get('skladka-mine', []);
 function renderMine(){
@@ -940,26 +1223,38 @@ $('mySave').addEventListener('click',()=>{
 });
 
 /* ---------- exports ---------- */
-$('exSvg').addEventListener('click',()=>saveFile(fname('-shablon.svg'), new Blob([svgDoc(G,null)],{type:'image/svg+xml'})));
+$('exSvg').addEventListener('click',()=>saveFile(fname('-shablon.svg'), new Blob([svgDoc(G,null,false,true)],{type:'image/svg+xml'})));
 $('exSvgArt').addEventListener('click',()=>{ const url = exportCanvas(G).toDataURL('image/png');
   saveFile(fname('-razvertka.svg'), new Blob([svgDoc(G,url)],{type:'image/svg+xml'})); });
 $('exPdf').addEventListener('click',()=>{
   const {jsPDF} = window.jspdf || {}; if (!jsPDF){ toast('Библиотека PDF не загрузилась. Обновите страницу.'); return; }
-  const {w,h,minX,maxY} = G.b;
-  const doc = new jsPDF({orientation: w>h?'landscape':'portrait', unit:'mm', format:[w,h]});
-  doc.addImage(exportCanvas(G).toDataURL('image/jpeg',.95),'JPEG',0,0,w,h);
-  doc.setLineWidth(.25);
-  const draw = list => list.forEach(([a,b])=>doc.line(a[0]-minX,maxY-a[1],b[0]-minX,maxY-b[1]));
-  doc.setDrawColor(0,144,255); doc.setLineDashPattern([3,1.5],0); draw(G.creases);
-  doc.setDrawColor(228,0,43); doc.setLineDashPattern([],0); draw(G.cuts);
-  if (hasInside()){
-    doc.addPage([w,h], w>h?'landscape':'portrait');
-    doc.addImage(exportCanvas(G,'in').toDataURL('image/jpeg',.95),'JPEG',0,0,w,h);
-    const drawM = list => list.forEach(([a,b])=>doc.line(G.b.maxX-a[0],maxY-a[1],G.b.maxX-b[0],maxY-b[1]));
-    doc.setDrawColor(0,144,255); doc.setLineDashPattern([3,1.5],0); drawM(G.creases);
-    doc.setDrawColor(228,0,43); doc.setLineDashPattern([],0); drawM(G.cuts);
-  }
-  saveFile(fname('-razvertka.pdf'), doc.output('blob'));
+  const {w,h,minX,maxX,maxY} = G.b, M = 14, PW = w+2*M, PH = h+2*M, orient = PW>PH?'landscape':'portrait';
+  const sExp = Math.min(300/25.4, 8000/Math.max(w,h), Math.sqrt(16e6/(w*h)));   // stays under the 16 Mpx canvas limit of Safari
+  const dpi = Math.round(sExp*25.4);
+  const doc = new jsPDF({orientation:orient, unit:'mm', format:[PW,PH]});
+  const art = side => drawArt(document.createElement('canvas'), G, sExp, false, side).toDataURL('image/jpeg',.95);
+  const die = mirror => { const X = x => M + (mirror ? maxX-x : x-minX), Y = y => M + maxY-y;
+    doc.setLineWidth(.25);
+    doc.setDrawColor(1,0,0,0); doc.setLineDashPattern([3,1.5],0); G.creases.forEach(([a,b])=>doc.line(X(a[0]),Y(a[1]),X(b[0]),Y(b[1])));
+    doc.setDrawColor(0,1,0,0); doc.setLineDashPattern([],0); G.cuts.forEach(([a,b])=>doc.line(X(a[0]),Y(a[1]),X(b[0]),Y(b[1]))); };
+  const marks = () => { // crop marks at the trim box corners, outside the bleed
+    const t = [M+BLEED, M+BLEED, M+w-BLEED, M+h-BLEED], o = BLEED+2, len = 6;
+    doc.setLineDashPattern([],0); doc.setDrawColor(0,0,0,1); doc.setLineWidth(.2);
+    for (const x of [t[0],t[2]]) for (const y of [t[1],t[3]]){ const sx = x===t[0]?-1:1, sy = y===t[1]?-1:1;
+      doc.line(x+sx*o, y, x+sx*(o+len), y); doc.line(x, y+sy*o, x, y+sy*(o+len)); } };
+  const info = title => { doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(0,0,0,1);
+    const typeName = TPL.find(t=>t.id===S.tpl)?.id || S.type;
+    doc.text(`${title}  |  ${typeName} ${S.L}x${S.W}x${S.H} mm  |  sheet ${w.toFixed(1)}x${h.toFixed(1)} mm incl. ${BLEED} mm bleed  |  safe zone ${SAFE} mm  |  image ${dpi} dpi, RGB`, M, M-6);
+    doc.text('CutContour = 100% M (solid)   Crease = 100% C (dashed)   Crop marks = trim box', M, PH-M+8); };
+  // 1 proof: artwork + dieline
+  doc.addImage(art('out'),'JPEG',M,M,w,h); die(false); marks(); info('PROOF - artwork + dieline (do not print dieline)');
+  // 2 print: outside artwork only
+  doc.addPage([PW,PH],orient); doc.addImage(art('out'),'JPEG',M,M,w,h); marks(); info('PRINT - outside');
+  // 3 print: inside (reverse side, mirrored)
+  if (hasInside()){ doc.addPage([PW,PH],orient); doc.addImage(art('in'),'JPEG',M,M,w,h); marks(); info('PRINT - inside / reverse side (mirrored)'); }
+  // 4 die: dieline only, for the die-cutter
+  doc.addPage([PW,PH],orient); die(false); marks(); info('DIELINE - cut & crease only');
+  saveFile(fname('-tipografiya.pdf'), doc.output('blob'));
 });
 $('exPng').addEventListener('click',()=>{ renderer.render(scene,camera); renderer.domElement.toBlob(b=>saveFile(fname('-mockup.png'),b),'image/png'); });
 $('saveProj').addEventListener('click',()=>{ const imgs={}, elimgs={}; for (const k in IMGS) imgs[k]=IMGS[k].src;
@@ -984,6 +1279,7 @@ camera.position.set(.55,.38,1);
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
 $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
 document.fonts?.ready.then(()=>refresh());
+showView();
 requestAnimationFrame(loop);
 </script>
 
