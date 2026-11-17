@@ -9,56 +9,68 @@
 <title>Складка</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@400;700&family=Playfair+Display:wght@400;700&family=Oswald:wght@500&family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@400;700&family=Playfair+Display:wght@400;700&family=Oswald:wght@500&family=Caveat:wght@500&display=swap">
 <style>
 /* Layout: tool shell — settings rail on the left, 3D stage with fold scrubber on the right; stacks on phones */
 :root{
-  --bg:#e9ece8; --panel:#f7f8f5; --fg:#1b211f; --muted:#5f6a65; --line:#d3d9d3;
-  --accent:#1f5e4a; --accent-fg:#ffffff; --accent-soft:#dcebe4; --stage:#dfe3de; --stage2:#cdd3cc;
-  --cut:#d7263d; --crease:#2f6fdb; --field:#ffffff;
-  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bg:#f7f7f7; --panel:#ffffff; --fg:#191919; --muted:#6b6b6b; --line:#e6e6e6;
+  --accent:#731eff; --accent-hover:#5e10dc; --accent-fg:#ffffff; --accent-soft:#f1eaff; --stage:#f3f2f5; --stage2:#e7e5ec;
+  --cut:#ff445d; --crease:#2f6fdb; --field:#ffffff; --hover:#f5f5f7;
+  --sans:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121614; --panel:#1a1f1d; --fg:#e5eae7; --muted:#97a29d; --line:#2c3431;
-  --accent:#5cc29a; --accent-fg:#0d1311; --accent-soft:#1f3a30; --stage:#1e2422; --stage2:#151a18;
-  --cut:#ff5a6e; --crease:#6aa0ff; --field:#111513; color-scheme:dark}}
+  --bg:#141317; --panel:#1c1b20; --fg:#ecebf0; --muted:#a19fab; --line:#2e2c35;
+  --accent:#9b6bff; --accent-hover:#b38cff; --accent-fg:#ffffff; --accent-soft:#2a2140; --stage:#1f1e24; --stage2:#17161b;
+  --cut:#ff6b7f; --crease:#6aa0ff; --field:#141317; --hover:#25232b; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121614; --panel:#1a1f1d; --fg:#e5eae7; --muted:#97a29d; --line:#2c3431;
-  --accent:#5cc29a; --accent-fg:#0d1311; --accent-soft:#1f3a30; --stage:#1e2422; --stage2:#151a18;
-  --cut:#ff5a6e; --crease:#6aa0ff; --field:#111513; color-scheme:dark}
+  --bg:#141317; --panel:#1c1b20; --fg:#ecebf0; --muted:#a19fab; --line:#2e2c35;
+  --accent:#9b6bff; --accent-hover:#b38cff; --accent-fg:#ffffff; --accent-soft:#2a2140; --stage:#1f1e24; --stage2:#17161b;
+  --cut:#ff6b7f; --crease:#6aa0ff; --field:#141317; --hover:#25232b; color-scheme:dark}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
 *{box-sizing:border-box}
-.app{height:100%;display:grid;grid-template-columns:350px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:8px;
-  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.app header .btn{padding:6px 11px}
+.app{height:100%;display:grid;grid-template-columns:84px 330px minmax(0,1fr);grid-template-rows:58px minmax(0,1fr)}
+header{grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--panel);border-bottom:1px solid var(--line);
+  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));min-width:0}
+.logo{display:flex;align-items:center;gap:8px;font:800 17px var(--sans);letter-spacing:-.02em;color:var(--fg);background:none;border:0;cursor:pointer;padding:6px 8px;border-radius:8px;flex:none}
+.logo:hover{background:var(--hover)}
+.logo .mk{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:#fff}
+.vsep{width:1px;height:24px;background:var(--line);flex:none}
+.ibtn{width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:var(--fg);cursor:pointer;display:grid;place-items:center;flex:none}
+.ibtn:hover{background:var(--hover)} .ibtn:disabled{opacity:.35;cursor:default;background:transparent}
+.rail{grid-row:2;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:8px 6px;overflow:auto;min-height:0}
+.rail button{display:grid;justify-items:center;gap:5px;padding:10px 2px 8px;border:0;background:transparent;border-radius:10px;font:600 10.5px var(--sans);letter-spacing:-.01em;color:var(--muted);cursor:pointer}
+.rail button:hover{background:var(--hover);color:var(--fg)}
+.rail button[aria-selected=true]{background:var(--accent-soft);color:var(--accent)}
+.rail svg{width:22px;height:22px}
+aside section[data-pane]:not(.on){display:none}
 .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .brand b{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .brand span{color:var(--muted);font-size:13px}
 header .sp{flex:1}
-aside{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto;min-height:0}
-section{padding:14px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;min-height:0}
+section{padding:16px 18px;border-bottom:1px solid var(--line);display:grid;gap:12px}
 section:last-child{border-bottom:0}
-h2{margin:0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--fg)}
 h3{margin:4px 0 0;font-size:12px;font-weight:600;color:var(--fg)}
 label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}
 .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 input[type=number],input[type=text],select{width:100%;font:500 14px var(--mono);color:var(--fg);background:var(--field);
-  border:1px solid var(--line);border-radius:6px;padding:7px 8px}
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;transition:border-color .15s}
+input[type=number]:hover,input[type=text]:hover,select:hover{border-color:#c9c7d0}
 input[type=text],select{font-family:var(--sans);font-size:13.5px}
 input:focus-visible,select:focus-visible,button:focus-visible,.slot:focus-within{outline:2px solid var(--accent);outline-offset:1px}
-input[type=color]{width:100%;height:34px;border:1px solid var(--line);border-radius:6px;background:var(--field);padding:2px}
+input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:2px}
 .tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .tpl{display:grid;gap:4px;border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:8px;padding:8px;cursor:pointer;text-align:left;font:500 12px/1.3 var(--sans)}
 .tpl svg{width:100%;height:58px;display:block}
 .tpl:hover{border-color:var(--accent)}
 .tpl[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
 .presets{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:99px;padding:4px 10px;font:12px var(--sans);cursor:pointer}
-.chip:hover{border-color:var(--accent)}
+.chip{border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:99px;padding:5px 11px;font:500 12px var(--sans);cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
 .mine{display:grid;gap:6px}
 .mine .it{display:flex;gap:6px;align-items:center}
 .mine .it button.ld{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -78,15 +90,20 @@ input[type=color]{width:100%;height:34px;border:1px solid var(--line);border-rad
 .chk{display:flex;align-items:center;gap:8px;font-size:13px}
 .sub{display:grid;gap:8px;padding:8px 0 4px 24px}
 .note{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
-.btn{border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:7px;padding:8px 12px;font:500 13px var(--sans);cursor:pointer;text-align:left}
-.btn:hover{border-color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:8px;padding:8px 14px;font:600 13px var(--sans);cursor:pointer;text-align:left;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.pri:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:var(--accent-fg)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--hover);color:var(--fg)}
 .btns{display:grid;gap:6px}
 .btn small{display:block;font-weight:400;color:inherit;opacity:.7;font-size:11.5px}
-main{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--stage);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.tabs{display:flex;gap:4px;padding:8px;align-items:center;flex-wrap:wrap}
-.tab{border:0;background:transparent;color:var(--muted);padding:6px 12px;border-radius:6px;font:500 13px var(--sans);cursor:pointer}
-.tab[aria-selected=true]{background:var(--panel);color:var(--fg)}
+main{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--stage);overflow:hidden}
+.tabs{display:flex;gap:4px;padding:10px 12px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;gap:2px;padding:3px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.tab{border:0;background:transparent;color:var(--muted);padding:6px 16px;border-radius:7px;font:600 13px var(--sans);cursor:pointer}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected=true]{background:var(--accent);color:var(--accent-fg)}
 .dims{margin-left:auto;font:12px var(--mono);color:var(--muted);padding-right:6px;font-variant-numeric:tabular-nums}
 #view3d{position:relative;min-height:0;background:radial-gradient(ellipse at 50% 40%,var(--stage) 0%,var(--stage2) 100%)}
 #view3d canvas{display:block;width:100%;height:100%;touch-action:none}
@@ -109,7 +126,7 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
 .warn{font-size:12px;line-height:1.4;margin:0;padding:6px 8px;border-radius:6px;background:var(--accent-soft);color:var(--fg)}
 .warn.bad{background:color-mix(in srgb,var(--cut) 16%,transparent)}
 .fold[hidden]{display:none!important}
-.fold{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
+.fold{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel)}
 .fold input{flex:1;min-width:0;accent-color:var(--accent)}
 .fold output{font:500 12px var(--mono);width:84px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 .play{width:36px;height:36px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-fg);cursor:pointer;display:grid;place-items:center;flex:none}
@@ -134,8 +151,8 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
 .card.proj .del{position:absolute;top:8px;right:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;font:500 12px var(--sans);padding:4px 8px;cursor:pointer;opacity:.85}
 .card.proj .del.arm{background:var(--cut);border-color:var(--cut);color:#fff;opacity:1}
 .card.proj:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.savemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;width:min(340px,calc(100vw - 32px));display:grid;gap:4px;padding:8px;
-  background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.savemenu{position:absolute;right:0;top:calc(100% + 8px);z-index:20;width:min(360px,calc(100vw - 32px));display:grid;gap:2px;padding:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px rgba(25,25,25,.16)}
 .savemenu .btn{border-color:transparent;background:transparent}
 .savemenu .btn:hover,.savemenu .btn:focus-visible{background:var(--accent-soft);border-color:transparent}
 .savemenu .btn b{font-weight:600;display:block}
@@ -153,24 +170,41 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .cap{font-size:12px;color:var(--muted);text-align:center;margin:16px 0 8px}
 #view2d.placing svg{cursor:crosshair}
 /* home */
-#home{min-height:100%;padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.home-in{max-width:1180px;margin:0 auto;display:grid;gap:28px}
-.home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.home-head h1{margin:0;font-size:34px;letter-spacing:-.02em;font-weight:700}
-.home-head p{margin:6px 0 0;color:var(--muted);font-size:15px;max-width:60ch;line-height:1.45}
+#home{min-height:100%;display:grid;grid-template-columns:260px minmax(0,1fr)}
+.hside{position:sticky;top:0;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.hside .logo{margin:0 0 10px}
+.hside .btn.pri{text-align:center;padding:10px 14px;margin-bottom:10px}
+.hside h2{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:14px 8px 4px}
+.nav{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--fg);font:600 13.5px var(--sans);text-align:left;padding:9px 10px;border-radius:8px;cursor:pointer;text-decoration:none}
+.nav:hover{background:var(--hover)}
+.nav.on{background:var(--accent-soft);color:var(--accent)}
+.nav em{margin-left:auto;font-style:normal;font-size:12px;color:var(--muted);font-weight:500}
+.nav svg{width:30px;height:22px;flex:none}
+.nav span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.navlist{display:grid;gap:1px}
+.navlist .nav{font-weight:500;font-size:13px}
+.hmain{min-width:0;padding:28px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,3vw)}
+.home-in{max-width:1200px;margin:0 auto;display:grid;gap:22px}
+.home-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.home-head h1{margin:0;font-size:28px;letter-spacing:-.02em;font-weight:800}
+.home-head .acts{display:flex;gap:8px;flex-wrap:wrap}
 .home-sec{display:grid;gap:12px}
-.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.card{display:grid;grid-template-rows:auto 1fr;border:1px solid var(--line);background:var(--panel);border-radius:12px;overflow:hidden;text-align:left;color:var(--fg);font:inherit;cursor:pointer;padding:0}
-button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.card .pic{background:var(--stage);padding:14px;height:150px;display:grid;place-items:center}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.card{display:grid;grid-template-rows:auto 1fr;border:1px solid var(--line);background:var(--panel);border-radius:12px;overflow:hidden;text-align:left;color:var(--fg);font:inherit;cursor:pointer;padding:0;transition:box-shadow .15s,border-color .15s}
+.card:hover{border-color:var(--accent);box-shadow:0 8px 24px rgba(115,30,255,.12)}
+.card .pic{background:var(--stage);padding:14px;height:160px;display:grid;place-items:center}
 .card .pic svg{width:100%;height:100%}
 .card .txt{padding:12px 14px 14px;display:grid;gap:4px;align-content:start}
-.card b{font-size:14.5px;font-weight:600}
+.card b{font-size:14.5px;font-weight:700}
 .card span{font-size:12.5px;color:var(--muted);line-height:1.4}
 .card .mm{font:12px var(--mono);color:var(--muted)}
-.card.blank{cursor:default;border-style:dashed;border-width:1.5px}
-.card.blank .txt{gap:10px}
-.card.blank .pic{font-size:44px;color:var(--accent);font-weight:300}
+.card.newc{border-style:dashed;border-width:1.5px;place-content:center;justify-items:center;gap:10px;min-height:236px;color:var(--accent);font:700 14px var(--sans);grid-template-rows:none}
+.card.newc i{font-style:normal;width:48px;height:48px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;font-size:26px;font-weight:400}
+dialog.dlg{border:1px solid var(--line);border-radius:14px;padding:22px;width:min(440px,calc(100vw - 32px));background:var(--panel);color:var(--fg);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog.dlg::backdrop{background:rgba(20,18,30,.4)}
+dialog.dlg form{display:grid;gap:14px}
+dialog.dlg h2{font-size:18px}
+dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 .zoom{display:flex;align-items:center;gap:4px;right:12px;bottom:12px;background:var(--panel);padding:4px;border-radius:8px;border:1px solid var(--line)}
 .zoom button{width:30px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;cursor:pointer;font:600 15px var(--sans)}
 .zoom button.wide{width:auto;padding:0 10px;font-size:12.5px;font-weight:500}
@@ -180,64 +214,67 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
   .board-hint{display:none}
   main.board-mode #view3d{width:150px;height:120px}
   html,body{height:auto}
-  .app{grid-template-columns:minmax(0,1fr);height:auto}
-  main{height:68vh;min-height:380px;order:1}
-  aside{order:2;overflow:visible}
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;height:auto}
+  header{flex-wrap:wrap;padding-block:8px}
+  main{height:62vh;min-height:360px;order:1}
+  .rail{order:2;grid-row:auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .rail button{flex:none;min-width:70px}
+  aside{order:3;overflow:visible;border-right:0}
+  #home{grid-template-columns:minmax(0,1fr)}
+  .hside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .hside .navlist{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
 }
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
 
 <div id="home" hidden>
-  <div class="home-in">
-    <div class="home-head">
-      <div>
-        <h1>Складка</h1>
-        <p>Выберите шаблон или начните с пустого проекта. Размеры, логотипы и надписи меняются в редакторе; развёртку для типографии и 3D-мокап можно скачать в любой момент.</p>
-      </div>
-      <button class="btn pri" id="homeContinue" hidden>Продолжить последний проект →</button>
-    </div>
-    <div class="home-sec" id="projSec">
-      <div class="sec-head"><h2>Мои проекты</h2>
-        <label class="btn" style="position:relative;overflow:hidden">Загрузить проект из файла (.json)<input id="openProjHome" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить проект из файла"></label></div>
-      <p class="empty" id="projEmpty">Пока нет проектов. Откройте шаблон или создайте пустой проект ниже — он сохранится здесь автоматически. Проект с другого компьютера или с claude.ai загрузите кнопкой «Загрузить проект из файла».</p>
-      <div class="home-grid" id="projGrid"></div>
-      <p class="note" id="projNote">Проекты сохраняются автоматически в этом браузере вместе с логотипами. Чтобы перенести на другой компьютер — «Экспорт → Файл проекта .json».</p>
-    </div>
-    <div class="home-sec">
-      <h2>Начать</h2>
-      <div class="home-grid">
-        <div class="card blank">
-          <div class="pic" aria-hidden="true">+</div>
-          <div class="txt">
-            <b>Пустой проект</b>
-            <label class="f">Тип упаковки<select id="nbType"></select></label>
-            <div class="row">
-              <label class="f"><span id="nbLL">Длина</span><input id="nbL" type="number" min="10" max="800" value="100"></label>
-              <label class="f"><span id="nbLW">Ширина</span><input id="nbW" type="number" min="10" max="800" value="60"></label>
-              <label class="f"><span id="nbLH">Высота</span><input id="nbH" type="number" min="5" max="800" value="150"></label>
-            </div>
-            <button class="btn pri" id="nbGo" style="text-align:center">Создать</button>
-          </div>
+  <nav class="hside" aria-label="Разделы">
+    <button class="logo" type="button" id="homeLogo"><span class="mk"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Складка</button>
+    <button class="btn pri" type="button" id="newBtn">+ Новый проект</button>
+    <button class="nav on" type="button" id="navProj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>Мои проекты</span><em id="projCount"></em></button>
+    <h2>Шаблоны</h2>
+    <div class="navlist" id="homeTpls"></div>
+    <div id="homeMineSec" hidden><h2>Мои шаблоны</h2><div class="navlist" id="homeMine"></div></div>
+  </nav>
+  <div class="hmain">
+    <div class="home-in">
+      <div class="home-head">
+        <h1>Мои проекты</h1>
+        <div class="acts">
+          <button class="btn" id="homeContinue" hidden>Продолжить последний →</button>
+          <label class="btn" style="position:relative;overflow:hidden">Загрузить .json<input id="openProjHome" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить проект из файла"></label>
         </div>
       </div>
-    </div>
-    <div class="home-sec" id="homeMineSec" hidden>
-      <h2>Мои шаблоны</h2>
-      <div class="home-grid" id="homeMine"></div>
-    </div>
-    <div class="home-sec">
-      <h2>Шаблоны</h2>
-      <div class="home-grid" id="homeTpls"></div>
+      <div class="home-sec" id="projSec">
+        <div class="home-grid" id="projGrid"></div>
+        <p class="empty" id="projEmpty">Пока нет проектов. Нажмите «+ Новый проект» или выберите шаблон слева — проект сохранится здесь автоматически.</p>
+        <p class="note" id="projNote">Проекты сохраняются автоматически в этом браузере вместе с логотипами. Чтобы перенести на другой компьютер — «Экспорт → Файл проекта .json».</p>
+      </div>
     </div>
   </div>
+  <dialog class="dlg" id="newDlg">
+    <form method="dialog">
+      <h2>Новый проект</h2>
+      <label class="f">Тип упаковки<select id="nbType"></select></label>
+      <div class="row">
+        <label class="f"><span id="nbLL">Длина</span><input id="nbL" type="number" min="10" max="800" value="100"></label>
+        <label class="f"><span id="nbLW">Ширина</span><input id="nbW" type="number" min="10" max="800" value="60"></label>
+        <label class="f"><span id="nbLH">Высота</span><input id="nbH" type="number" min="5" max="800" value="150"></label>
+      </div>
+      <p class="note">Внутренние размеры в мм. Всё можно поменять потом в редакторе.</p>
+      <div class="acts"><button class="btn" value="cancel">Отмена</button><button class="btn pri" id="nbGo" type="button">Создать</button></div>
+    </form>
+  </dialog>
 </div>
 
 <div class="app" hidden>
   <header>
-    <button class="btn" id="goHome">← Все шаблоны</button>
+    <button class="logo" type="button" id="goHome" title="На главную — мои проекты"><span class="mk"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Складка</button>
+    <span class="vsep"></span>
     <input id="pname" type="text" class="pname" aria-label="Название проекта" placeholder="Название проекта" title="Нажмите, чтобы переименовать">
     <span class="saved" id="savedState" aria-live="polite"></span>
     <div class="sp"></div>
+    <label class="btn ghost" style="position:relative;overflow:hidden">Открыть .json<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
     <div class="savewrap">
       <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Экспорт ▾</button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
@@ -250,11 +287,21 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
         <p class="note">Масштаб 1:1, мм. Цвет CMYK, картинки 300 dpi, шрифты в кривых. Вылеты 3 мм, безопасная зона 3 мм. Рез — слой CUT (spot CutContour), биговка — слой CREASE (spot Crease), оба с overprint.</p>
       </div>
     </div>
-    <label class="btn" style="position:relative;overflow:hidden">Открыть проект<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
   </header>
 
-  <aside>
-    <section>
+  <nav class="rail" role="tablist" aria-label="Настройки">
+    <button role="tab" data-pane="size" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 20 4M4 20v-5M4 20h5M20 4h-5M20 4v5"/></svg>Размер</button>
+    <button role="tab" data-pane="build" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>Конструкция</button>
+    <button role="tab" data-pane="material" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18M3 12h18M3 16h18"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>Материал</button>
+    <button role="tab" data-pane="design" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="9.5" r="1.3"/><circle cx="14.5" cy="8.5" r="1.3"/><circle cx="16" cy="13" r="1.3"/><path d="M12 20.5c-1.5 0-2-1-1.5-2.2.6-1.4-.3-2.3-1.8-2.3"/></svg>Дизайн</button>
+    <button role="tab" data-pane="elements" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h10M10 6v12"/><rect x="14" y="12" width="6" height="6" rx="1"/></svg>Элементы</button>
+    <button role="tab" data-pane="print" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg>Печать</button>
+    <button role="tab" data-pane="scene" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>Сцена</button>
+    <button role="tab" data-pane="mine" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Шаблоны</button>
+  </nav>
+
+  <aside id="aside">
+    <section data-pane="size">
       <h2>Размеры, мм (внутренние)</h2>
       <div class="row">
         <label class="f"><span id="lL">Длина</span><input id="L" type="number" min="10" max="800" step="1"></label>
@@ -264,7 +311,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       <div class="presets" id="presets"></div>
     </section>
 
-    <section>
+    <section data-pane="build">
       <h2>Конструкция</h2>
       <div data-for="tube" class="sub" style="padding-left:0">
         <div class="row2">
@@ -325,7 +372,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       </div>
     </section>
 
-    <section>
+    <section data-pane="mine">
       <h2>Мои шаблоны</h2>
       <div class="inl">
         <input id="myName" type="text" placeholder="Название, например «Чай 100 г»" aria-label="Название шаблона">
@@ -335,7 +382,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       <p class="note">Хранятся в этом браузере. Чтобы перенести на другой компьютер, сохраните проект в файл.</p>
     </section>
 
-    <section>
+    <section data-pane="design">
       <h2>Дизайн</h2>
       <div class="row2">
         <label class="f">Цвет фона<input id="bg" type="color"></label>
@@ -348,7 +395,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       <div class="slots" id="slots"></div>
       <p class="note">Картинка ложится на сторону с обрезкой по краям. Для точной вёрстки скачайте шаблон SVG, нарисуйте дизайн поверх и загрузите PNG того же размера в «Вся развёртка».</p>
     </section>
-    <section>
+    <section data-pane="elements">
       <h2>Логотипы и надписи</h2>
       <div class="row2">
         <label class="btn" style="position:relative;overflow:hidden;text-align:center">+ Логотип<input id="addLogo" type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить логотип"></label>
@@ -380,7 +427,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       </div>
       <p class="note" id="elHint">Логотип — PNG с прозрачным фоном или SVG. Внутри можно напечатать, например, «Спасибо за заказ!» на крышке.</p>
     </section>
-    <section>
+    <section data-pane="scene">
       <h2>3D-сцена</h2>
       <div class="f">Фон</div>
       <div class="sw" id="bgSw" role="group" aria-label="Фон 3D"></div>
@@ -393,7 +440,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       <label class="rng"><span>Тень</span><input id="shadow" type="range" min="0" max="60" step="2"><output id="shadowO"></output></label>
       <p class="note">Фон и свет сохраняются в мокап PNG. «Прозрачный» — для вставки на сайт или в презентацию.</p>
     </section>
-    <section>
+    <section data-pane="material">
       <h2>Материал</h2>
       <div class="row2">
         <label class="f">Внутри<select id="inside"><option value="white">Белый картон</option><option value="kraft">Крафт</option><option value="color">Печать цветом</option></select></label>
@@ -406,8 +453,8 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 
   <main>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="t3d" aria-selected="true">3D</button>
-      <button class="tab" role="tab" id="t2d" aria-selected="false">Развёртка</button>
+      <div class="seg"><button class="tab" role="tab" id="t3d" aria-selected="true">3D</button>
+      <button class="tab" role="tab" id="t2d" aria-selected="false">Развёртка</button></div>
       <span class="dims" id="sheet"></span>
     </div>
     <div id="view3d"></div>
@@ -1315,12 +1362,14 @@ async function openProject(id){
   $('pname').value = S.pname; syncUI(); syncEl(); refresh(true); openEditor();
 }
 const fmtDate = t => new Date(t).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const NEWCARD = '<button class="card newc" id="newCard" type="button"><i>+</i>Новый проект</button>';
 async function renderProjects(){
+  if (!$('projGrid').children.length) $('projGrid').innerHTML = NEWCARD;
   let list = []; try { list = (await idb.all()) || []; } catch {}
   list.sort((a,b)=>b.updated-a.updated);
-  $('projEmpty').hidden = !!list.length; $('projGrid').hidden = !list.length; $('homeContinue').hidden = !list.length;
+  $('projEmpty').hidden = !!list.length; $('homeContinue').hidden = !list.length; $('projCount').textContent = list.length || '';
   $('homeContinue').dataset.id = list[0]?.id || '';
-  $('projGrid').innerHTML = list.map(r => { const st = r.settings || {};
+  $('projGrid').innerHTML = NEWCARD + list.map(r => { const st = r.settings || {};
     const pic = r.thumb ? `<img src="${r.thumb}" alt="">` : thumbSvg(build({...DEFAULTS, ...st}));
     return `<div class="card proj"><button class="open" data-pid="${r.id}"><div class="pic">${pic}</div><div class="txt"><b>${esc(r.name)}</b><span>${TYPE_NAMES[st.type]||''}</span><span class="mm">${st.L}×${st.W}×${st.H} мм · ${fmtDate(r.updated)}</span></div></button><button class="del" data-del="${r.id}" aria-label="Удалить проект ${esc(r.name)}">Удалить</button></div>`; }).join('');
 }
@@ -1346,19 +1395,25 @@ function cardHTML(svg, name, desc, mm, attrs){
   return `<button class="card" ${attrs}><div class="pic">${svg}</div><div class="txt"><b>${name}</b>${desc?`<span>${desc}</span>`:''}<span class="mm">${mm}</span></div></button>`;
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const navItem = (svg, name, title, attrs) => `<button class="nav" type="button" ${attrs} title="${title}">${svg}<span>${name}</span></button>`;
 function renderHome(){
   $('homeTpls').innerHTML = TPL.map(t => { const d = TYPE_DIMS[t.type];
     const P = {...DEFAULTS, ...d, type:t.type, ...t.set};
-    return cardHTML(thumbSvg(build(P)), t.name, TPL_DESC[t.id]||'', `${d.L}×${d.W}×${d.H} мм`, `data-tpl="${t.id}"`); }).join('');
+    return navItem(thumbSvg(build(P)), t.name, esc((TPL_DESC[t.id]||'')+` · ${d.L}×${d.W}×${d.H} мм`), `data-tpl="${t.id}"`); }).join('');
   $('homeMineSec').hidden = !mine.length;
-  $('homeMine').innerHTML = mine.map((m,i) => cardHTML(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), TYPE_NAMES[m.s.type]||'', `${m.s.L}×${m.s.W}×${m.s.H} мм`, `data-mine="${i}"`)).join('');
+  $('homeMine').innerHTML = mine.map((m,i) => navItem(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), `${TYPE_NAMES[m.s.type]||''} · ${m.s.L}×${m.s.W}×${m.s.H} мм`, `data-mine="${i}"`)).join('');
   renderProjects();
 }
 $('nbType').innerHTML = Object.entries(TYPE_NAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
 const nbSync = () => { const t = $('nbType').value, d = TYPE_DIMS[t], dl = DIM_LABELS[t] || ['Длина','Ширина','Высота'];
   $('nbL').value = d.L; $('nbW').value = d.W; $('nbH').value = d.H; ['nbLL','nbLW','nbLH'].forEach((id,i)=>$(id).textContent = dl[i]); };
 $('nbType').addEventListener('input', nbSync); nbSync();
+$('newBtn').addEventListener('click', () => { nbSync(); $('newDlg').showModal(); });
+$('homeLogo').addEventListener('click', () => scrollTo(0,0));
+$('navProj').addEventListener('click', () => scrollTo(0,0));
+$('projGrid').addEventListener('click', e => { if (e.target.closest('#newCard')){ nbSync(); $('newDlg').showModal(); } });
 $('nbGo').addEventListener('click', () => {
+  $('newDlg').close();
   const t = $('nbType').value, v = id => clamp(parseFloat($(id).value)||0, +$(id).min, +$(id).max);
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k];
   Object.assign(S, DEFAULTS, TYPE_DIMS[t], {type:t, tpl:null, L:v('nbL'), W:v('nbW'), H:v('nbH'),
@@ -1373,6 +1428,9 @@ $('homeMine').addEventListener('click', e => { const b = e.target.closest('[data
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = [];
   Object.assign(S, m.s); newProject(m.name); syncUI(); syncEl(); renderEls(); refresh(true); openEditor(); });
 $('homeContinue').addEventListener('click', () => { const id = $('homeContinue').dataset.id; if (id) openProject(id); });
+const setPane = k => { document.querySelectorAll('.rail [data-pane]').forEach(b => b.setAttribute('aria-selected', b.dataset.pane===k));
+  document.querySelectorAll('aside section[data-pane]').forEach(x => x.classList.toggle('on', x.dataset.pane===k)); $('aside').scrollTop = 0; store.set('skladka-pane', k); };
+document.querySelector('.rail').addEventListener('click', e => { const b = e.target.closest('[data-pane]'); if (b) setPane(b.dataset.pane); });
 $('goHome').addEventListener('click', async () => { clearTimeout(saveT); await saveProject(); location.hash = ''; });
 window.addEventListener('hashchange', showView);
 
@@ -1631,7 +1689,7 @@ const importProject = e=>{ const f=e.target.files[0]; if(!f) return; const r=new
 $('openProj').addEventListener('change', importProject);
 $('openProjHome').addEventListener('change', importProject);
 
-bindInputs(); syncUI(); renderMine(); resize();
+bindInputs(); syncUI(); renderMine(); setPane(store.get('skladka-pane','size')); resize();
 camera.position.set(.55,.38,1);
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
 $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
