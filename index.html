@@ -116,6 +116,8 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
   padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1}
 .savewrap{position:relative}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.empty{margin:0;padding:22px;border:1.5px dashed var(--line);border-radius:12px;color:var(--muted);font-size:14px;line-height:1.5;max-width:none}
 .sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .sw button{height:40px;border-radius:8px;border:1px solid var(--line);cursor:pointer;font:11px var(--sans);color:#1b211f;display:grid;align-items:end;justify-items:start;padding:3px 5px;max-width:100%}
 .sw button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:1px}
@@ -193,8 +195,10 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       </div>
       <button class="btn pri" id="homeContinue" hidden>Продолжить последний проект →</button>
     </div>
-    <div class="home-sec" id="projSec" hidden>
-      <h2>Мои проекты</h2>
+    <div class="home-sec" id="projSec">
+      <div class="sec-head"><h2>Мои проекты</h2>
+        <label class="btn" style="position:relative;overflow:hidden">Загрузить проект из файла (.json)<input id="openProjHome" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить проект из файла"></label></div>
+      <p class="empty" id="projEmpty">Пока нет проектов. Откройте шаблон или создайте пустой проект ниже — он сохранится здесь автоматически. Проект с другого компьютера или с claude.ai загрузите кнопкой «Загрузить проект из файла».</p>
       <div class="home-grid" id="projGrid"></div>
       <p class="note" id="projNote">Проекты сохраняются автоматически в этом браузере вместе с логотипами. Чтобы перенести на другой компьютер — «Сохранить → Проект .json».</p>
     </div>
@@ -1305,7 +1309,7 @@ const fmtDate = t => new Date(t).toLocaleString('ru-RU',{day:'numeric',month:'sh
 async function renderProjects(){
   let list = []; try { list = (await idb.all()) || []; } catch {}
   list.sort((a,b)=>b.updated-a.updated);
-  $('projSec').hidden = !list.length; $('homeContinue').hidden = !list.length;
+  $('projEmpty').hidden = !!list.length; $('projGrid').hidden = !list.length; $('homeContinue').hidden = !list.length;
   $('homeContinue').dataset.id = list[0]?.id || '';
   $('projGrid').innerHTML = list.map(r => { const st = r.settings || {};
     const pic = r.thumb ? `<img src="${r.thumb}" alt="">` : thumbSvg(build({...DEFAULTS, ...st}));
@@ -1465,7 +1469,7 @@ $('saveProj').addEventListener('click',()=>{ const imgs={}, elimgs={}; for (cons
   for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id]=ELIMG[e.id].src;
   saveFile(fname('.json'), new Blob([JSON.stringify({app:'skladka',v:3,settings:S,imgs,elimgs,mine})],{type:'application/json'})); });
 const loadElImg = (id, src) => new Promise(res => { const img = new Image(); img.onload = () => { ELIMG[id] = {img, src}; res(); }; img.onerror = res; img.src = src; });
-$('openProj').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+const importProject = e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader();
   r.onload=async()=>{ try{ const d=JSON.parse(r.result); if (d.app!=='skladka') throw 0;
       Object.assign(S,{type:'tube',els:[]},d.settings||{}); for (const k in IMGS) delete IMGS[k];
       for (const k in ELIMG) delete ELIMG[k]; selId = null;
@@ -1476,7 +1480,9 @@ $('openProj').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) r
       await Promise.all(Object.entries(d.imgs||{}).map(([k,src])=>loadImg(k,src)));
       newProject(d.settings?.pname || f.name.replace(/\.json$/i,'')); syncUI(); syncEl(); refresh(true); openEditor(); toast('Проект открыт и добавлен в «Мои проекты»'); }
     catch{ toast('Это не файл проекта «Складки». Выберите .json, сохранённый здесь.'); } e.target.value=''; };
-  r.readAsText(f); });
+  r.readAsText(f); };
+$('openProj').addEventListener('change', importProject);
+$('openProjHome').addEventListener('change', importProject);
 
 renderTpls(); bindInputs(); syncUI(); renderMine(); resize();
 camera.position.set(.55,.38,1);
