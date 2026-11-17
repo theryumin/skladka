@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Складка</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@400;700&family=Playfair+Display:wght@400;700&family=Oswald:wght@500&family=Caveat:wght@500&display=swap">
+<style>
+/* Layout: tool shell — settings rail on the left, 3D stage with fold scrubber on the right; stacks on phones */
+:root{
+  --bg:#e9ece8; --panel:#f7f8f5; --fg:#1b211f; --muted:#5f6a65; --line:#d3d9d3;
+  --accent:#1f5e4a; --accent-fg:#ffffff; --accent-soft:#dcebe4; --stage:#dfe3de; --stage2:#cdd3cc;
+  --cut:#d7263d; --crease:#2f6fdb; --field:#ffffff;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121614; --panel:#1a1f1d; --fg:#e5eae7; --muted:#97a29d; --line:#2c3431;
+  --accent:#5cc29a; --accent-fg:#0d1311; --accent-soft:#1f3a30; --stage:#1e2422; --stage2:#151a18;
+  --cut:#ff5a6e; --crease:#6aa0ff; --field:#111513; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121614; --panel:#1a1f1d; --fg:#e5eae7; --muted:#97a29d; --line:#2c3431;
+  --accent:#5cc29a; --accent-fg:#0d1311; --accent-soft:#1f3a30; --stage:#1e2422; --stage2:#151a18;
+  --cut:#ff5a6e; --crease:#6aa0ff; --field:#111513; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
+*{box-sizing:border-box}
+.app{height:100%;display:grid;grid-template-columns:350px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px;
+  padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand b{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.brand span{color:var(--muted);font-size:13px}
+header .sp{flex:1}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto;min-height:0}
+section{padding:14px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+section:last-child{border-bottom:0}
+h2{margin:0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+h3{margin:4px 0 0;font-size:12px;font-weight:600;color:var(--fg)}
+label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+input[type=number],input[type=text],select{width:100%;font:500 14px var(--mono);color:var(--fg);background:var(--field);
+  border:1px solid var(--line);border-radius:6px;padding:7px 8px}
+input[type=text],select{font-family:var(--sans);font-size:13.5px}
+input:focus-visible,select:focus-visible,button:focus-visible,.slot:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+input[type=color]{width:100%;height:34px;border:1px solid var(--line);border-radius:6px;background:var(--field);padding:2px}
+.tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tpl{display:grid;gap:4px;border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:8px;padding:8px;cursor:pointer;text-align:left;font:500 12px/1.3 var(--sans)}
+.tpl svg{width:100%;height:58px;display:block}
+.tpl:hover{border-color:var(--accent)}
+.tpl[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:99px;padding:4px 10px;font:12px var(--sans);cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.mine{display:grid;gap:6px}
+.mine .it{display:flex;gap:6px;align-items:center}
+.mine .it button.ld{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mine .it button.del{flex:none;width:32px;padding:6px 0;text-align:center}
+.mine .it button.del.arm{background:var(--cut);border-color:var(--cut);color:#fff;width:auto;padding:6px 10px}
+.inl{display:flex;gap:6px}
+.inl input{flex:1;min-width:0}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.slot{position:relative;border:1px dashed var(--line);border-radius:7px;aspect-ratio:1;display:grid;place-items:center;text-align:center;
+  font-size:11.5px;color:var(--muted);cursor:pointer;overflow:hidden;background-size:cover;background-position:center;max-width:100%;padding:4px}
+.slot:hover{border-color:var(--accent);color:var(--fg)}
+.slot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.slot.has{border-style:solid}
+.slot.has .lbl{background:var(--panel);padding:2px 6px;border-radius:4px;color:var(--fg)}
+.slot .x{position:absolute;top:3px;right:3px;z-index:2;width:20px;height:20px;border-radius:50%;border:0;background:var(--panel);color:var(--fg);cursor:pointer;font-size:13px;line-height:20px;padding:0}
+.slot.wide{grid-column:1/-1;aspect-ratio:auto;height:54px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px}
+.sub{display:grid;gap:8px;padding:8px 0 4px 24px}
+.note{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
+.btn{border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:7px;padding:8px 12px;font:500 13px var(--sans);cursor:pointer;text-align:left}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btns{display:grid;gap:6px}
+.btn small{display:block;font-weight:400;color:inherit;opacity:.7;font-size:11.5px}
+main{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--stage);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tabs{display:flex;gap:4px;padding:8px;align-items:center;flex-wrap:wrap}
+.tab{border:0;background:transparent;color:var(--muted);padding:6px 12px;border-radius:6px;font:500 13px var(--sans);cursor:pointer}
+.tab[aria-selected=true]{background:var(--panel);color:var(--fg)}
+.dims{margin-left:auto;font:12px var(--mono);color:var(--muted);padding-right:6px;font-variant-numeric:tabular-nums}
+#view3d{position:relative;min-height:0;background:radial-gradient(ellipse at 50% 40%,var(--stage) 0%,var(--stage2) 100%)}
+#view3d canvas{display:block;width:100%;height:100%;touch-action:none}
+#view2d{min-height:0;overflow:auto;padding:16px;background:var(--stage2)}
+#view2d svg{display:block;margin:auto;max-width:100%;height:auto;max-height:calc(100% - 30px);background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+.legend i{display:inline-block;width:22px;border-top:2px solid var(--cut);vertical-align:middle;margin-right:6px}
+.legend i.c{border-top:2px dashed var(--crease)}
+.fold{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
+.fold input{flex:1;min-width:0;accent-color:var(--accent)}
+.fold output{font:500 12px var(--mono);width:84px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.play{width:36px;height:36px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-fg);cursor:pointer;display:grid;place-items:center;flex:none}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);
+  padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1}
+textarea{width:100%;font:14px var(--sans);color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:6px;padding:7px 8px;resize:vertical}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.rng{display:grid;grid-template-columns:96px minmax(0,1fr) 52px;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.rng output{font:12px var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.els{display:grid;gap:6px}
+.els .btn[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
+.els .btn{display:flex;gap:8px;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.els .btn em{font-style:normal;color:var(--muted);font-size:11.5px;margin-left:auto;flex:none}
+.edit{display:grid;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px}
+.cap{font-size:12px;color:var(--muted);text-align:center;margin:16px 0 8px}
+#view2d svg{touch-action:none}
+#view2d.placing svg{cursor:crosshair}
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{grid-template-columns:minmax(0,1fr);height:auto}
+  main{height:68vh;min-height:380px;order:1}
+  aside{order:2;overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="app">
+  <header>
+    <div class="brand"><b>Складка</b><span>развёртки и 3D-мокапы коробок</span></div>
+    <div class="sp"></div>
+    <button class="btn" id="saveProj">Сохранить проект</button>
+    <label class="btn" style="position:relative;overflow:hidden">Открыть проект<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+  </header>
+
+  <aside>
+    <section>
+      <h2>Шаблон</h2>
+      <div class="tpls" id="tpls"></div>
+    </section>
+
+    <section>
+      <h2>Размеры, мм (внутренние)</h2>
+      <div class="row">
+        <label class="f">Длина<input id="L" type="number" min="10" max="800" step="1"></label>
+        <label class="f">Ширина<input id="W" type="number" min="10" max="800" step="1"></label>
+        <label class="f">Высота<input id="H" type="number" min="5" max="800" step="1"></label>
+      </div>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section>
+      <h2>Конструкция</h2>
+      <div data-for="tube" class="sub" style="padding-left:0">
+        <div class="row2">
+          <label class="f">Верх<select id="topClose"><option value="tuck">Клапан с язычком</option><option value="seal">Склейка</option><option value="open">Открыт</option></select></label>
+          <label class="f">Клапан верха на<select id="topLid"><option value="back">задней стороне</option><option value="front">лицевой стороне</option></select></label>
+          <label class="f">Низ<select id="botClose"><option value="tuck">Клапан с язычком</option><option value="seal">Склейка</option><option value="open">Открыт</option></select></label>
+          <label class="f">Клапан низа на<select id="botLid"><option value="front">лицевой стороне</option><option value="back">задней стороне</option></select></label>
+        </div>
+        <div class="row">
+          <label class="f">Язычок<input id="tuck" type="number" min="5" max="40" step="1"></label>
+          <label class="f">Клеевой<input id="glue" type="number" min="5" max="30" step="1"></label>
+          <label class="f">Пылевые<input id="dust" type="number" min="0" max="200" step="1" title="0 — подобрать автоматически"></label>
+        </div>
+        <p class="note">Пылевые клапаны: 0 — подобрать автоматически.</p>
+        <label class="chk"><input id="notch" type="checkbox"> Выемка под палец</label>
+        <label class="chk"><input id="window" type="checkbox"> Окошко на лицевой стороне</label>
+        <div class="sub" id="winOpts">
+          <div class="row">
+            <label class="f">Ширина<input id="winW" type="number" min="5" max="500" step="1"></label>
+            <label class="f">Высота<input id="winH" type="number" min="5" max="500" step="1"></label>
+            <label class="f">Центр, % выс.<input id="winY" type="number" min="10" max="90" step="1"></label>
+          </div>
+        </div>
+        <label class="chk"><input id="hang" type="checkbox"> Европодвес (для крючка)</label>
+        <div class="sub" id="hangOpts">
+          <label class="f">Высота подвеса, мм<input id="hangH" type="number" min="18" max="80" step="1"></label>
+          <p class="note">С подвесом верхний клапан всегда на лицевой стороне.</p>
+        </div>
+      </div>
+      <div data-for="tray" class="sub" style="padding-left:0">
+        <label class="f">Уголки для склейки, мм<input id="tab" type="number" min="5" max="60" step="1"></label>
+        <p class="note">Уголки приклеиваются изнутри к боковым стенкам.</p>
+      </div>
+      <div data-for="lidbase" class="sub" style="padding-left:0">
+        <div class="row2">
+          <label class="f">Высота крышки<input id="lidH" type="number" min="8" max="400" step="1"></label>
+          <label class="f">Зазор крышки<input id="gap" type="number" min="0" max="10" step="0.5"></label>
+        </div>
+        <label class="f">Уголки для склейки, мм<input id="tab2" type="number" min="5" max="60" step="1"></label>
+        <p class="note">Крышка и дно печатаются на одном листе. Зазор добавляется к длине и ширине крышки с каждой стороны.</p>
+      </div>
+      <div data-for="mailer" class="sub" style="padding-left:0">
+        <p class="note">Двойные боковые стенки, «ушки» и замки в дно, без клея. Обычно делается из микрогофрокартона. Высоту лучше держать меньше ширины.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Мои шаблоны</h2>
+      <div class="inl">
+        <input id="myName" type="text" placeholder="Название, например «Чай 100 г»" aria-label="Название шаблона">
+        <button class="btn" id="mySave">Сохранить</button>
+      </div>
+      <div class="mine" id="mine"></div>
+      <p class="note">Хранятся в этом браузере. Чтобы перенести на другой компьютер, сохраните проект в файл.</p>
+    </section>
+
+    <section>
+      <h2>Дизайн</h2>
+      <div class="row2">
+        <label class="f">Цвет фона<input id="bg" type="color"></label>
+        <label class="f">Цвет текста<input id="ink" type="color"></label>
+      </div>
+      <label class="chk"><input id="showText" type="checkbox"> Текст на сторонах без картинок</label>
+      <label class="f">Название<input id="title" type="text"></label>
+      <label class="f">Подпись<input id="sub" type="text"></label>
+      <p class="note">Название и подпись — пример. Замените своими или загрузите картинки на стороны.</p>
+      <div class="slots" id="slots"></div>
+      <p class="note">Картинка ложится на сторону с обрезкой по краям. Для точной вёрстки скачайте шаблон SVG, нарисуйте дизайн поверх и загрузите PNG того же размера в «Вся развёртка».</p>
+    </section>
+    <section>
+      <h2>Логотипы и надписи</h2>
+      <div class="row2">
+        <label class="btn" style="position:relative;overflow:hidden;text-align:center">+ Логотип<input id="addLogo" type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить логотип"></label>
+        <button class="btn" id="addText" style="text-align:center">+ Надпись</button>
+      </div>
+      <div class="els" id="els"></div>
+      <div class="edit" id="elEdit" hidden>
+        <div class="row2">
+          <label class="f">Сторона<select id="elSide"><option value="out">Снаружи</option><option value="in">Внутри</option></select></label>
+          <label class="f">Грань<select id="elFace"></select></label>
+        </div>
+        <div id="elTextOpts" class="edit" style="border:0;padding:0">
+          <label class="f">Текст<textarea id="elText" rows="2"></textarea></label>
+          <div class="row2">
+            <label class="f">Шрифт<select id="elFont"></select></label>
+            <label class="f">Цвет<input id="elColor" type="color"></label>
+          </div>
+        </div>
+        <label class="rng"><span id="elSizeLbl">Размер, мм</span><input id="elSize" type="range" min="2" max="300" step="1"><output id="elSizeO"></output></label>
+        <label class="rng"><span>Влево / вправо</span><input id="elX" type="range" min="0" max="100" step="0.5"><output id="elXO"></output></label>
+        <label class="rng"><span>Вверх / вниз</span><input id="elY" type="range" min="0" max="100" step="0.5"><output id="elYO"></output></label>
+        <label class="rng"><span>Поворот</span><input id="elRot" type="range" min="-180" max="180" step="1"><output id="elRotO"></output></label>
+        <div class="row2">
+          <button class="btn" id="elDup" style="text-align:center">Дублировать</button>
+          <button class="btn" id="elDel" style="text-align:center">Удалить</button>
+        </div>
+        <p class="note">На вкладке «Развёртка» выбранный элемент можно перетаскивать мышкой — и снаружи, и на обороте.</p>
+      </div>
+      <p class="note" id="elHint">Логотип — PNG с прозрачным фоном или SVG. Внутри можно напечатать, например, «Спасибо за заказ!» на крышке.</p>
+    </section>
+    <section>
+      <h2>Материал</h2>
+      <div class="row2">
+        <label class="f">Внутри<select id="inside"><option value="white">Белый картон</option><option value="kraft">Крафт</option><option value="color">Печать цветом</option></select></label>
+        <label class="f" id="insideBgWrap">Цвет внутри<input id="insideBg" type="color"></label>
+        <label class="f">Покрытие<select id="finish"><option value="matte">Матовое</option><option value="gloss">Глянец</option></select></label>
+      </div>
+      <label class="chk"><input id="showLines" type="checkbox"> Показывать линии реза и биговки на 3D</label>
+    </section>
+    <section>
+      <h2>Экспорт</h2>
+      <div class="btns">
+        <button class="btn pri" id="exPdf">Развёртка PDF<small>дизайн + контур, 1:1 в мм, для типографии</small></button>
+        <button class="btn" id="exSvgArt">Развёртка SVG<small>дизайн + контур слоями</small></button>
+        <button class="btn" id="exSvg">Шаблон SVG<small>только линии — рисовать поверх в Illustrator / Figma</small></button>
+        <button class="btn" id="exPng">Мокап PNG<small>текущий ракурс, прозрачный фон</small></button>
+      </div>
+    </section>
+  </aside>
+
+  <main>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="t3d" aria-selected="true">3D</button>
+      <button class="tab" role="tab" id="t2d" aria-selected="false">Развёртка</button>
+      <span class="dims" id="sheet"></span>
+    </div>
+    <div id="view3d"></div>
+    <div id="view2d" hidden></div>
+    <div class="fold">
+      <button class="play" id="play" aria-label="Собрать или разобрать коробку">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 1.5v11l9-5.5z"/></svg>
+      </button>
+      <input id="t" type="range" min="0" max="1000" value="1000" aria-label="Степень сборки">
+      <output id="tOut">собрана</output>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const ease = p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+const lerp = (a,b,k) => a + (b-a)*k;
+const DEG = Math.PI/180, PI = Math.PI;
+const BLEED = 3;
+
+/* ---------- settings & templates ---------- */
+const TYPE_DIMS = {
+  tube:{L:70,W:70,H:110}, tray:{L:160,W:110,H:40}, lidbase:{L:150,W:150,H:50,lidH:30}, mailer:{L:220,W:160,H:70}
+};
+const TUBE_BASE = {topClose:'tuck',topLid:'back',botClose:'tuck',botLid:'front',window:false,hang:false,notch:true};
+const TPL = [
+  {id:'rte',   type:'tube', name:'Клапаны с разных сторон', set:{...TUBE_BASE}},
+  {id:'ste',   type:'tube', name:'Клапаны с одной стороны', set:{...TUBE_BASE, botLid:'back'}},
+  {id:'seal',  type:'tube', name:'Склеиваемые клапаны',     set:{...TUBE_BASE, topClose:'seal', botClose:'seal', notch:false}},
+  {id:'mix',   type:'tube', name:'Клапан + склеенное дно',  set:{...TUBE_BASE, botClose:'seal'}},
+  {id:'hang',  type:'tube', name:'С европодвесом',          set:{...TUBE_BASE, hang:true, topLid:'front', notch:false}},
+  {id:'win',   type:'tube', name:'С окошком',               set:{...TUBE_BASE, window:true}},
+  {id:'sleeve',type:'tube', name:'Футляр без клапанов',     set:{...TUBE_BASE, topClose:'open', botClose:'open', notch:false}},
+  {id:'tray',  type:'tray', name:'Лоток',                   set:{}},
+  {id:'lidbase',type:'lidbase', name:'Крышка-дно',          set:{}},
+  {id:'mailer',type:'mailer', name:'Самосборная для доставки', set:{}},
+];
+const SIZE_CHIPS = {
+  tube:[['Чай','70,70,110'],['Крем','50,50,130'],['Флакон','60,40,160'],['Мыло','90,30,60'],['Свеча','85,85,95']],
+  tray:[['Конфеты','160,110,40'],['Печенье','200,140,50'],['Подарок','250,200,60']],
+  lidbase:[['Подарок','150,150,50'],['Свеча','100,100,80'],['Обувь','300,180,110'],['Пряники','220,160,40']],
+  mailer:[['S','220,160,70'],['M','300,220,100'],['L','400,300,120']],
+};
+const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
+  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2,
+  bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
+  inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[] };
+const S = {...DEFAULTS};
+const IMGS = {};
+const ELIMG = {};
+const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|Montserrat','Montserrat'],['700|Montserrat','Montserrat жирный'],
+  ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
+const uid = () => Math.random().toString(36).slice(2,9);
+const FACE_NAMES = {front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
+const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap'];
+const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish'];
+const CHK = ['notch','window','hang','showText','showLines'];
+const STRUCT = ['type','tpl','L','W','H',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap'];
+
+const store = {
+  get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+Object.assign(S, store.get('skladka-settings-2', {}));
+S.els = (S.els||[]).filter(e => e.kind==='text');   // logos live in project files, not in browser storage
+const persist = () => store.set('skladka-settings-2', {...S, els:S.els.filter(e=>e.kind==='text')});
+
+/* ---------- geometry helpers ---------- */
+const QI = new THREE.Quaternion();
+const AX = {x:new THREE.Vector3(1,0,0), y:new THREE.Vector3(0,1,0)};
+function qOf(...rots){ const q = new THREE.Quaternion(); for (const [a,ang] of rots) q.premultiply(new THREE.Quaternion().setFromAxisAngle(AX[a],ang)); return q; }
+const Q_UP = qOf(['x',PI/2],['y',PI]);   // flat piece → lying on the ground, opening up, front wall towards viewer
+const Q_LID = qOf(['x',-PI/2]);          // flat piece → opening down (lid)
+
+function rect(x0,y0,x1,y1){ return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]]; }
+function arc(cx,cy,r,a0,a1,n){ const p=[]; for (let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+r*Math.cos(a), cy+r*Math.sin(a)]); } return p; }
+function panelNotch(x0,y0,x1,y1,r){
+  if (!r) return rect(x0,y0,x1,y1);
+  const cx=(x0+x1)/2; return [[x0,y0],[x1,y0],[x1,y1], ...arc(cx,y1,r,0,-PI,10), [x0,y1]];
+}
+function roundRect(cx,cy,w,h,r){
+  r = Math.min(r,w/2,h/2); const x0=cx-w/2, x1=cx+w/2, y0=cy-h/2, y1=cy+h/2;
+  return [...arc(x1-r,y0+r,r,-PI/2,0,4), ...arc(x1-r,y1-r,r,0,PI/2,4), ...arc(x0+r,y1-r,r,PI/2,PI,4), ...arc(x0+r,y0+r,r,PI,1.5*PI,4)];
+}
+function euroHole(cx,cy,a){
+  const b=2.5, r=5, xc=Math.sqrt(r*r-b*b), t=Math.asin(b/r);
+  return [...arc(cx+a-b,cy,b,-PI/2,PI/2,6), [cx+xc,cy+b], ...arc(cx,cy,r,t,PI-t,10).slice(1,-1), [cx-xc,cy+b],
+          ...arc(cx-a+b,cy,b,PI/2,1.5*PI,6), [cx-xc,cy-b], ...arc(cx,cy,r,PI+t,2*PI-t,10).slice(1,-1), [cx+xc,cy-b]];
+}
+function tuckPoly(x0,y0,L,T,dir){
+  const r = Math.min(T*.7, L*.2, 10), n = 6, pts = [[x0,y0],[x0+L,y0]];
+  for (let i=0;i<=n;i++){ const a=i/n*PI/2; pts.push([x0+L-r+r*Math.cos(a), y0+dir*(T-r+r*Math.sin(a))]); }
+  for (let i=0;i<=n;i++){ const a=PI/2+i/n*PI/2; pts.push([x0+r+r*Math.cos(a), y0+dir*(T-r+r*Math.sin(a))]); }
+  return pts;
+}
+function dustPoly(x0,y0,W,D,dir){
+  return [[x0,y0],[x0+W,y0],[x0+W,y0+dir*D*.35],[x0+W-W*.2,y0+dir*D],[x0+Math.min(3,W*.1),y0+dir*D],[x0,y0+dir*D*.75]];
+}
+// side flap hinged on a vertical edge at x=hx spanning y0..y1, extending dx (negative = left)
+function sideTab(hx,y0,y1,dx,taper){
+  const ya=Math.min(y0,y1), yb=Math.max(y0,y1), ti=Math.min(taper,(yb-ya)*.3);
+  return [[hx,ya],[hx+dx,ya+ti],[hx+dx,yb-ti],[hx,yb]];
+}
+function maker(){
+  const N=[], faces=[];
+  return { N, faces,
+    add(id,parent,origin,axis,angle,stage,poly,extra={}){ N.push({id,parent,origin,axis,angle,stage,poly,holes:extra.holes||[],final:extra.final}); },
+    face(key,r,rot=0){ faces.push({key,r,rot}); } };
+}
+
+/* ---------- box builders (flat coords in mm, print side = +z, inside = −z) ---------- */
+function buildTube(P, B){
+  const L=P.L, W=P.W, H=P.H;
+  const T = clamp(P.tuck,5,Math.max(5,Math.min(W*.9,40)));
+  const g = clamp(P.glue,5,Math.max(5,Math.min(30,L*.6)));
+  const D = P.dust>0 ? Math.min(P.dust, L*.5) : Math.max(8,Math.min(L*.45,W*.9));
+  const hang = P.hang && P.topClose==='tuck';
+  const topLid = hang ? 'front' : P.topLid;
+  const nr = (P.notch && P.topClose==='tuck') ? Math.min(12, L*.18) : 0;
+  const notchOn = nr ? (topLid==='back' ? 'front' : (hang ? null : 'back')) : null;
+  const fHoles = [];
+  if (P.window){ const ww=Math.min(P.winW,L-10), wh=Math.min(P.winH,H-10); if (ww>3 && wh>3) fHoles.push(roundRect(L/2,H*clamp(P.winY,10,90)/100,ww,wh,3)); }
+  B.add('front',null,[0,0],null,0,null,panelNotch(0,0,L,H,notchOn==='front'?nr:0),{holes:fHoles,final:{p:[0,0,0],q:QI}});
+  const gi = Math.min(g*.8,H*.12);
+  B.add('glue','front',[0,0],'y',-92*DEG,[0,.3],[[0,0],[0,H],[-g,H-gi],[-g,gi]]);
+  B.add('side1','front',[L,0],'y',90*DEG,[0,.35],rect(L,0,L+W,H));
+  let backPoly = panelNotch(L+W,0,2*L+W,H,notchOn==='back'?nr:0), bHoles=[];
+  if (hang){ const hh=clamp(P.hangH,18,80); backPoly = [[L+W,0],[2*L+W,0],[2*L+W,H],[2*L+W,H+hh],[L+W,H+hh],[L+W,H]]; bHoles.push(euroHole(L+W+L/2,H+hh/2,Math.min(15,Math.max(10,L*.3)))); }
+  B.add('back','side1',[L+W,0],'y',90*DEG,[.05,.4],backPoly,{holes:bHoles});
+  B.add('side2','back',[2*L+W,0],'y',90*DEG,[.1,.45],rect(2*L+W,0,2*L+2*W,H));
+  B.face('front',[0,0,L,H]); B.face('side1',[L,0,L+W,H]); B.face('back',[L+W,0,2*L+W,H]); B.face('side2',[2*L+W,0,2*L+2*W,H]);
+  const end = (top, kind, lidOn) => {
+    if (kind==='open') return;
+    const e = top?'T':'B', y0 = top?H:0, dir = top?1:-1, s = top?-1:1;
+    B.add('dust1'+e,'side1',[L,y0],'x',s*92*DEG,[.45,.6],dustPoly(L,y0,W,D,dir));
+    B.add('dust2'+e,'side2',[2*L+W,y0],'x',s*92*DEG,[.47,.62],dustPoly(2*L+W,y0,W,D,dir));
+    if (kind==='tuck'){
+      const x0 = lidOn==='front' ? 0 : L+W, r = top ? [x0,H,x0+L,H+W] : [x0,-W,x0+L,0];
+      B.add('lid'+e, lidOn, [x0,y0], 'x', s*90*DEG, [.68,.95], rect(...r));
+      B.add('tuck'+e, 'lid'+e, [x0,y0+dir*W], 'x', s*92*DEG, [.6,.8], tuckPoly(x0,y0+dir*W,L,T,dir));
+      B.face(top?'top':'bottom', r, lidOn==='back' ? PI : 0);
+    } else {
+      const M = W*.5 + Math.min(6, W*.2);
+      B.add('minor'+e,'back',[L+W,y0],'x',s*92*DEG,[.6,.78], top?rect(L+W,H,2*L+W,H+M):rect(L+W,-M,2*L+W,0));
+      B.add('major'+e,'front',[0,y0],'x',s*90*DEG,[.75,.95], top?rect(0,H,L,H+M):rect(0,-M,L,0));
+    }
+  };
+  end(true, P.topClose, topLid);
+  end(false, P.botClose, P.botLid);
+  return {fold:'tube'};
+}
+function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces){
+  const id = k => pre+k, t = clamp(tab,5,Math.max(5,Math.min(60,W*.45,L*.45))), ti = Math.min(3,H*.1);
+  const sideStage = [.5,.85];
+  B.add(id('base'),null,[ox,0],null,0,null,rect(ox,0,ox+L,W),{final});
+  B.add(id('front'),id('base'),[ox,0],'x',90*DEG,[.1,.4],rect(ox,-H,ox+L,0));
+  B.add(id('back'),id('base'),[ox,W],'x',-90*DEG,[.1,.4],rect(ox,W,ox+L,W+H));
+  B.add(id('tfl'),id('front'),[ox,0],'y',-92*DEG,[.35,.55],sideTab(ox,0,-H,-t,ti));
+  B.add(id('tfr'),id('front'),[ox+L,0],'y',92*DEG,[.35,.55],sideTab(ox+L,0,-H,t,ti));
+  B.add(id('tbl'),id('back'),[ox,W],'y',-92*DEG,[.35,.55],sideTab(ox,W,W+H,-t,ti));
+  B.add(id('tbr'),id('back'),[ox+L,W],'y',92*DEG,[.35,.55],sideTab(ox+L,W,W+H,t,ti));
+  B.add(id('wl'),id('base'),[ox,0],'y',-90*DEG,sideStage,rect(ox-H,0,ox,W));
+  B.add(id('wr'),id('base'),[ox+L,0],'y',90*DEG,sideStage,rect(ox+L,0,ox+L+H,W));
+  if (!withFaces) return;
+  if (!lid){
+    B.face('bottom',[ox,0,ox+L,W]); B.face('front',[ox,-H,ox+L,0],PI); B.face('back',[ox,W,ox+L,W+H]);
+    B.face('side1',[ox-H,0,ox,W],-PI/2); B.face('side2',[ox+L,0,ox+L+H,W],PI/2);
+  } else {
+    B.face('top',[ox,0,ox+L,W]); B.face('front',[ox,-H,ox+L,0]); B.face('back',[ox,W,ox+L,W+H],PI);
+    B.face('side2',[ox-H,0,ox,W],PI/2); B.face('side1',[ox+L,0,ox+L+H,W],-PI/2);
+  }
+}
+function buildTray(P,B){ addTray(B,'',0,P.L,P.W,P.H,P.tab,false,{p:[0,0,0],q:Q_UP},true); return {}; }
+function buildLidBase(P,B){
+  const L=P.L, W=P.W, H=P.H, gp=clamp(P.gap,0,10), Ll=L+2*gp, Wl=W+2*gp, Hl=clamp(P.lidH,8,Math.max(8,H+20));
+  addTray(B,'b',0,L,W,H,P.tab,false,{p:[0,0,0],q:Q_UP},false);
+  B.face('bottom',[0,0,L,W]);
+  const ox = L + H + Hl + 12;
+  addTray(B,'l',ox,Ll,Wl,Hl,P.tab,true,{p:[-L/2-Ll/2, H+.6, -W/2+Wl/2], q:Q_LID},true);
+  return {};
+}
+function buildMailer(P,B){
+  const L=P.L, W=P.W, H=Math.min(P.H, W*.9), sh=1.5;
+  const e = Math.min(W*.42, 60), tw = Math.min(L*.18, 25), td = 4;
+  // slots in the base for locking tabs
+  const slot = (cx,cy,w,h) => rect(cx-w/2,cy-h/2,cx+w/2,cy+h/2);
+  const swF = tw+1, swS = Math.min(W*.35,30)+1;
+  const holes = [slot(L*.25,2,swF,2), slot(L*.75,2,swF,2), slot(2,W/2,2,swS), slot(L-2,W/2,2,swS)];
+  B.add('base',null,[0,0],null,0,null,rect(0,0,L,W),{holes,final:{p:[0,0,0],q:Q_UP}});
+  // front wall + inner fold-over with tabs
+  B.add('front','base',[0,0],'x',90*DEG,[0,.25],rect(0,-H,L,0));
+  const yi = -2*H+sh;
+  const inner = [[0,-H],[0,yi],
+    [L*.25-tw/2,yi],[L*.25-tw/2+1,yi-td],[L*.25+tw/2-1,yi-td],[L*.25+tw/2,yi],
+    [L*.75-tw/2,yi],[L*.75-tw/2+1,yi-td],[L*.75+tw/2-1,yi-td],[L*.75+tw/2,yi],
+    [L,yi],[L,-H]];
+  B.add('frontIn','front',[0,-H],'x',177*DEG,[.55,.72],inner);
+  B.add('earFL','front',[0,0],'y',-92*DEG,[.2,.38],sideTab(0,0,-H,-e,4));
+  B.add('earFR','front',[L,0],'y',92*DEG,[.2,.38],sideTab(L,0,-H,e,4));
+  // back wall + ears
+  B.add('back','base',[0,W],'x',-90*DEG,[0,.25],rect(0,W,L,W+H));
+  B.add('earBL','back',[0,W],'y',-92*DEG,[.2,.38],sideTab(0,W,W+H,-e,4));
+  B.add('earBR','back',[L,W],'y',92*DEG,[.2,.38],sideTab(L,W,W+H,e,4));
+  // double side walls with a tab each
+  const sw = swS-1, xi = -2*H+sh;
+  B.add('sideL','base',[0,0],'y',-90*DEG,[.3,.5],rect(-H,0,0,W));
+  B.add('sideLi','sideL',[-H,0],'y',-177*DEG,[.45,.65],[[-H,0],[-H,W],[xi,W],[xi,W/2+sw/2],[xi-td,W/2+sw/2-1],[xi-td,W/2-sw/2+1],[xi,W/2-sw/2],[xi,0]]);
+  const xo = L+2*H-sh;
+  B.add('sideR','base',[L,0],'y',90*DEG,[.3,.5],rect(L,0,L+H,W));
+  B.add('sideRi','sideR',[L+H,0],'y',177*DEG,[.45,.65],[[L+H,0],[xo,0],[xo,W/2-sw/2],[xo+td,W/2-sw/2+1],[xo+td,W/2+sw/2-1],[xo,W/2+sw/2],[xo,W],[L+H,W]]);
+  // lid, front tuck, lid dust flaps
+  const y1 = W+H, y2 = 2*W+H, d = Math.max(6,H-3);
+  B.add('lid','back',[0,y1],'x',-90*DEG,[.72,.97],rect(0,y1,L,y2));
+  B.add('lidTuck','lid',[0,y2],'x',-92*DEG,[.66,.84],tuckPoly(0,y2,L,Math.max(8,H-2),1));
+  B.add('lidDL','lid',[0,y1],'y',-92*DEG,[.66,.82],sideTab(0,y1,y2,-d,Math.min(d,W*.25)));
+  B.add('lidDR','lid',[L,y1],'y',92*DEG,[.66,.82],sideTab(L,y1,y2,d,Math.min(d,W*.25)));
+  B.face('bottom',[0,0,L,W]); B.face('front',[0,-H,L,0],PI); B.face('back',[0,W,L,W+H]);
+  B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
+  return {};
+}
+function build(P){
+  P = {...P}; for (const k of NUM) P[k] = +P[k];
+  const B = maker();
+  ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer}[P.type] || buildTube)(P,B);
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for (const n of B.N) for (const [x,y] of n.poly){ minX=Math.min(minX,x); minY=Math.min(minY,y); maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); }
+  minX-=BLEED; minY-=BLEED; maxX+=BLEED; maxY+=BLEED;
+  const m = new Map(), k = p => p[0].toFixed(2)+','+p[1].toFixed(2);
+  const addLoop = loop => { for (let i=0;i<loop.length;i++){
+    const a=loop[i], b=loop[(i+1)%loop.length], ka=k(a), kb=k(b); if (ka===kb) continue;
+    const key = ka<kb ? ka+'|'+kb : kb+'|'+ka; const e=m.get(key); if (e) e.c++; else m.set(key,{a,b,c:1}); } };
+  for (const n of B.N){ addLoop(n.poly); n.holes.forEach(addLoop); }
+  const cuts=[], creases=[];
+  for (const e of m.values()) (e.c>1 ? creases : cuts).push([e.a,e.b]);
+  return { N:B.N, faces:B.faces, cuts, creases, P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY} };
+}
+
+/* ---------- artwork ---------- */
+function hash(s){ let h=2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h>>>0; }
+function fitFont(ctx, text, weight, size, maxW){
+  let s = size; const set = () => ctx.font = `${weight} ${s}px "IBM Plex Sans", system-ui, sans-serif`; set();
+  while (s > 4 && ctx.measureText(text).width > maxW){ s *= .92; set(); }
+  return s;
+}
+function placeholder(ctx, key, w, h, s){
+  const t = S.title.trim(), sub = S.sub.trim(); ctx.fillStyle = S.ink; ctx.strokeStyle = S.ink;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const big = (y, scale) => { if (!t) return 0; const fs = fitFont(ctx,t,700,Math.min(w*.16,h*.3)*scale,w*.8); ctx.fillText(t,0,y);
+    if (sub){ fitFont(ctx,sub,400,fs*.42,w*.8); ctx.fillText(sub,0,y+fs*.95); } return fs; };
+  if (key==='front'){
+    const p = Math.min(4*s, w*.06, h*.06); ctx.lineWidth = .35*s; ctx.strokeRect(-w/2+p,-h/2+p,w-2*p,h-2*p); big(-h*.06,1);
+  } else if (key==='top' && S.type!=='tube'){
+    big(-h*.06,1.1);
+  } else if (key==='back'){
+    if (t){ const fs = fitFont(ctx,t,600,Math.min(w*.1,h*.12),w*.8); ctx.fillText(t,0,-h*.32);
+      if (sub){ fitFont(ctx,sub,400,fs*.55,w*.8); ctx.fillText(sub,0,-h*.32+fs*1.1); } }
+    const bw = Math.min(w*.5, 34*s), bh = Math.min(h*.22, 18*s), bx = -bw/2, by = h/2-bh-Math.min(7*s,h*.08);
+    ctx.fillStyle='#ffffff'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle='#111111';
+    let r = hash(t+sub), cx = bx+bw*.08; const u = bw*.84/95;
+    while (cx < bx+bw*.92){ r = Math.imul(r ^ (r>>>15), 2246822507)>>>0; const wd=(1+(r%3))*u; if ((r>>3)&1) ctx.fillRect(cx,by+bh*.1,wd,bh*.8); cx += wd + u*(1+((r>>5)%2)); }
+  } else if (key==='side1' || key==='side2'){
+    if (!t) return;
+    if (h > w){ ctx.rotate(-PI/2); fitFont(ctx,t,600,Math.min(w*.3,h*.1),h*.8); }
+    else fitFont(ctx,t,600,Math.min(h*.3,w*.1),w*.8);
+    ctx.fillText(t,0,0);
+  } else if (key==='top'){
+    const txt = sub || t; if (txt){ fitFont(ctx,txt,500,Math.min(w*.12,h*.25),w*.8); ctx.fillText(txt,0,0); }
+  }
+}
+const insideColor = () => S.inside==='kraft' ? '#b48a5a' : S.inside==='white' ? '#f1efe9' : S.insideBg;
+const hasInside = () => S.inside==='color' || S.els.some(e => e.side==='in' && G?.faces.some(f=>f.key===e.face));
+// face placement on the sheet canvas; the inside sheet is mirrored left-right (as printed on the reverse)
+function faceX(G, f, s, side){
+  const {minX,maxX,maxY} = G.b, [x0,y0,x1,y1] = f.r, q = Math.abs(Math.round(f.rot/(PI/2)))%2===1;
+  const cw=(x1-x0)*s, ch=(y1-y0)*s;
+  return { cx: side==='in' ? (maxX-(x0+x1)/2)*s : ((x0+x1)/2-minX)*s, cy:(maxY-(y0+y1)/2)*s,
+    cw, ch, rot: side==='in' ? -f.rot : f.rot, lw:q?ch:cw, lh:q?cw:ch };
+}
+function drawEl(ctx, el, s){
+  if (el.kind==='image'){ const im = ELIMG[el.id]?.img; if (!im) return null;
+    const w = el.size*s, h = w*im.naturalHeight/im.naturalWidth; ctx.drawImage(im,-w/2,-h/2,w,h); return [w,h]; }
+  const [wt,fam] = el.font.split('|'), fs = el.size*s, lh = fs*1.2, lines = String(el.text||'').split('\n');
+  ctx.font = `${wt} ${fs}px "${fam}", system-ui, sans-serif`; ctx.fillStyle = el.color; ctx.textAlign='center'; ctx.textBaseline='middle';
+  let mw = 0; lines.forEach((ln,i)=>{ ctx.fillText(ln,0,(i-(lines.length-1)/2)*lh); mw=Math.max(mw,ctx.measureText(ln).width); });
+  return [mw, lh*lines.length];
+}
+function drawArt(canvas, G, s, lines, side='out', hl=null){
+  const {minX,maxX,maxY,w,h} = G.b; canvas.width = Math.max(1,Math.round(w*s)); canvas.height = Math.max(1,Math.round(h*s));
+  const ctx = canvas.getContext('2d'), X = side==='in' ? x=>(maxX-x)*s : x=>(x-minX)*s, Y = y=>(maxY-y)*s;
+  ctx.fillStyle = side==='in' ? insideColor() : S.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
+  if (side==='out'){
+    if (IMGS.layout) ctx.drawImage(IMGS.layout.img,0,0,canvas.width,canvas.height);
+    for (const f of G.faces){
+      if (!IMGS[f.key] && (!S.showText || IMGS.layout)) continue;
+      const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
+      ctx.save(); ctx.beginPath(); ctx.rect(cx-cw/2,cy-ch/2,cw,ch); ctx.clip(); ctx.translate(cx,cy); ctx.rotate(rot);
+      if (IMGS[f.key]){ const img=IMGS[f.key].img, iw=img.naturalWidth, ih=img.naturalHeight, k=Math.max(lw/iw,lh/ih); ctx.drawImage(img,-iw*k/2,-ih*k/2,iw*k,ih*k); }
+      else placeholder(ctx,f.key,lw,lh,s);
+      ctx.restore();
+    }
+  }
+  for (const el of S.els){
+    if (el.side!==side) continue; const f = G.faces.find(f=>f.key===el.face); if (!f) continue;
+    const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
+    ctx.save(); ctx.beginPath(); ctx.rect(cx-cw/2,cy-ch/2,cw,ch); ctx.clip();
+    ctx.translate(cx,cy); ctx.rotate(rot); ctx.translate((el.x-.5)*lw,(el.y-.5)*lh); ctx.rotate(el.rot*DEG);
+    const bb = drawEl(ctx,el,s);
+    if (bb && hl===el.id){ ctx.setLineDash([2*s,1.2*s]); ctx.lineWidth=Math.max(1,.4*s); ctx.strokeStyle='#ff2d87'; ctx.strokeRect(-bb[0]/2-s,-bb[1]/2-s,bb[0]+2*s,bb[1]+2*s); ctx.setLineDash([]); }
+    ctx.restore();
+  }
+  if (lines){
+    ctx.lineWidth = Math.max(1,.35*s);
+    const seg = (list,color,dash) => { ctx.strokeStyle=color; ctx.setLineDash(dash); ctx.beginPath();
+      for (const [a,b] of list){ ctx.moveTo(X(a[0]),Y(a[1])); ctx.lineTo(X(b[0]),Y(b[1])); } ctx.stroke(); };
+    seg(G.creases,'#2f6fdb',[3*s,1.5*s]); seg(G.cuts,'#d7263d',[]); ctx.setLineDash([]);
+  }
+  return canvas;
+}
+
+/* ---------- SVG / PDF ---------- */
+const f2 = v => (+v.toFixed(3)).toString();
+function svgDoc(G, artHref, mirror){
+  const {minX,maxX,maxY,w,h} = G.b, X = mirror ? x=>f2(maxX-x) : x=>f2(x-minX), Y = y=>f2(maxY-y);
+  const lines = l => l.map(([a,b])=>`<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}"/>`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${f2(w)}mm" height="${f2(h)}mm" viewBox="0 0 ${f2(w)} ${f2(h)}">
+<title>Развёртка ${G.P.L}×${G.P.W}×${G.P.H} мм</title>
+${artHref ? `<g id="artwork"><image x="0" y="0" width="${f2(w)}" height="${f2(h)}" preserveAspectRatio="none" href="${artHref}" xlink:href="${artHref}"/></g>` : `<rect id="bleed-area" x="0" y="0" width="${f2(w)}" height="${f2(h)}" fill="none" stroke="#99aaaa" stroke-width="0.15" stroke-dasharray="1 1"/>`}
+<g id="crease" fill="none" stroke="#0090ff" stroke-width="0.3" stroke-dasharray="3 1.5">${lines(G.creases)}</g>
+<g id="cut" fill="none" stroke="#e4002b" stroke-width="0.3">${lines(G.cuts)}</g>
+</svg>`;
+}
+function thumbSvg(G){
+  const {minX,maxY,w,h} = G.b, X = x=>f2(x-minX), Y = y=>f2(maxY-y), sw = f2(Math.max(w,h)/90);
+  const lines = l => l.map(([a,b])=>`M${X(a[0])} ${Y(a[1])}L${X(b[0])} ${Y(b[1])}`).join('');
+  return `<svg viewBox="0 0 ${f2(w)} ${f2(h)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${lines(G.creases)}" fill="none" stroke="var(--crease)" stroke-width="${sw}" stroke-dasharray="${sw*3} ${sw*2}"/><path d="${lines(G.cuts)}" fill="none" stroke="var(--fg)" stroke-width="${sw}"/></svg>`;
+}
+function exportCanvas(G, side='out'){ return drawArt(document.createElement('canvas'), G, Math.min(300/25.4, 8000/Math.max(G.b.w,G.b.h)), false, side); }
+
+/* ---------- save ---------- */
+let dlP = null;
+const getDL = () => dlP ??= (window.claude?.use ? window.claude.use('downloads').catch(()=>null) : Promise.resolve(null));
+getDL();
+async function saveFile(name, blob){
+  const dl = await getDL();
+  if (dl){
+    try { await dl.save({filename:name, data:blob}); toast('Сохранено: '+name); }
+    catch(e){ if (e?.code !== 'declined') toast('Не удалось сохранить файл: '+(e?.message||e?.code||'ошибка')); }
+    return;
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  toast('Скачивается: '+name);
+}
+let tt; function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('on'),2600); }
+const fname = ext => `korobka-${S.type}-${S.L}x${S.W}x${S.H}${ext}`;
+
+/* ---------- 3D ---------- */
+const host = $('view3d');
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+host.append(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(30,1,1,40000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .08;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8f988f, 1.5));
+const key = new THREE.DirectionalLight(0xffffff, 2.0); key.castShadow = true; key.shadow.mapSize.set(2048,2048); key.shadow.bias = -0.0004;
+scene.add(key, key.target);
+const fill = new THREE.DirectionalLight(0xffffff, .55); scene.add(fill);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.ShadowMaterial({opacity:.2}));
+ground.rotation.x = -PI/2; ground.receiveShadow = true; scene.add(ground);
+const wrapper = new THREE.Group(); scene.add(wrapper);
+
+const texCanvas = document.createElement('canvas'), texInCanvas = document.createElement('canvas');
+const outMat = new THREE.MeshStandardMaterial({roughness:.8, metalness:0});
+const inMat = new THREE.MeshStandardMaterial({roughness:.95, side:THREE.BackSide});
+// a canvas texture can't change size after upload, so recreate it when the sheet size changes
+function updTex(mat, canvas, inside){
+  const t = mat.map;
+  if (t && t.userData.w===canvas.width && t.userData.h===canvas.height){ t.needsUpdate = true; return; }
+  t?.dispose();
+  const n = new THREE.CanvasTexture(canvas); n.colorSpace = THREE.SRGBColorSpace; n.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  if (inside){ n.repeat.set(-1,1); n.offset.set(1,0); }
+  n.userData = {w:canvas.width, h:canvas.height}; mat.map = n; mat.needsUpdate = true;
+}
+
+let G = null, groups = [], roots = [], T = 1;
+const c0 = new THREE.Vector3(), c1 = new THREE.Vector3(), foldedSize = new THREE.Vector3();
+const box3 = new THREE.Box3();
+function rebuild3D(){
+  wrapper.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  wrapper.clear(); groups = []; roots = [];
+  const by = {}, {minX,minY,maxX,maxY,w,h} = G.b;
+  for (const n of G.N){
+    const grp = new THREE.Group(); by[n.id] = grp; grp.userData.n = n;
+    const p = n.parent ? G.N.find(q=>q.id===n.parent) : null;
+    if (p){ by[p.id].add(grp); grp.position.set(n.origin[0]-p.origin[0], n.origin[1]-p.origin[1], 0); groups.push(grp); }
+    else { wrapper.add(grp); grp.userData.p0 = new THREE.Vector3(n.origin[0],n.origin[1],0);
+      grp.userData.p1 = new THREE.Vector3(...n.final.p); grp.userData.q1 = n.final.q; roots.push(grp); }
+    const [ox,oy] = n.origin, shape = new THREE.Shape(n.poly.map(([x,y])=>new THREE.Vector2(x-ox,y-oy)));
+    for (const hl of n.holes) shape.holes.push(new THREE.Path(hl.map(([x,y])=>new THREE.Vector2(x-ox,y-oy))));
+    const geo = new THREE.ShapeGeometry(shape, 4);
+    const pos = geo.attributes.position, uv = new Float32Array(pos.count*2);
+    for (let i=0;i<pos.count;i++){ uv[i*2]=(pos.getX(i)+ox-minX)/w; uv[i*2+1]=(pos.getY(i)+oy-minY)/h; }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv,2));
+    const a = new THREE.Mesh(geo,outMat), b = new THREE.Mesh(geo,inMat);
+    a.castShadow = b.castShadow = true; grp.add(a,b);
+  }
+  // measure the assembled box
+  c0.set((minX+maxX)/2,(minY+maxY)/2,0);
+  setPose(1); wrapper.position.set(0,0,0); wrapper.updateMatrixWorld(true);
+  box3.setFromObject(wrapper); box3.getCenter(c1); box3.getSize(foldedSize);
+  const size = Math.max(w,h,foldedSize.length());
+  Object.assign(key.shadow.camera, {left:-size,right:size,top:size,bottom:-size,near:1,far:size*6});
+  key.shadow.camera.updateProjectionMatrix();
+  key.position.set(-size*.8,size*1.6,size*1.4); fill.position.set(size*1.2,size*.4,-size);
+  ground.scale.set(size*8,size*8,1);
+}
+function setPose(t){
+  for (const g of groups){ const n = g.userData.n, [a,b] = n.stage; g.rotation[n.axis] = n.angle*ease(clamp((t-a)/(b-a),0,1)); }
+  const k = ease(t);
+  for (const r of roots){ r.position.lerpVectors(r.userData.p0, r.userData.p1, k); r.quaternion.slerpQuaternions(QI, r.userData.q1, k); }
+}
+function applyFold(t, fitCam){
+  T = t; setPose(t);
+  wrapper.position.lerpVectors(c0, c1, ease(t)).negate();
+  wrapper.updateMatrixWorld(true); box3.setFromObject(wrapper);
+  ground.position.y = box3.min.y - .3;
+  if (fitCam) fitCamera();
+  $('tOut').textContent = t >= .999 ? 'собрана' : t <= .001 ? 'плоская' : Math.round(t*100)+' %';
+}
+function fitCamera(){
+  const aspect = camera.aspect, tanH = Math.tan(camera.fov*DEG/2);
+  const flat = Math.max(G.b.h, G.b.w/aspect)/(2*tanH)*1.12;
+  const diag = foldedSize.length(), folded = Math.max(diag, diag/aspect)/(2*tanH)*1.05;
+  const dist = lerp(flat, folded, ease(T));
+  const dir = camera.position.clone().sub(controls.target);
+  if (dir.lengthSq() < 1e-6) dir.set(.55,.38,1);
+  controls.target.set(0,0,0); camera.position.copy(dir.normalize().multiplyScalar(dist));
+}
+function resize(){
+  const r = host.getBoundingClientRect(); if (!r.width || !r.height) return;
+  renderer.setSize(r.width, r.height, false); camera.aspect = r.width/r.height; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(host);
+let anim = null;
+function loop(now){
+  if (anim){ const p = clamp((now-anim.t0)/anim.dur,0,1); const t = lerp(anim.from, anim.to, p); applyFold(t,true); $('t').value = Math.round(t*1000); if (p>=1) anim=null; }
+  controls.update(); renderer.render(scene,camera); requestAnimationFrame(loop);
+}
+
+/* ---------- refresh ---------- */
+let pending = 0, geomDirty = true;
+function refresh(geom){ if (geom) geomDirty = true; persist(); if (!pending) pending = requestAnimationFrame(doRefresh); }
+function doRefresh(){
+  pending = 0;
+  if (geomDirty){
+    G = build(S); rebuild3D(); applyFold(T, true); geomDirty = false;
+    $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
+    gen++; renderSlots(); renderEls();
+  }
+  const sTex = Math.min(10, 4096/Math.max(G.b.w,G.b.h));
+  drawArt(texCanvas, G, sTex, S.showLines, 'out'); updTex(outMat, texCanvas, false);
+  drawArt(texInCanvas, G, hasInside() ? sTex : Math.min(sTex, 1), S.showLines, 'in'); updTex(inMat, texInCanvas, true);
+  outMat.roughness = S.finish==='gloss' ? .28 : .82;
+  $('insideBgWrap').hidden = S.inside!=='color';
+  if (!$('view2d').hidden) render2D();
+}
+let gen = 0, sig2d = '';
+function render2D(){
+  const sp = Math.min(4, 1600/Math.max(G.b.w,G.b.h)), inside = hasInside();
+  const out = drawArt(document.createElement('canvas'), G, sp, false, 'out', selId).toDataURL('image/jpeg',.85);
+  const inn = inside ? drawArt(document.createElement('canvas'), G, sp, false, 'in', selId).toDataURL('image/jpeg',.85) : null;
+  const v = $('view2d'), sig = gen+'|'+inside;
+  v.classList.toggle('placing', !!selId);
+  if (sig === sig2d && v.querySelector('[data-side=out] image')){
+    v.querySelector('[data-side=out] image').setAttribute('href', out);
+    if (inn) v.querySelector('[data-side=in] image').setAttribute('href', inn);
+    return;
+  }
+  sig2d = sig;
+  v.innerHTML = `<div data-side="out">${svgDoc(G, out)}</div>` +
+    (inside ? `<p class="cap">Оборот — внутренняя сторона (зеркально, как печатается на обороте листа)</p><div data-side="in">${svgDoc(G, inn, true)}</div>` : '') +
+    `<div class="legend"><span><i></i>рез</span><span><i class="c"></i>биговка (сгиб)</span><span>вылеты ${BLEED} мм</span></div>`;
+}
+// drag the selected logo/text on the flat sheet
+let dragging = false;
+function placeAt(e){
+  const el = curEl(); const wrap = e.target.closest('[data-side]'); const svg = wrap?.querySelector('svg'); if (!el || !svg) return;
+  const side = wrap.dataset.side, pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const x = side==='in' ? G.b.maxX - p.x : G.b.minX + p.x, y = G.b.maxY - p.y;
+  const inside = f => x>=f.r[0] && x<=f.r[2] && y>=f.r[1] && y<=f.r[3];
+  const f = G.faces.find(f=>f.key===el.face && inside(f)) || G.faces.find(inside); if (!f) return;
+  const fx = faceX(G,f,1,side), dx = x-(f.r[0]+f.r[2])/2, dy = y-(f.r[1]+f.r[3])/2;
+  const ux = side==='in' ? -dx : dx, uy = -dy, r = fx.rot;
+  const lx = ux*Math.cos(r) + uy*Math.sin(r), ly = -ux*Math.sin(r) + uy*Math.cos(r);
+  Object.assign(el, {side, face:f.key, x:clamp(lx/fx.lw+.5,0,1), y:clamp(ly/fx.lh+.5,0,1)});
+  syncEl(); refresh();
+}
+$('view2d').addEventListener('pointerdown', e => {
+  if (!e.target.closest('svg')) return;
+  if (!curEl()){ toast('Сначала добавьте или выберите логотип или надпись'); return; }
+  dragging = true; e.target.closest('svg').setPointerCapture(e.pointerId); placeAt(e);
+});
+$('view2d').addEventListener('pointermove', e => { if (dragging) placeAt(e); });
+$('view2d').addEventListener('pointerup', () => { dragging = false; renderEls(); });
+$('view2d').addEventListener('pointercancel', () => { dragging = false; });
+
+/* ---------- UI ---------- */
+function syncUI(){
+  for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
+  $('tab2').value = S.tab;
+  for (const id of SEL) $(id).value = S[id];
+  for (const id of CHK) $(id).checked = !!S[id];
+  document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== S.type);
+  $('winOpts').hidden = !S.window; $('hangOpts').hidden = !S.hang;
+  $('topLid').disabled = S.topClose!=='tuck' || S.hang; $('botLid').disabled = S.botClose!=='tuck';
+  document.querySelectorAll('.tpl').forEach(b => b.setAttribute('aria-pressed', b.dataset.id===S.tpl));
+  $('presets').innerHTML = (SIZE_CHIPS[S.type]||[]).map(([n,d])=>`<button class="chip" data-d="${d}">${n} ${d.replaceAll(',','×')}</button>`).join('');
+}
+function custom(){ S.tpl = null; document.querySelectorAll('.tpl').forEach(b => b.setAttribute('aria-pressed', false)); }
+function selectTpl(id){
+  const t = TPL.find(x=>x.id===id); if (!t) return;
+  if (S.type !== t.type) Object.assign(S, TYPE_DIMS[t.type]);
+  Object.assign(S, {type:t.type, tpl:t.id}, t.set);
+  syncUI(); refresh(true);
+}
+function renderTpls(){
+  $('tpls').innerHTML = TPL.map(t => {
+    const P = {...DEFAULTS, ...TYPE_DIMS[t.type], type:t.type, ...t.set};
+    return `<button class="tpl" data-id="${t.id}" aria-pressed="false">${thumbSvg(build(P))}<span>${t.name}</span></button>`;
+  }).join('');
+  $('tpls').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) selectTpl(b.dataset.id); });
+}
+function bindInputs(){
+  for (const id of NUM){ const el=$(id); if (!el) continue;
+    el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[id]=clamp(v,+el.min,+el.max);
+      if (!['L','W','H'].includes(id)) custom(); refresh(true); });
+    el.addEventListener('change',()=>{ el.value=S[id]; }); }
+  $('tab2').addEventListener('input',()=>{ const v=parseFloat($('tab2').value); if (!isFinite(v)) return; S.tab=clamp(v,5,60); custom(); refresh(true); });
+  for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
+  for (const id of ['notch','window','hang']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
+  for (const id of ['bg','ink','title','sub','inside','finish']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
+  for (const id of ['showText','showLines']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; refresh(); });
+  $('presets').addEventListener('click',e=>{ const d=e.target.closest('[data-d]')?.dataset.d; if(!d) return;
+    [S.L,S.W,S.H]=d.split(',').map(Number); syncUI(); refresh(true); });
+  $('t').addEventListener('input',()=>{ anim=null; applyFold($('t').value/1000,true); });
+  $('play').addEventListener('click',()=>{ const to = T > .5 ? 0 : 1;
+    const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 2800*Math.abs(to-T)+200;
+    anim = {from:T, to, t0:performance.now(), dur}; });
+  const tabs = [$('t3d'),$('t2d')];
+  tabs.forEach(tb=>tb.addEventListener('click',()=>{ const is2 = tb.id==='t2d';
+    tabs.forEach(x=>x.setAttribute('aria-selected', x===tb)); $('view2d').hidden=!is2; $('view3d').hidden=is2;
+    document.querySelector('.fold').hidden=is2; if (is2) render2D(); else resize(); }));
+}
+function renderSlots(){
+  const box = $('slots'); box.innerHTML='';
+  const keys = [...new Set(G.faces.map(f=>f.key)), 'layout'];
+  for (const k of keys){
+    const label = FACE_NAMES[k];
+    const el = document.createElement('label'); el.className='slot'+(k==='layout'?' wide':'')+(IMGS[k]?' has':'');
+    if (IMGS[k]) el.style.backgroundImage=`url("${IMGS[k].src}")`;
+    el.innerHTML = `<span class="lbl">${label}</span><input type="file" accept="image/*" id="img-${k}" aria-label="Картинка: ${label}">`;
+    if (IMGS[k]){ const x=document.createElement('button'); x.className='x'; x.type='button'; x.textContent='×'; x.setAttribute('aria-label','Убрать картинку: '+label);
+      x.addEventListener('click',e=>{ e.preventDefault(); delete IMGS[k]; renderSlots(); refresh(); }); el.append(x); }
+    el.querySelector('input').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader(); r.onload=()=>loadImg(k,r.result); r.readAsDataURL(f); });
+    box.append(el);
+  }
+}
+function loadImg(k, src){
+  return new Promise(res=>{ const img=new Image(); img.onload=()=>{ IMGS[k]={img,src}; if (G) renderSlots(); refresh(); res(); };
+    img.onerror=()=>{ toast('Не получилось открыть картинку. Подойдут PNG, JPG или WebP.'); res(); }; img.src=src; });
+}
+
+/* ---------- logos & text ---------- */
+let selId = null;
+const curEl = () => S.els.find(e=>e.id===selId) || null;
+$('elFont').innerHTML = FONTS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('');
+function faceWidthMM(key){ const f = G.faces.find(f=>f.key===key) || G.faces[0]; const fx = faceX(G,f,1,'out'); return fx.lw; }
+function defaultFace(){ return G.faces.some(f=>f.key==='front') ? 'front' : G.faces[0].key; }
+function renderEls(){
+  const box = $('els'); box.innerHTML = '';
+  S.els.forEach(el => {
+    const b = document.createElement('button'); b.className='btn'; b.setAttribute('aria-pressed', el.id===selId);
+    const name = el.kind==='image' ? 'Логотип' : (String(el.text).split('\n')[0] || 'Надпись');
+    const where = (el.side==='in'?'внутри · ':'')+(FACE_NAMES[el.face]||el.face)+(G.faces.some(f=>f.key===el.face)?'':' — нет в этом шаблоне');
+    b.append(name); const em=document.createElement('em'); em.textContent=where; b.append(em);
+    b.addEventListener('click',()=>{ selId = el.id===selId ? null : el.id; renderEls(); syncEl(); refresh(); });
+    box.append(b);
+  });
+  $('elHint').hidden = S.els.length>0;
+}
+function syncEl(){
+  const el = curEl(); $('elEdit').hidden = !el; if (!el) return;
+  $('elFace').innerHTML = [...new Set(G.faces.map(f=>f.key))].map(k=>`<option value="${k}">${FACE_NAMES[k]}</option>`).join('');
+  $('elFace').value = el.face; $('elSide').value = el.side;
+  $('elTextOpts').hidden = el.kind!=='text';
+  $('elSizeLbl').textContent = el.kind==='text' ? 'Кегль, мм' : 'Ширина, мм';
+  if (el.kind==='text'){ $('elText').value = el.text; $('elFont').value = el.font; $('elColor').value = el.color; }
+  $('elSize').value = el.size; $('elSizeO').textContent = el.size;
+  $('elX').value = (el.x*100).toFixed(1); $('elXO').textContent = Math.round(el.x*100)+'%';
+  $('elY').value = (el.y*100).toFixed(1); $('elYO').textContent = Math.round(el.y*100)+'%';
+  $('elRot').value = el.rot; $('elRotO').textContent = el.rot+'°';
+}
+function addEl(el){ S.els.push(el); selId = el.id; renderEls(); syncEl(); refresh(); }
+$('addLogo').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => { const img = new Image();
+    img.onload = () => { const id = uid(); ELIMG[id] = {img, src:r.result}; const face = defaultFace();
+      addEl({id, kind:'image', side:'out', face, x:.5, y:.3, size:Math.round(faceWidthMM(face)*.4), rot:0}); };
+    img.onerror = () => toast('Не получилось открыть логотип. Подойдут PNG, JPG, WebP или SVG.');
+    img.src = r.result; };
+  r.readAsDataURL(f); e.target.value = '';
+});
+$('addText').addEventListener('click', () => {
+  addEl({id:uid(), kind:'text', side:'out', face:defaultFace(), x:.5, y:.75, size:7, rot:0, text:'Ваш текст', font:'600|IBM Plex Sans', color:S.ink});
+});
+const onEl = (id, fn) => $(id).addEventListener('input', () => { const el = curEl(); if (!el) return; fn(el, $(id).value); syncEl(); renderEls(); refresh(); });
+onEl('elSide', (el,v)=>{ el.side=v; });
+onEl('elFace', (el,v)=>{ el.face=v; });
+onEl('elText', (el,v)=>{ el.text=v; });
+onEl('elColor', (el,v)=>{ el.color=v; });
+onEl('elFont', (el,v)=>{ el.font=v; const [wt,fam]=v.split('|'); document.fonts?.load(`${wt} 40px "${fam}"`).then(()=>refresh()); });
+onEl('elSize', (el,v)=>{ el.size=+v; });
+onEl('elX', (el,v)=>{ el.x=v/100; });
+onEl('elY', (el,v)=>{ el.y=v/100; });
+onEl('elRot', (el,v)=>{ el.rot=+v; });
+$('elDup').addEventListener('click', () => { const el = curEl(); if (!el) return; const id = uid();
+  if (ELIMG[el.id]) ELIMG[id] = ELIMG[el.id];
+  addEl({...el, id, x:clamp(el.x+.06,0,1), y:clamp(el.y+.06,0,1)}); });
+$('elDel').addEventListener('click', () => { const i = S.els.findIndex(e=>e.id===selId); if (i<0) return;
+  delete ELIMG[S.els[i].id]; S.els.splice(i,1); selId = null; renderEls(); syncEl(); refresh(); });
+
+/* ---------- my templates ---------- */
+let mine = store.get('skladka-mine', []);
+function renderMine(){
+  const box = $('mine');
+  if (!mine.length){ box.innerHTML = '<p class="note">Пока пусто. Настройте коробку и сохраните её здесь под своим названием.</p>'; return; }
+  box.innerHTML = mine.map((m,i)=>`<div class="it"><button class="btn ld" data-i="${i}" title="${m.name.replace(/"/g,'&quot;')}"></button><button class="btn del" data-i="${i}" aria-label="Удалить шаблон">×</button></div>`).join('');
+  box.querySelectorAll('.ld').forEach((b,i)=>{ const m=mine[i]; b.textContent = `${m.name} · ${m.s.L}×${m.s.W}×${m.s.H}`; });
+}
+$('mine').addEventListener('click',e=>{
+  const b = e.target.closest('button'); if (!b) return; const i = +b.dataset.i;
+  if (b.classList.contains('ld')){ Object.assign(S, mine[i].s); syncUI(); refresh(true); toast('Шаблон загружен: '+mine[i].name); }
+  else if (b.classList.contains('del')){
+    if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='Удалить?'; setTimeout(()=>{ if (b.isConnected){ b.classList.remove('arm'); b.textContent='×'; } },3000); return; }
+    mine.splice(i,1); store.set('skladka-mine',mine); renderMine();
+  }
+});
+$('mySave').addEventListener('click',()=>{
+  const name = $('myName').value.trim(); if (!name){ toast('Введите название шаблона'); $('myName').focus(); return; }
+  const s = {}; for (const k of [...STRUCT,'bg','ink','title','sub','inside','finish']) s[k]=S[k];
+  const at = mine.findIndex(m=>m.name===name); if (at>=0) mine[at]={name,s}; else mine.push({name,s});
+  store.set('skladka-mine',mine); renderMine(); $('myName').value=''; toast('Шаблон сохранён: '+name);
+});
+
+/* ---------- exports ---------- */
+$('exSvg').addEventListener('click',()=>saveFile(fname('-shablon.svg'), new Blob([svgDoc(G,null)],{type:'image/svg+xml'})));
+$('exSvgArt').addEventListener('click',()=>{ const url = exportCanvas(G).toDataURL('image/png');
+  saveFile(fname('-razvertka.svg'), new Blob([svgDoc(G,url)],{type:'image/svg+xml'})); });
+$('exPdf').addEventListener('click',()=>{
+  const {jsPDF} = window.jspdf || {}; if (!jsPDF){ toast('Библиотека PDF не загрузилась. Обновите страницу.'); return; }
+  const {w,h,minX,maxY} = G.b;
+  const doc = new jsPDF({orientation: w>h?'landscape':'portrait', unit:'mm', format:[w,h]});
+  doc.addImage(exportCanvas(G).toDataURL('image/jpeg',.95),'JPEG',0,0,w,h);
+  doc.setLineWidth(.25);
+  const draw = list => list.forEach(([a,b])=>doc.line(a[0]-minX,maxY-a[1],b[0]-minX,maxY-b[1]));
+  doc.setDrawColor(0,144,255); doc.setLineDashPattern([3,1.5],0); draw(G.creases);
+  doc.setDrawColor(228,0,43); doc.setLineDashPattern([],0); draw(G.cuts);
+  if (hasInside()){
+    doc.addPage([w,h], w>h?'landscape':'portrait');
+    doc.addImage(exportCanvas(G,'in').toDataURL('image/jpeg',.95),'JPEG',0,0,w,h);
+    const drawM = list => list.forEach(([a,b])=>doc.line(G.b.maxX-a[0],maxY-a[1],G.b.maxX-b[0],maxY-b[1]));
+    doc.setDrawColor(0,144,255); doc.setLineDashPattern([3,1.5],0); drawM(G.creases);
+    doc.setDrawColor(228,0,43); doc.setLineDashPattern([],0); drawM(G.cuts);
+  }
+  saveFile(fname('-razvertka.pdf'), doc.output('blob'));
+});
+$('exPng').addEventListener('click',()=>{ renderer.render(scene,camera); renderer.domElement.toBlob(b=>saveFile(fname('-mockup.png'),b),'image/png'); });
+$('saveProj').addEventListener('click',()=>{ const imgs={}, elimgs={}; for (const k in IMGS) imgs[k]=IMGS[k].src;
+  for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id]=ELIMG[e.id].src;
+  saveFile(fname('.json'), new Blob([JSON.stringify({app:'skladka',v:3,settings:S,imgs,elimgs,mine})],{type:'application/json'})); });
+const loadElImg = (id, src) => new Promise(res => { const img = new Image(); img.onload = () => { ELIMG[id] = {img, src}; res(); }; img.onerror = res; img.src = src; });
+$('openProj').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=async()=>{ try{ const d=JSON.parse(r.result); if (d.app!=='skladka') throw 0;
+      Object.assign(S,{type:'tube',els:[]},d.settings||{}); for (const k in IMGS) delete IMGS[k];
+      for (const k in ELIMG) delete ELIMG[k]; selId = null;
+      await Promise.all(Object.entries(d.elimgs||{}).map(([id,src])=>loadElImg(id,src)));
+      S.els = (S.els||[]).filter(e => e.kind==='text' || ELIMG[e.id]);
+      if (Array.isArray(d.mine)) for (const m of d.mine) if (m?.name && !mine.some(x=>x.name===m.name)) mine.push(m);
+      store.set('skladka-mine',mine); renderMine();
+      await Promise.all(Object.entries(d.imgs||{}).map(([k,src])=>loadImg(k,src)));
+      syncUI(); syncEl(); refresh(true); toast('Проект открыт'); }
+    catch{ toast('Это не файл проекта «Складки». Выберите .json, сохранённый здесь.'); } e.target.value=''; };
+  r.readAsText(f); });
+
+renderTpls(); bindInputs(); syncUI(); renderMine(); resize();
+camera.position.set(.55,.38,1);
+G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
+$('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
+document.fonts?.ready.then(()=>refresh());
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
