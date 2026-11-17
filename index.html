@@ -222,6 +222,13 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .card .mm{font:12px var(--mono);color:var(--muted)}
 .card.newc{border-style:dashed;border-width:1.5px;place-content:center;justify-items:center;gap:10px;min-height:236px;color:var(--accent);font:700 14px var(--sans);grid-template-rows:none}
 .card.newc i{font-style:normal;width:48px;height:48px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;font-size:26px;font-weight:400}
+.tgrid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.tgrid .card .pic{height:150px}
+.tgrid .card span:not(.mm){display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.h1s{font-size:22px!important}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.tpls .tpl[hidden]{display:none}
+.tpl span{font-size:11.5px}
 dialog.dlg{border:1px solid var(--line);border-radius:14px;padding:22px;width:min(440px,calc(100vw - 32px));background:var(--panel);color:var(--fg);box-shadow:0 20px 60px rgba(0,0,0,.25)}
 dialog.dlg::backdrop{background:rgba(20,18,30,.4)}
 dialog.dlg form{display:grid;gap:14px}
@@ -275,8 +282,12 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       </div>
       <div class="home-sec" id="projSec">
         <div class="home-grid" id="projGrid"></div>
-        <p class="empty" id="projEmpty">No projects yet. Click “+ New project” or pick a template on the left — it will be saved here automatically.</p>
+        <p class="empty" id="projEmpty">No projects yet. Click “+ New project” or pick a template below — it will be saved here automatically.</p>
         <p class="note" id="projNote">Projects are saved automatically in this browser, logos included. To move one to another computer, use “Export → Project file .json”.</p>
+      </div>
+      <div class="home-sec" id="tplSec">
+        <div class="home-head"><h1 class="h1s">Start from a template</h1><div class="presets" id="homeCats"></div></div>
+        <div class="home-grid tgrid" id="tplGrid"></div>
       </div>
     </div>
   </div>
@@ -336,7 +347,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
     <section data-pane="size">
       <h2 id="dimTitle">Dimensions, mm (inside)</h2>
       <div class="row2">
-        <label class="f">Dimensions are<select id="dimMode"><option value="inner">Inside</option><option value="outer">Outside</option><option value="mfg">Crease to crease</option></select></label>
+        <label class="f" id="dimModeWrap">Dimensions are<select id="dimMode"><option value="inner">Inside</option><option value="outer">Outside</option><option value="mfg">Crease to crease</option></select></label>
         <label class="f">Units<select id="unit"><option value="mm">mm</option><option value="cm">cm</option><option value="in">inches</option></select></label>
       </div>
       <div class="row">
@@ -354,7 +365,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <div class="row2">
           <label class="f">Top<select id="topClose"><option value="tuck">Tuck flap</option><option value="seal">Glued</option><option value="open">Open</option></select></label>
           <label class="f">Top flap on<select id="topLid"><option value="back">back panel</option><option value="front">front panel</option></select></label>
-          <label class="f">Bottom<select id="botClose"><option value="tuck">Tuck flap</option><option value="seal">Glued</option><option value="snap">1-2-3 snap lock (no glue)</option><option value="open">Open</option></select></label>
+          <label class="f">Bottom<select id="botClose"><option value="tuck">Tuck flap</option><option value="seal">Glued</option><option value="crash">Crash-lock (auto bottom)</option><option value="snap">1-2-3 snap lock (no glue)</option><option value="open">Open</option></select></label>
           <label class="f">Bottom flap on<select id="botLid"><option value="front">front panel</option><option value="back">back panel</option></select></label>
         </div>
         <div class="row">
@@ -380,6 +391,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       </div>
       <div data-for="tray" class="sub" style="padding-left:0">
         <label class="f">Glue tabs, mm<input id="tab" type="number" min="5" max="60" step="1"></label>
+        <label class="f">Display header on the back wall, mm (0 — none)<input id="hdr" type="number" min="0" max="400" step="5"></label>
         <label class="chk"><input id="dbl2" type="checkbox"> Double long walls</label>
         <p class="note">Glue tabs are glued inside to the side walls. A double wall folds inward and covers them.</p>
       </div>
@@ -404,9 +416,36 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <label class="f">Glue tabs, mm<input id="tab2" type="number" min="5" max="60" step="1"></label>
         <p class="note">Lid and base print on one sheet. The clearance is added to the lid length and width on each side.</p>
       </div>
+      <div data-for="label" class="sub" style="padding-left:0">
+        <div class="row2">
+          <label class="f">Container<select id="vessel"></select></label>
+          <label class="f">Label shape<select id="lshape"><option value="rect">Rectangle</option><option value="oval">Oval</option><option value="circle">Circle</option></select></label>
+          <label class="f" id="placeWrap">Placement<select id="place"><option value="side">On the side</option><option value="top">On the lid / top</option></select></label>
+          <label class="f" id="lblYWrap">Bottom edge from base, mm<input id="lblY" type="number" min="0" max="400" step="1"></label>
+        </div>
+        <label class="chk" id="wrapWrap"><input id="wrap" type="checkbox"> Full wrap — width = π × Ø + overlap</label>
+        <label class="f" id="overlapWrap">Overlap at the seam, mm<input id="overlap" type="number" min="0" max="40" step="1"></label>
+        <div class="row">
+          <label class="f" id="vglassWrap">Body<select id="vglass"></select></label>
+          <label class="f" id="vcapWrap">Cap / lid<select id="vcap"></select></label>
+          <label class="f" id="vfillWrap">Contents<select id="vfill"></select></label>
+        </div>
+        <p class="note" id="lblNote"></p>
+      </div>
+      <div data-for="cup" class="sub" style="padding-left:0">
+        <label class="f">What is printed<select id="cupKind"><option value="cup">Cup wall (fan)</option><option value="sleeve">Cup sleeve</option></select></label>
+        <label class="chk"><input id="cupLid" type="checkbox"> Show a plastic lid in 3D</label>
+        <p class="note" id="cupNote"></p>
+      </div>
+      <div data-for="card" class="sub" style="padding-left:0">
+        <label class="f">Format<select id="fold"><option value="flat">Flat card / insert</option><option value="bi">Bi-fold leaflet</option><option value="tri">Tri-fold leaflet (roll)</option><option value="z">Z-fold leaflet (accordion)</option><option value="tent">Table tent</option><option value="tag">Hang tag</option><option value="neck">Bottle neck hanger</option><option value="topper">Bag header card</option><option value="env">Envelope</option></select></label>
+        <label class="f" id="holeWrap">Hole Ø, mm<input id="holeD" type="number" min="2" max="60" step="0.5"></label>
+        <p class="note" id="cardNote"></p>
+      </div>
       <div class="sub" style="padding-left:0" id="conCommon">
-        <h3>For all types</h3>
+        <h3>Corners and extras</h3>
         <label class="rng"><span>Corner radius</span><input id="cornerR" type="range" min="0" max="15" step="0.5"><output id="cornerRO"></output></label>
+        <div id="conBox" class="sub" style="padding:0">
         <div class="row2">
           <label class="f">Vent holes per side<input id="vents" type="number" min="0" max="6" step="1"></label>
           <label class="f">Diameter, mm<input id="ventD" type="number" min="4" max="30" step="1"></label>
@@ -416,12 +455,19 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
           <label class="f">Height, % of wall<input id="tearY" type="number" min="15" max="85" step="1"></label>
           <label class="f">Strip width, mm<input id="tearW" type="number" min="3" max="20" step="1"></label>
         </div>
+        </div>
       </div>
       <div data-for="mailer" class="sub" style="padding-left:0">
         <p class="note">Double side walls, dust ears and locking tabs, no glue. Usually made from E-flute corrugated. Keep the height below the width.</p>
       </div>
     </section>
 
+    <section data-pane="mine">
+      <h2>Templates</h2>
+      <div class="presets" id="tplCats"></div>
+      <div class="tpls" id="tpls"></div>
+      <p class="note">Picking a template in a project you have already changed asks whether to keep it and start a new one, or to apply the new structure here.</p>
+    </section>
     <section data-pane="mine">
       <h2>My templates</h2>
       <div class="inl">
@@ -564,10 +610,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
     </section>
     <section data-pane="material">
       <h2>Material</h2>
-      <label class="f">Board<select id="mat">
-        <option value="carton03">Paperboard 0.3 mm (≈250 gsm)</option><option value="carton05">Paperboard 0.5 mm (≈350 gsm)</option>
-        <option value="kraft">Kraft board 0.45 mm</option><option value="micro_e">E-flute, 1.5 mm</option>
-        <option value="corr_b">B-flute corrugated, 3 mm</option><option value="custom">Custom thickness…</option></select></label>
+      <label class="f">Material<select id="mat"></select></label>
       <label class="f">White underprint<select id="white"><option value="">None</option><option value="full">Under all print</option><option value="els">Only under logos and text</option></select></label>
       <label class="f" id="thickWrap">Thickness, mm<input id="thick" type="number" min="0" max="8" step="0.05"></label>
       <p class="note">Thickness is built into the dieline: creases shift so the finished box comes out at the right size.</p>
@@ -611,6 +654,13 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
     </div>
   </main>
 </div>
+<dialog class="dlg" id="tplDlg">
+  <form method="dialog">
+    <h2>Switch to “<span id="tplDlgName"></span>”?</h2>
+    <p class="note">You have already customised “<b id="tplDlgCur"></b>”. Keep it in My projects and start a new project from this template — or apply the template's structure to this project (your colours, images and elements stay).</p>
+    <div class="acts" style="flex-wrap:wrap"><button class="btn" value="cancel">Cancel</button><button class="btn" id="tplHere" type="button">Apply to this project</button><button class="btn pri" id="tplNew" type="button">Save it &amp; start new</button></div>
+  </form>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -632,48 +682,113 @@ let WARN = {};
 /* ---------- settings & templates ---------- */
 const TYPE_DIMS = {
   tube:{L:70,W:70,H:110}, tray:{L:160,W:110,H:40}, lidbase:{L:150,W:150,H:50,lidH:30}, mailer:{L:220,W:160,H:70},
-  drawer:{L:200,W:100,H:50}, pouch:{L:140,W:80,H:220}
+  drawer:{L:200,W:100,H:50}, pouch:{L:140,W:80,H:220}, label:{L:90,W:75,H:100}, cup:{L:80,W:55,H:95}, card:{L:148,W:10,H:105}
 };
+const BOX = new Set(['tube','tray','lidbase','mailer','drawer']);
+const TYPE_MAT = {label:'paper80', card:'card350', cup:'cupb', pouch:'carton05'};
 const TUBE_BASE = {topClose:'tuck',topLid:'back',botClose:'tuck',botLid:'front',window:false,hang:false,notch:true};
+const LBL_BASE = {vessel:'wine', lshape:'rect', wrap:false, place:'side', overlap:8, lblY:55, cornerR:0, vglass:'auto', vcap:'auto', vfill:'auto'};
+const CARD_BASE = {fold:'flat', holeD:5, cornerR:0};
 const TPL = [
-  {id:'rte',   type:'tube', name:'Reverse tuck end', set:{...TUBE_BASE}},
-  {id:'ste',   type:'tube', name:'Straight tuck end', set:{...TUBE_BASE, botLid:'back'}},
-  {id:'seal',  type:'tube', name:'Glued end (cereal box)',     set:{...TUBE_BASE, topClose:'seal', botClose:'seal', notch:false}},
-  {id:'mix',   type:'tube', name:'Tuck top, glued bottom',  set:{...TUBE_BASE, botClose:'seal'}},
-  {id:'hang',  type:'tube', name:'With euro hang tab',          set:{...TUBE_BASE, hang:true, topLid:'front', notch:false}},
-  {id:'win',   type:'tube', name:'With window',               set:{...TUBE_BASE, window:true}},
-  {id:'sleeve',type:'tube', name:'Open sleeve',     set:{...TUBE_BASE, topClose:'open', botClose:'open', notch:false}},
-  {id:'tray',  type:'tray', name:'Tray',                   set:{}},
-  {id:'lidbase',type:'lidbase', name:'Lid and base',          set:{}},
-  {id:'mailer',type:'mailer', name:'Mailer box', set:{}},
-  {id:'drawer',type:'drawer', name:'Drawer box with sleeve', set:{dbl:true}},
-  {id:'pouch', type:'pouch',  name:'Flat-bottom pouch', set:{finish:'gloss'}},
+  {id:'rte',   type:'tube', cat:'box', name:'Reverse tuck end', set:{...TUBE_BASE}},
+  {id:'ste',   type:'tube', cat:'box', name:'Straight tuck end', set:{...TUBE_BASE, botLid:'back'}},
+  {id:'seal',  type:'tube', cat:'box', name:'Glued end (cereal box)',     set:{...TUBE_BASE, topClose:'seal', botClose:'seal', notch:false}},
+  {id:'mix',   type:'tube', cat:'box', name:'Tuck top, glued bottom',  set:{...TUBE_BASE, botClose:'seal'}},
+  {id:'crash', type:'tube', cat:'box', name:'Crash-lock bottom', set:{...TUBE_BASE, botClose:'crash', L:90, W:60, H:140}},
+  {id:'hang',  type:'tube', cat:'box', name:'With euro hang tab',          set:{...TUBE_BASE, hang:true, topLid:'front', notch:false}},
+  {id:'win',   type:'tube', cat:'box', name:'With window',               set:{...TUBE_BASE, window:true}},
+  {id:'winebox',type:'tube',cat:'box', name:'Wine bottle box', set:{...TUBE_BASE, botClose:'crash', L:90, W:90, H:330}},
+  {id:'sleeve',type:'tube', cat:'box', name:'Open sleeve',     set:{...TUBE_BASE, topClose:'open', botClose:'open', notch:false}},
+  {id:'band',  type:'tube', cat:'box', name:'Belly band',     set:{...TUBE_BASE, topClose:'open', botClose:'open', notch:false, L:120, W:60, H:40}},
+  {id:'tray',  type:'tray', cat:'box', name:'Tray',                   set:{hdr:0}},
+  {id:'display',type:'tray',cat:'box', name:'Counter display tray', set:{hdr:90, L:200, W:120, H:60}},
+  {id:'lidbase',type:'lidbase', cat:'box', name:'Lid and base',          set:{}},
+  {id:'mailer',type:'mailer', cat:'box', name:'Mailer box', set:{}},
+  {id:'drawer',type:'drawer', cat:'box', name:'Drawer box with sleeve', set:{dbl:true}},
+  {id:'l_wine',  type:'label', cat:'label', name:'Wine bottle label',  set:{...LBL_BASE, vessel:'wine', L:90, W:75, H:100, lblY:55, cornerR:0}},
+  {id:'l_beer',  type:'label', cat:'label', name:'Beer bottle wrap label', set:{...LBL_BASE, vessel:'beer', wrap:true, W:60, H:75, lblY:24}},
+  {id:'l_jar',   type:'label', cat:'label', name:'Jar wrap label',     set:{...LBL_BASE, vessel:'jar', wrap:true, W:80, H:60, lblY:12}},
+  {id:'l_lid',   type:'label', cat:'label', name:'Jar lid sticker',    set:{...LBL_BASE, vessel:'jar', lshape:'circle', place:'top', L:70, W:80, H:70}},
+  {id:'l_can',   type:'label', cat:'label', name:'Tin can label',      set:{...LBL_BASE, vessel:'can', wrap:true, overlap:10, W:73, H:98, lblY:6}},
+  {id:'l_drop',  type:'label', cat:'label', name:'Dropper bottle label', set:{...LBL_BASE, vessel:'dropper', L:80, W:32, H:38, lblY:8, cornerR:2}},
+  {id:'l_candle',type:'label', cat:'label', name:'Candle jar label',   set:{...LBL_BASE, vessel:'candle', L:120, W:80, H:55, lblY:16, cornerR:4}},
+  {id:'l_pump',  type:'label', cat:'label', name:'Cosmetic bottle oval label', set:{...LBL_BASE, vessel:'pump', lshape:'oval', L:50, W:50, H:72, lblY:28}},
+  {id:'s_round', type:'label', cat:'label', name:'Round sticker',      set:{...LBL_BASE, vessel:'none', lshape:'circle', L:60, W:60, H:60}},
+  {id:'s_rect',  type:'label', cat:'label', name:'Rectangle sticker',  set:{...LBL_BASE, vessel:'none', L:90, W:60, H:55, cornerR:5}},
+  {id:'s_oval',  type:'label', cat:'label', name:'Oval sticker',       set:{...LBL_BASE, vessel:'none', lshape:'oval', L:80, W:60, H:50}},
+  {id:'cup8',    type:'cup', cat:'round', name:'Paper cup 8 oz',  set:{cupKind:'cup', cupLid:false, L:80, W:55, H:95}},
+  {id:'cup12',   type:'cup', cat:'round', name:'Paper cup 12 oz with lid', set:{cupKind:'cup', cupLid:true, L:90, W:60, H:112}},
+  {id:'csleeve', type:'cup', cat:'round', name:'Coffee cup sleeve', set:{cupKind:'sleeve', cupLid:true, L:86, W:70, H:60}},
+  {id:'ptube',   type:'label', cat:'round', name:'Paper tube with lid', set:{...LBL_BASE, vessel:'ptube', wrap:true, overlap:6, W:75, H:150, lblY:0}},
+  {id:'pouch', type:'pouch', cat:'round', name:'Flat-bottom pouch', set:{finish:'gloss'}},
+  {id:'c_card', type:'card', cat:'print', name:'Thank-you card',      set:{...CARD_BASE, L:148, H:105, cornerR:4}},
+  {id:'c_bi',   type:'card', cat:'print', name:'Bi-fold leaflet',     set:{...CARD_BASE, fold:'bi', L:105, H:148}},
+  {id:'c_tri',  type:'card', cat:'print', name:'Tri-fold leaflet (DL)', set:{...CARD_BASE, fold:'tri', L:99, H:210}},
+  {id:'c_z',    type:'card', cat:'print', name:'Z-fold leaflet',      set:{...CARD_BASE, fold:'z', L:99, H:210}},
+  {id:'c_tent', type:'card', cat:'print', name:'Table tent card',     set:{...CARD_BASE, fold:'tent', L:150, H:100}},
+  {id:'c_tag',  type:'card', cat:'print', name:'Hang tag',            set:{...CARD_BASE, fold:'tag', L:50, H:90, holeD:5}},
+  {id:'c_neck', type:'card', cat:'print', name:'Bottle neck hanger',  set:{...CARD_BASE, fold:'neck', L:75, H:170, holeD:31}},
+  {id:'c_top',  type:'card', cat:'print', name:'Bag header card',     set:{...CARD_BASE, fold:'topper', L:120, H:50, holeD:5}},
+  {id:'c_env',  type:'card', cat:'print', name:'Envelope C6',         set:{...CARD_BASE, fold:'env', L:162, H:114}},
 ];
+const TPL_CATS = {box:'Boxes', label:'Labels & stickers', round:'Cups, tubes & pouches', print:'Inserts, cards & tags'};
 const TPL_DESC = {
   rte:'The classic for cosmetics, tea and pharma. Top and bottom flaps tuck from opposite sides.',
   ste:'Both flaps on the back panel — easier on a packing line.',
   seal:'Flaps are glued like a cereal box. Strong, for heavier goods.',
   mix:'Opens at the top, glued bottom carries the weight.',
+  crash:'Auto-bottom: pre-glued diagonal gussets, the bottom snaps flat when the carton is opened. Fast to pack.',
   hang:'Tall back panel with a hole for a retail peg hook.',
   win:'A cut-out on the front so the product shows.',
+  winebox:'Tall carton for a 750 ml bottle with a crash-lock bottom that carries the weight.',
   sleeve:'A sleeve without flaps — slides over another box or product.',
+  band:'A narrow paper band around a box, tray or soap bar. Cheap way to brand plain packaging.',
   tray:'Open tray with glue corners. For sweets, cookies, display.',
+  display:'Counter display (PDQ) with a tall printed header on the back wall.',
   lidbase:'Two parts: base and lid. Gift packaging.',
   mailer:'Self-locking with a hinged lid, no glue. For shipping and subscriptions.',
   drawer:'A tray slides out of a sleeve, like a matchbox.',
-  pouch:'Flat-bottom bag with a zip lock. A 3D mockup for design.'
+  pouch:'Flat-bottom bag with a zip lock. A 3D mockup for design.',
+  l_wine:'Front label 90×100 mm on a 750 ml Bordeaux bottle (Ø 75 mm). Keep it under half the circumference.',
+  l_beer:'Full wrap on a 330 ml long-neck (Ø 60 mm): π × Ø plus overlap, seam at the back.',
+  l_jar:'Wrap-around label for jam and honey jars, Ø 80 mm.',
+  l_lid:'Round sticker on the lid of a jar — Ø 70 mm on a 82 mm lid.',
+  l_can:'Paper label for a 400 g tin can, Ø 73 mm, 10 mm glued overlap.',
+  l_drop:'Small label for a 30 ml amber dropper bottle (Ø 32 mm).',
+  l_candle:'Rounded label on a glass candle tumbler, Ø 80 mm.',
+  l_pump:'Oval label on a cosmetic pump bottle.',
+  s_round:'Round kiss-cut sticker — logos, seals, giveaways.',
+  s_rect:'Rectangle sticker with rounded corners — product and address labels.',
+  s_oval:'Oval sticker — classic for artisan products.',
+  cup8:'Printed fan (sidewall) for an 8 oz / 240 ml hot cup: rim Ø 80, base Ø 55, height 95 mm.',
+  cup12:'12 oz / 355 ml hot cup with a plastic lid: rim Ø 90, base Ø 60, height 112 mm.',
+  csleeve:'Corrugated sleeve that wraps a 12 oz cup — conical, glued at the seam.',
+  ptube:'Cylindrical cardboard tube with a lid, fully wrapped in a printed label.',
+  c_card:'A6 insert card for the box: thank-you, discount code, care instructions.',
+  c_bi:'A5 sheet folded in half — 4 pages of instructions or a mini catalogue.',
+  c_tri:'A4 roll fold to DL (99×210). The fold-in panel is 2 mm narrower.',
+  c_z:'A4 zig-zag (accordion) fold to DL — panels open like a concertina.',
+  c_tent:'Self-standing A-frame for tables and counters with a glue tab.',
+  c_tag:'Hang tag with a punched hole and a string — price, care, brand story.',
+  c_neck:'Neck hanger that slips over a bottle neck — Ø 31 mm hole with relief cuts.',
+  c_top:'Folds over the top of a plastic bag and is stapled, with a euro hole for hanging.',
+  c_env:'C6 envelope 162×114 mm for A6 cards, with side flaps and a curved seal flap.'
 };
-const TYPE_NAMES = {tube:'Folding carton', tray:'Tray', lidbase:'Lid and base', mailer:'Mailer box', drawer:'Drawer box', pouch:'Stand-up pouch'};
+const TYPE_NAMES = {tube:'Folding carton', tray:'Tray', lidbase:'Lid and base', mailer:'Mailer box', drawer:'Drawer box', pouch:'Stand-up pouch', label:'Label / sticker', cup:'Paper cup', card:'Card / leaflet'};
 const SIZE_CHIPS = {
-  tube:[['Tea','70,70,110'],['Cream','50,50,130'],['Bottle','60,40,160'],['Soap','90,30,60'],['Candle','85,85,95']],
+  tube:[['Tea','70,70,110'],['Cream','50,50,130'],['Bottle','60,40,160'],['Soap','90,30,60'],['Candle','85,85,95'],['Wine','90,90,330']],
   tray:[['Sweets','160,110,40'],['Cookies','200,140,50'],['Gift','250,200,60']],
   lidbase:[['Gift','150,150,50'],['Candle','100,100,80'],['Shoes','300,180,110'],['Gingerbread','220,160,40']],
   mailer:[['S','220,160,70'],['M','300,220,100'],['L','400,300,120']],
   drawer:[['Sweets','200,100,50'],['Tea','150,100,40'],['Jewellery','100,100,35']],
   pouch:[['250 g','130,70,200'],['500 g','160,90,250'],['1 kg','190,110,300']],
+  label:[['Wine 750 ml','90,75,100'],['Beer 330 ml','190,60,75'],['Jar 0.5 l','260,80,60'],['Can 400 g','240,73,98'],['Dropper 30 ml','80,32,38']],
+  cup:[['4 oz','62,45,60'],['8 oz','80,55,95'],['12 oz','90,60,112'],['16 oz','90,60,135']],
+  card:[['A6','148,10,105'],['A5','148,10,210'],['DL','99,10,210'],['Business card','85,10,55'],['Square','120,10,120']],
 };
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
-  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0,
+  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
+  ...LBL_BASE, ...CARD_BASE, cupKind:'cup', cupLid:false, base:'',
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'FOREST TEA', sub:'blend No.4 · 100 g',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
   mat:'carton05', white:'', bgMode:'solid', bg2:'#c9a227', gradAng:90, pattern:'dots', patScale:10, cornerR:0, vents:0, ventD:8, tear:false, tearY:70, tearW:6, grain:'any', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
@@ -685,13 +800,13 @@ const ELIMG = {};
 const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|IBM Plex Sans','Plex Sans regular'],['400|IBM Plex Mono','Plex Mono'],['400|Montserrat','Montserrat'],['700|Montserrat','Montserrat bold'],
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair bold'],['500|Oswald','Oswald'],['500|Caveat','Caveat, handwritten']];
 const uid = () => Math.random().toString(36).slice(2,9);
-const FACE_NAMES = {drawer:'Drawer base', pull:'Drawer end', front:'Front', back:'Back', side1:'Right side', side2:'Left side', top:'Top', bottom:'Bottom', layout:'Whole dieline (PNG on the template)'};
-const NUM = ['gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
+const FACE_NAMES = {drawer:'Drawer base', pull:'Drawer end', front:'Front', back:'Back', side1:'Right side', side2:'Left side', top:'Top', bottom:'Bottom', mid:'Middle panel', flap:'Fold-in flap', layout:'Whole dieline (PNG on the template)'};
+const NUM = ['gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow','hdr','overlap','lblY','holeD'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
-const DIM_LABELS = {pouch:['Width','Gusset depth','Height']};
-const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern'];
-const CHK = ['notch','window','hang','showText','showLines','dbl','tear'];
-const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
+const DIM_LABELS = {pouch:['Width','Gusset depth','Height'], label:['Label width','Container Ø','Label height'], cup:['Rim Ø (top)','Base Ø','Height'], card:['Width (folded)',null,'Height']};
+const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern','vessel','lshape','place','vglass','vcap','vfill','cupKind','fold'];
+const CHK = ['notch','window','hang','showText','showLines','dbl','tear','wrap','cupLid'];
+const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl','hdr',...Object.keys(LBL_BASE),...Object.keys(CARD_BASE),'cupKind','cupLid'];
 
 const store = {
   get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -779,6 +894,17 @@ function buildTube(P, B){
       B.add('sn4'+e,'back',[L+W,y0],'x',s*93*DEG,[.75,.95],[[L+W,y0],[2*L+W,y0],[2*L+W-3,Y(db)],[L+W+L*.62,Y(db)],[L+W+L*.6,Y(db*.55)],[L+W+L*.4,Y(db*.55)],[L+W+L*.38,Y(db)],[L+W+3,Y(db)]]);
       return;
     }
+    if (kind==='crash'){   // auto (crash-lock) bottom: two main flaps with pre-glued diagonal gussets + two side flaps
+      const d = Math.min(W*.62, L*.95), Y = k => y0 + dir*k, sd = Math.min(L*.5, d);
+      for (const [pid, x, st, a] of [['front',0,[.6,.88],90],['back',L+W,[.66,.95],91]]){
+        const g = Math.min(d, L*.6);
+        B.add('cm'+pid+e, pid, [x,y0], 'x', s*a*DEG, st, [[x,y0],[x+L,y0],[x+L-2,Y(d)],[x+g,Y(d)]]);
+        B.add('cg'+pid+e, 'cm'+pid+e, [x,y0], 'x', 0, [0,1], [[x,y0],[x+g,Y(d)],[x+1.5,Y(d)]]);   // glue gusset: crease on the diagonal
+      }
+      for (const [pid, x] of [['side1',L],['side2',2*L+W]])
+        B.add('cs'+pid+e, pid, [x,y0], 'x', s*92*DEG, [.45,.6], [[x,y0],[x+W,y0],[x+W*.82,Y(sd)],[x+W*.18,Y(sd)]]);
+      return;
+    }
     B.add('dust1'+e,'side1',[L,y0],'x',s*92*DEG,[.45,.6],dustPoly(L,y0,W,D,dir));
     B.add('dust2'+e,'side2',[2*L+W,y0],'x',s*92*DEG,[.47,.62],dustPoly(2*L+W,y0,W,D,dir));
     if (kind==='tuck'){
@@ -796,12 +922,12 @@ function buildTube(P, B){
   end(false, P.botClose, P.botLid);
   return {fold:'tube'};
 }
-function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces, dbl){
+function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces, dbl, hdr=0){
   const id = k => pre+k, t = clamp(tab,5,Math.max(5,Math.min(60,W*.45,L*.45))), ti = Math.min(3,H*.1);
   const sideStage = [.5,.85];
   B.add(id('base'),null,[ox,0],null,0,null,rect(ox,0,ox+L,W),{final});
   B.add(id('front'),id('base'),[ox,0],'x',90*DEG,[.1,.4],rect(ox,-H,ox+L,0));
-  B.add(id('back'),id('base'),[ox,W],'x',-90*DEG,[.1,.4],rect(ox,W,ox+L,W+H));
+  B.add(id('back'),id('base'),[ox,W],'x',-90*DEG,[.1,.4],rect(ox,W,ox+L,W+H+hdr));
   B.add(id('tfl'),id('front'),[ox,0],'y',-92*DEG,[.35,.55],sideTab(ox,0,-H,-t,ti));
   B.add(id('tfr'),id('front'),[ox+L,0],'y',92*DEG,[.35,.55],sideTab(ox+L,0,-H,t,ti));
   B.add(id('tbl'),id('back'),[ox,W],'y',-92*DEG,[.35,.55],sideTab(ox,W,W+H,-t,ti));
@@ -813,14 +939,14 @@ function addTray(B, pre, ox, L, W, H, tab, lid, final, withFaces, dbl){
     B.add(id('bi'),id('back'),[ox,W+H],'x',-177*DEG,[.78,.97],rect(ox,W+H,ox+L,W+2*H-sh)); }
   if (!withFaces) return;
   if (!lid){
-    B.face('bottom',[ox,0,ox+L,W]); B.face('front',[ox,-H,ox+L,0],PI); B.face('back',[ox,W,ox+L,W+H]);
+    B.face('bottom',[ox,0,ox+L,W]); B.face('front',[ox,-H,ox+L,0],PI); B.face('back',[ox,W,ox+L,W+H+hdr]);
     B.face('side1',[ox-H,0,ox,W],-PI/2); B.face('side2',[ox+L,0,ox+L+H,W],PI/2);
   } else {
     B.face('top',[ox,0,ox+L,W]); B.face('front',[ox,-H,ox+L,0]); B.face('back',[ox,W,ox+L,W+H],PI);
     B.face('side2',[ox-H,0,ox,W],PI/2); B.face('side1',[ox+L,0,ox+L+H,W],-PI/2);
   }
 }
-function buildTray(P,B){ addTray(B,'',0,P.L,P.W,P.H,P.tab,false,{p:[0,0,0],q:Q_UP},true,P.dbl); return {}; }
+function buildTray(P,B){ addTray(B,'',0,P.L,P.W,P.H,P.tab,false,{p:[0,0,0],q:Q_UP},true,P.dbl,clamp(+P.hdr||0,0,400)); return {}; }
 function buildDrawer(P,B){
   const L=P.L, W=P.W, H=P.H, g=clamp(P.gap,0,10), Ws=W+2*g, Hs=H+g, gl=12, gi=Math.min(gl*.8,L*.12);
   addTray(B,'t',0,L,W,H,P.tab,false,{p:[0,0,0],q:Q_UP},false,P.dbl);
@@ -893,6 +1019,108 @@ function buildMailer(P,B){
   B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
   return {};
 }
+/* ---------- labels, cups, cards ---------- */
+// containers a label goes on: nominal Ø of the label zone, straight part [y0,y1], total height (mm)
+const VESSELS = {
+  wine:   {n:'Wine bottle 750 ml',   D:75, zone:[8,205],  top:301, glass:'green'},
+  beer:   {n:'Beer bottle 330 ml',   D:60, zone:[5,115],  top:228, glass:'amber'},
+  jar:    {n:'Glass jar with lid',   D:80, zone:[5,80],   top:101, glass:'clear', cap:'gold'},
+  can:    {n:'Tin can',              D:73, zone:[5,105],  top:110},
+  dropper:{n:'Dropper bottle 30 ml', D:32, zone:[3,52],   top:105, glass:'amber', cap:'black'},
+  candle: {n:'Candle glass',         D:80, zone:[4,86],   top:90,  glass:'clear'},
+  pump:   {n:'Pump bottle',          D:50, zone:[6,118],  top:162, glass:'white', cap:'silver'},
+  ptube:  {n:'Paper tube with lid',  D:75, zone:[0,9999], top:0},
+  none:   {n:'Flat sticker (on liner)', D:0, zone:[0,0], top:0},
+};
+const labelL = P => P.wrap && P.vessel!=='none' && P.place!=='top' ? Math.round((PI*P.W + (+P.overlap||0))*10)/10 : +P.L;
+const ellipsePoly = (cx,cy,a,b,n=96) => Array.from({length:n}, (_,i) => { const t = i/n*2*PI; return [cx+a*Math.cos(t), cy+b*Math.sin(t)]; });
+function buildLabel(P,B){
+  const L = labelL(P), H = P.lshape==='circle' ? L : +P.H, sh = P.lshape;
+  const poly = sh==='rect' ? rect(0,0,L,H) : ellipsePoly(L/2,H/2,L/2,H/2);
+  B.add('label',null,[0,0],null,0,null,poly,{final:{p:[0,0,0],q:QI}});
+  if (P.vessel!=='none' && P.place!=='top' && L >= PI*P.W*.7){ B.face('side2',[0,0,L/4,H]); B.face('front',[L/4,0,L*.75,H]); B.face('side1',[L*.75,0,L,H]); }
+  else B.face('front',[0,0,L,H]);
+  return {lbl:{L, H, D:+P.W, vessel:P.vessel, place:P.place, y:+P.lblY||0, shape:sh, stat:P.vessel==='none'}};
+}
+function cupGeom(P){
+  const R1 = P.L/2, R0 = Math.min(P.W/2, R1-1), H = +P.H, dr = R1-R0, s = Math.hypot(H,dr), rho0 = R0*s/dr, rho1 = rho0+s;
+  const ov = P.cupKind==='sleeve' ? 12 : 8, th = 2*PI*R1/rho1;
+  return {R0, R1, H, s, rho0, rho1, ov, th, A: th + ov/rho1, kind:P.cupKind, lid:!!P.cupLid};
+}
+// a cup wall / sleeve is a flat annular sector ("fan") that rolls into a cone
+function buildCup(P,B){
+  const c = cupGeom(P), {rho0, rho1, A} = c, pt = (r,f) => [r*Math.sin(f), r*Math.cos(f)-rho0], n = 90, poly = [];
+  for (let i = 0; i <= n; i++) poly.push(pt(rho0, -A/2 + A*i/n));
+  for (let i = n; i >= 0; i--) poly.push(pt(rho1, -A/2 + A*i/n));
+  B.add('wall',null,[0,0],null,0,null,poly,{final:{p:[0,0,0],q:QI}});
+  const wedge = (key, fa, fb) => { const fc = (fa+fb)/2, rc = (rho0+rho1)/2, [cx,cy] = pt(rc,fc), w = 2*rc*Math.sin((fb-fa)/2), h = c.s, cp = [];
+    const ea = fa <= -A/2+1e-9 ? fa - BLEED/rho0 : fa, eb = fb >= A/2-1e-9 ? fb + BLEED/rho0 : fb;
+    for (let i = 0; i <= 24; i++) cp.push(pt(rho0-BLEED, ea+(eb-ea)*i/24)); for (let i = 24; i >= 0; i--) cp.push(pt(rho1+BLEED, ea+(eb-ea)*i/24));
+    B.faces.push({key, r:[cx-w/2, cy-h/2, cx+w/2, cy+h/2], rot:fc, cp}); };
+  wedge('side2', -A/2, -A/6); wedge('front', -A/6, A/6); wedge('side1', A/6, A/2);
+  return {cup:c};
+}
+function buildCard(P,B){
+  const L = +P.L, H = +P.H, f = P.fold, hd = clamp(+P.holeD||5, 2, 60), up = {p:[0,0,0], q:QI};
+  if (f==='bi'){
+    B.add('front',null,[L,0],null,0,null,rect(L,0,2*L,H),{final:{p:[0,0,0], q:qOf(['y',30*DEG])}});
+    B.add('back','front',[L,0],'y',-152*DEG,[.1,.9],rect(0,0,L,H));
+    B.face('back',[0,0,L,H]); B.face('front',[L,0,2*L,H]); return {};
+  }
+  if (f==='tri'){ const a = L-2;   // roll fold: the fold-in panel is narrower
+    B.add('front',null,[a+L,0],null,0,null,rect(a+L,0,a+2*L,H),{final:{p:[0,0,0], q:qOf(['y',30*DEG])}});
+    B.add('back','front',[a+L,0],'y',-165*DEG,[.45,.95],rect(a,0,a+L,H));
+    B.add('flap','back',[a,0],'y',-158*DEG,[.05,.5],rect(0,0,a,H));
+    B.face('flap',[0,0,a,H]); B.face('back',[a,0,a+L,H]); B.face('front',[a+L,0,a+2*L,H]); return {};
+  }
+  if (f==='z'){
+    B.add('front',null,[0,0],null,0,null,rect(0,0,L,H),{final:{p:[0,0,0], q:qOf(['y',25*DEG])}});
+    B.add('mid','front',[L,0],'y',150*DEG,[.1,.9],rect(L,0,2*L,H));
+    B.add('back','mid',[2*L,0],'y',-150*DEG,[.1,.9],rect(2*L,0,3*L,H));
+    B.face('front',[0,0,L,H]); B.face('mid',[L,0,2*L,H]); B.face('back',[2*L,0,3*L,H]); return {};
+  }
+  if (f==='tent'){ const lean = 21, tb = Math.min(20, H*.3);
+    B.add('front',null,[0,0],null,0,null,rect(0,0,L,H),{final:{p:[0,0,0], q:qOf(['x',-lean*DEG])}});
+    B.add('back','front',[0,H],'x',-(180-2*lean)*DEG,[.1,.75],rect(0,H,L,2*H));
+    B.add('tab','back',[0,2*H],'x',-(90-lean)*DEG,[.7,.98],rect(0,2*H,L,2*H+tb));
+    B.face('front',[0,0,L,H]); B.face('back',[0,H,L,2*H],PI); return {};
+  }
+  if (f==='tag'){ const c = Math.min(L*.2, 9), hy = H - c - hd/2 - 2;
+    B.add('front',null,[0,0],null,0,null,[[0,0],[L,0],[L,H-c],[L-c,H],[c,H],[0,H-c]],{holes:[circle(L/2,hy,hd/2)],
+      final:{p:[0,0,0], q:qOf(['y',-14*DEG])}, flat:{p:[0,0,H*.6], q:Q_LID}});
+    B.face('front',[0,0,L,hy-hd/2-2]); return {tag:{x:L/2, y:hy, r:hd/2}};
+  }
+  if (f==='neck'){ const R = L/2, cy = H-R, y0 = Math.max(10, cy-R-6), b = Math.min(14, y0/3);
+    // the top with the hole lies on the shoulder, the rest bends down over the bottle: several soft segments, no creases
+    const top = [[0,y0],[L,y0],[L,cy],...arc(R,cy,R,0,PI,28).slice(1,-1),[0,cy]];
+    const ring = 257, q = qOf(['x',-90*DEG]);
+    B.add('top',null,[0,0],null,0,null,top,{holes:[circle(R,cy,hd/2,48)], final:{p:[-R, ring, cy], q}, flat:{p:[-R, 1, H+70], q}});
+    B.add('s1','top',[0,y0],'x',32*DEG,[.15,.75],rect(0,y0-b,L,y0));
+    B.add('s2','s1',[0,y0-b],'x',30*DEG,[.2,.8],rect(0,y0-2*b,L,y0-b));
+    B.add('s3','s2',[0,y0-2*b],'x',24*DEG,[.25,.85],rect(0,0,L,y0-2*b));
+    const slits = Array.from({length:8}, (_,i) => { const a = i/8*2*PI + PI/8, r0 = hd/2, r1 = hd/2 + Math.min(5, R-hd/2-2);
+      return [[R+r0*Math.cos(a), cy+r0*Math.sin(a)], [R+r1*Math.cos(a), cy+r1*Math.sin(a)]]; });
+    B.face('front',[0,0,L,y0]);
+    return {neck:true, noCrease:true, slits};
+  }
+  if (f==='topper'){ const a = Math.min(12, L*.18), eh = H - 9;
+    B.add('front',null,[0,0],null,0,null,rect(0,0,L,H),{holes:[euroHole(L/2,eh,a)], final:up});
+    B.add('back','front',[0,H],'x',-178*DEG,[.1,.9],rect(0,H,L,2*H),{holes:[euroHole(L/2,2*H-eh,a)]});
+    B.face('front',[0,0,L,H]); B.face('back',[0,H,L,2*H],PI); return {topper:{L,H}};
+  }
+  if (f==='env'){ const d = Math.min(L*.2, 32), bd = H*.62, td = H*.48;
+    B.add('front',null,[0,0],null,0,null,rect(0,0,L,H),{final:{p:[0,0,0], q:qOf(['x',6*DEG],['y',PI])}});
+    B.add('sl','front',[0,0],'y',-171*DEG,[0,.3],[[0,0],[0,H],[-d,H*.74],[-d,H*.2]]);
+    B.add('sr','front',[L,0],'y',171*DEG,[.05,.35],[[L,0],[L+d,H*.2],[L+d,H*.74],[L,H]]);
+    B.add('bf','front',[0,0],'x',174*DEG,[.35,.65],[[0,0],[L*.16,-bd*.9],[L*.3,-bd],[L*.7,-bd],[L*.84,-bd*.9],[L,0]]);
+    const tp = [[0,H]]; for (let i = 1; i < 24; i++){ const u = i/24, x = L*u, k = 1-Math.pow(Math.abs(2*u-1),1.6); tp.push([x, H + td*k]); } tp.push([L,H]);
+    B.add('tf','front',[0,H],'x',-148*DEG,[.65,.95],tp);
+    B.face('front',[0,0,L,H]); B.face('top',[L*.2,H,L*.8,H+td*.8],PI); return {};
+  }
+  // single flat card / insert
+  B.add('front',null,[0,0],null,0,null,rect(0,0,L,H),{final:{p:[0,0,0], q:qOf(['x',-12*DEG])}});
+  B.face('front',[0,0,L,H]); return {stat:true};
+}
 const inPoly = (x, y, p) => { let c = false; for (let i = 0, j = p.length-1; i < p.length; j = i++){ const [xi,yi] = p[i], [xj,yj] = p[j];
   if ((yi>y) !== (yj>y) && x < (xj-xi)*(y-yi)/(yj-yi)+xi) c = !c; } return c; };
 const circle = (cx, cy, r, n=28) => Array.from({length:n}, (_,i) => [cx+r*Math.cos(-i/n*2*PI), cy+r*Math.sin(-i/n*2*PI)]);
@@ -927,12 +1155,14 @@ function constructionExtras(P, B){
       for (const dy of [-gap/2, gap/2]) perfs.push([[x0, y+dy],[x1, y+dy]]); } }
   return perfs;
 }
-const MATS = { carton03:['Paperboard 0.3 mm',.3], carton05:['Paperboard 0.5 mm',.5], kraft:['Kraft board 0.45 mm',.45],
-  micro_e:['E-flute 1.5 mm',1.5], corr_b:['B-flute 3 mm',3], custom:['Custom thickness',null] };
+const MATS = { carton03:['Paperboard 0.3 mm (~250 gsm)',.3], carton05:['Paperboard 0.5 mm (~350 gsm)',.5], kraft:['Kraft board 0.45 mm',.45],
+  micro_e:['E-flute corrugated 1.5 mm',1.5], corr_b:['B-flute corrugated 3 mm',3],
+  paper80:['Label paper, semi-gloss',.08], vinyl:['White vinyl, waterproof',.08], kraftp:['Kraft label paper',.1],
+  card350:['Card 350 gsm (0.4 mm)',.4], cupb:['Cup stock 280 gsm + PE',.42], custom:['Custom thickness…',null] };
 const thickOf = P => P.mat==='custom' ? clamp(+P.thick||0,0,8) : (MATS[P.mat]?.[1] ?? 0);
 // entered size -> crease-to-crease size of the dieline, so the box comes out right with real board thickness
 function prodDims(P){
-  if (P.type==='pouch' || P.dimMode==='mfg') return {};
+  if (!BOX.has(P.type) || P.dimMode==='mfg') return {};
   const t = thickOf(P), tray = P.type!=='tube'; let {L,W,H} = P;
   if (P.dimMode==='outer'){ L -= 2*t; W -= 2*t; H -= tray ? t : 2*t; }
   return tray ? {L:L+2*t, W:W+2*t, H:H+t} : {L:L+t, W:W+t, H:H+2*t};
@@ -941,8 +1171,8 @@ function build(P){
   P = {...P}; for (const k of NUM) P[k] = +P[k];
   const Pin = {...P}; Object.assign(P, prodDims(P));
   const B = maker();
-  const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, drawer:buildDrawer, pouch:buildPouch}[P.type] || buildTube)(P,B) || {};
-  const perfs = P.type==='pouch' ? [] : constructionExtras(P, B);
+  const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, drawer:buildDrawer, pouch:buildPouch, label:buildLabel, cup:buildCup, card:buildCard}[P.type] || buildTube)(P,B) || {};
+  const perfs = BOX.has(P.type) ? constructionExtras(P, B) : ['label','card'].includes(P.type) ? constructionExtras({cornerR:P.cornerR}, B) : [];
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   for (const n of B.N) for (const [x,y] of n.poly){ minX=Math.min(minX,x); minY=Math.min(minY,y); maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); }
   minX-=BLEED; minY-=BLEED; maxX+=BLEED; maxY+=BLEED;
@@ -952,7 +1182,8 @@ function build(P){
     const key = ka<kb ? ka+'|'+kb : kb+'|'+ka; const e=m.get(key); if (e) e.c++; else m.set(key,{a,b,c:1}); } };
   for (const n of B.N){ addLoop(n.poly); n.holes.forEach(addLoop); }
   const cuts=[], creases=[];
-  for (const e of m.values()) (e.c>1 ? creases : cuts).push([e.a,e.b]);
+  for (const e of m.values()){ if (e.c<2) cuts.push([e.a,e.b]); else if (!extra.noCrease) creases.push([e.a,e.b]); }
+  if (extra.slits) cuts.push(...extra.slits);
   // artwork extends 3 mm past cut edges, but stops exactly at creases (so it doesn't spill onto the neighbouring panel)
   const ov = (a0,a1,b0,b1) => Math.min(Math.max(a0,a1),Math.max(b0,b1)) - Math.max(Math.min(a0,a1),Math.min(b0,b1));
   const onCrease = (x0,y0,x1,y1) => creases.some(([a,b]) => x0===x1
@@ -976,7 +1207,9 @@ function placeholder(ctx, key, w, h, s){
   const big = (y, scale) => { if (!t) return 0; const fs = fitFont(ctx,t,700,Math.min(w*.16,h*.3)*scale,w*.8); ctx.fillText(t,0,y);
     if (sub){ fitFont(ctx,sub,400,fs*.42,w*.8); ctx.fillText(sub,0,y+fs*.95); } return fs; };
   if (key==='front'){
-    const p = Math.min(4*s, w*.06, h*.06); ctx.lineWidth = .35*s; ctx.strokeRect(-w/2+p,-h/2+p,w-2*p,h-2*p); big(-h*.06,1);
+    const p = Math.min(4*s, w*.06, h*.06); ctx.lineWidth = .35*s;
+    if (!(S.type==='cup' || (S.type==='label' && S.lshape!=='rect'))) ctx.strokeRect(-w/2+p,-h/2+p,w-2*p,h-2*p);
+    big(-h*.06, S.type==='label' && S.lshape!=='rect' ? .8 : 1);
   } else if (key==='top' && S.type!=='tube'){
     big(-h*.06,1.1);
   } else if (key==='back'){
@@ -989,7 +1222,7 @@ function placeholder(ctx, key, w, h, s){
     while (cx < bx+bw*.92){ r = Math.imul(r ^ (r>>>15), 2246822507)>>>0; const wd=(1+(r%3))*u; if ((r>>3)&1) ctx.fillRect(cx,by+bh*.1,wd,bh*.8); cx += wd + u*(1+((r>>5)%2)); }
   } else if (key==='side1' || key==='side2'){
     if (!t) return;
-    if (h > w){ ctx.rotate(-PI/2); fitFont(ctx,t,600,Math.min(w*.3,h*.1),h*.8); }
+    if (h > w && S.type!=='cup'){ ctx.rotate(-PI/2); fitFont(ctx,t,600,Math.min(w*.3,h*.1),h*.8); }
     else fitFont(ctx,t,600,Math.min(h*.3,w*.1),w*.8);
     ctx.fillText(t,0,0);
   } else if (key==='top'){
@@ -1108,7 +1341,10 @@ function drawElFx(ctx, el, s){
 function clipFace(ctx, G, f, s, side){
   const [a,b,c,d] = f.clip || f.r, {minX,maxX,maxY} = G.b;
   lastClip = [side==='in' ? (maxX-c)*s : (a-minX)*s, (maxY-d)*s, (c-a)*s, (d-b)*s];
-  ctx.beginPath(); ctx.rect(side==='in' ? (maxX-c)*s : (a-minX)*s, (maxY-d)*s, (c-a)*s, (d-b)*s); ctx.clip();
+  ctx.beginPath();
+  if (f.cp){ f.cp.forEach(([x,y],i) => ctx[i?'lineTo':'moveTo'](side==='in' ? (maxX-x)*s : (x-minX)*s, (maxY-y)*s)); ctx.closePath(); }
+  else ctx.rect(side==='in' ? (maxX-c)*s : (a-minX)*s, (maxY-d)*s, (c-a)*s, (d-b)*s);
+  ctx.clip();
 }
 // o.oy/o.hpx: render one horizontal strip; o.text:'skip' leaves text out; o.rec:[] records text runs instead of drawing them
 function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
@@ -1169,11 +1405,11 @@ function svgDoc(G, artHref, mirror, guides, vtext=''){
   let g = '';
   if (guides){
     const fs = Math.max(w,h)/48, seen = new Set();
-    g += L('Safe zone','fill="none" stroke="#22a04b" stroke-width="0.2" stroke-dasharray="1.5 1"', G.faces.map(f=>{ const [x0,y0,x1,y1]=f.r;
+    g += L('Safe zone','fill="none" stroke="#22a04b" stroke-width="0.2" stroke-dasharray="1.5 1"', G.faces.map(f=>{ const [x0,y0,x1,y1]=f.r; if (f.cp) return '';
       if (x1-x0<=2*SAFE || y1-y0<=2*SAFE) return ''; const xa=Math.min(X(x0),X(x1));
       return `<rect x="${f2(xa+SAFE)}" y="${f2(Y(y1)+SAFE)}" width="${f2(x1-x0-2*SAFE)}" height="${f2(y1-y0-2*SAFE)}"/>`; }).join(''));
     g += L('Dimensions',`font-size="${f2(fs)}" font-family="IBM Plex Mono, monospace" fill="#2f6fdb" text-anchor="middle"`, G.faces.map(f=>{ const [x0,y0,x1,y1]=f.r, k=x0+','+y0;
-      if (seen.has(k)) return ''; seen.add(k);
+      if (seen.has(k) || f.cp) return ''; seen.add(k);
       return `<text x="${f2((X(x0)+X(x1))/2)}" y="${f2(Y(y0)-fs*.7)}" paint-order="stroke" stroke="#ffffff" stroke-width="${f2(fs*.25)}">${+(x1-x0).toFixed(1)} × ${+(y1-y0).toFixed(1)}</text>`; }).join(''));
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(w)}mm" height="${f2(h)}mm" viewBox="0 0 ${f2(w)} ${f2(h)}">
@@ -1187,10 +1423,26 @@ ${L('CUT','fill="none" stroke="#ec008c" stroke-width="0.25"', lines(G.cuts))}
 ${G.perfs?.length ? L('PERF','fill="none" stroke="#ff8a00" stroke-width="0.45" stroke-dasharray="2 1.2"', lines(G.perfs)) : ''}
 </svg>`;
 }
+// silhouettes of the containers for template thumbnails (radius, height in mm at the nominal size)
+const VSIL = { wine:[[37.5,0],[37.5,205],[34,224],[28,236],[21,247],[16,256],[14.6,262],[14.6,288],[16,290],[16,301]],
+  beer:[[30,0],[30,115],[25,140],[18,155],[13.6,168],[12.8,176],[12.8,214],[14.3,221],[14.3,228]], jar:[[40,0],[40,80],[36.5,87],[41,87],[41,101]],
+  can:[[37.5,0],[37.5,110]], dropper:[[16,0],[16,52],[12.4,59.5],[9.2,63],[10.6,63],[10.6,77],[9.8,79],[7.4,89],[8.4,98],[5,104]],
+  candle:[[40,0],[40,90]], pump:[[25,0],[25,118],[21,128],[13.8,134],[13.8,143],[3.4,143],[3.4,151],[9.4,152],[9.4,162]] };
 function thumbSvg(G){
-  const {minX,maxY,w,h} = G.b, X = x=>f2(x-minX), Y = y=>f2(maxY-y), sw = f2(Math.max(w,h)/90);
+  const {minX,maxY,w,h} = G.b, X = x=>f2(x-minX), Y = y=>f2(maxY-y);
   const lines = l => l.map(([a,b])=>`M${X(a[0])} ${Y(a[1])}L${X(b[0])} ${Y(b[1])}`).join('');
-  return `<svg viewBox="0 0 ${f2(w)} ${f2(h)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${lines(G.creases)}" fill="none" stroke="var(--crease)" stroke-width="${sw}" stroke-dasharray="${sw*3} ${sw*2}"/><path d="${lines(G.cuts)}" fill="none" stroke="var(--fg)" stroke-width="${sw}"/></svg>`;
+  const Lb = G.lbl, V = Lb && VESSELS[Lb.vessel];
+  let prof = Lb && (Lb.vessel==='ptube' ? [[Lb.D/2,0],[Lb.D/2,Lb.H]] : VSIL[Lb.vessel]?.map(([r,y]) => [r*Lb.D/V.D, y*Lb.D/V.D]));
+  if (!prof){ const sw = f2(Math.max(w,h)/90);
+    return `<svg viewBox="0 0 ${f2(w)} ${f2(h)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${lines(G.creases)}" fill="none" stroke="var(--crease)" stroke-width="${sw}" stroke-dasharray="${sw*3} ${sw*2}"/><path d="${lines(G.cuts)}" fill="none" stroke="var(--fg)" stroke-width="${sw}"/></svg>`; }
+  // flat label on the left, the container with the label on it on the right
+  const vh = prof.at(-1)[1], vr = Math.max(...prof.map(p=>p[0])), gap = Math.max(w,vh)*.12, TW = w + gap + 2*vr, TH = Math.max(h, vh), sw = f2(Math.max(TW,TH)/110);
+  const cx = w + gap + vr, oy = TH - vh, vy = y => f2(oy + vh - y), oy2 = (TH-h)/2;
+  const sil = 'M' + prof.map(([r,y]) => `${f2(cx+r)} ${vy(y)}`).join('L') + 'L' + [...prof].reverse().map(([r,y]) => `${f2(cx-r)} ${vy(y)}`).join('L') + 'Z';
+  const R = Lb.D/2, hw = Lb.place==='top' ? Lb.L/2 : Lb.L >= PI*R ? R : R*Math.sin(Lb.L/(2*R)), lb = Lb.place==='top'
+    ? `<ellipse cx="${f2(cx)}" cy="${vy(vh)}" rx="${f2(hw)}" ry="${f2(hw*.28)}"/>`
+    : Lb.shape==='rect' ? `<rect x="${f2(cx-hw)}" y="${vy(Lb.y+Lb.H)}" width="${f2(2*hw)}" height="${f2(Lb.H)}"/>` : `<ellipse cx="${f2(cx)}" cy="${vy(Lb.y+Lb.H/2)}" rx="${f2(hw)}" ry="${f2(Lb.H/2)}"/>`;
+  return `<svg viewBox="0 0 ${f2(TW)} ${f2(TH)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${sil}" fill="color-mix(in srgb,var(--muted) 18%,transparent)" stroke="var(--muted)" stroke-width="${sw}" stroke-linejoin="round"/><g fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="${sw}">${lb}</g><g transform="translate(0 ${f2(oy2)})"><path d="${lines(G.cuts)}" fill="none" stroke="var(--fg)" stroke-width="${sw}"/></g></svg>`;
 }
 function exportCanvas(G, side='out', o={}){ return drawArt(document.createElement('canvas'), G, Math.min(300/25.4, 8000/Math.max(G.b.w,G.b.h)), false, side, null, null, o); }
 
@@ -1210,7 +1462,7 @@ async function saveFile(name, blob){
   toast('Downloading: '+name);
 }
 let tt; function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('on'),2600); }
-const fname = ext => `box-${S.type}-${S.L}x${S.W}x${S.H}${ext}`;
+const fname = ext => `${S.type==='tube' ? 'box' : S.type}-${S.L}x${S.W}x${S.H}${ext}`;
 
 /* ---------- 3D ---------- */
 const host = $('view3d');
@@ -1274,34 +1526,227 @@ function pouchMeshes(G){
     surf(20,12,(u,v)=>[(u-.5)*W, 0, (v-.5)*D], bo),
   ];
 }
+/* ---------- 3D: containers, labels, cups, card extras, board edges ---------- */
+let customPose = null, vMats = [], bgTint = [];
+const lblMat = new THREE.MeshPhysicalMaterial({roughness:.6, metalness:0, alphaTest:.5, side:THREE.FrontSide});
+const lblBack = new THREE.MeshStandardMaterial({color:0xf3f1ec, roughness:.9, alphaTest:.5, side:THREE.BackSide});
+const GLASS = {clear:{n:'Clear glass', c:0xffffff, o:.16, r:.02}, frosted:{n:'Frosted glass', c:0xf2f5f4, o:.55, r:.45}, green:{n:'Green glass', c:0x1b3323, r:.05},
+  amber:{n:'Amber glass', c:0x4d2207, r:.05}, cobalt:{n:'Cobalt glass', c:0x142d6b, r:.05}, white:{n:'White plastic', c:0xf4f2ee, r:.3, cc:.4}, black:{n:'Black matte', c:0x18181a, r:.55, cc:.1}};
+const CAPS = {gold:{n:'Gold metal', c:0xcaa54b, m:1, r:.28}, silver:{n:'Silver metal', c:0xd6d9dc, m:1, r:.22}, black:{n:'Black', c:0x1b1b1d, m:0, r:.35},
+  white:{n:'White', c:0xf3f3f1, m:0, r:.4}, wood:{n:'Wood', c:0x9a6a40, m:0, r:.75}, copper:{n:'Copper', c:0xb87348, m:1, r:.3}};
+const FILLS = {jam:{n:'Berry jam', c:0x5e0c1c, r:.25}, honey:{n:'Honey', c:0xc7810f, r:.15}, cream:{n:'Cream / wax', c:0xefe6d2, r:.85}, coffee:{n:'Coffee beans', c:0x3a2315, r:.6},
+  greens:{n:'Pickles', c:0x5c6b25, r:.4}, none:{n:'Empty', c:0}};
+const vm = (Ctor, o) => { const m = new Ctor(o); vMats.push(m); return m; };
+function glassMat(key){
+  const g = GLASS[key] || GLASS.clear, m = vm(THREE.MeshPhysicalMaterial, {color:g.c, roughness:g.r, metalness:0, clearcoat:g.cc ?? 1, clearcoatRoughness:.05, side:THREE.DoubleSide, envMapIntensity:1.6});
+  if (g.o){ m.transparent = true; m.opacity = g.o; m.depthWrite = false; m.userData.glass = true; } return m;
+}
+const capMat = key => { const c = CAPS[key] || CAPS.gold; return vm(THREE.MeshStandardMaterial, {color:c.c, metalness:c.m, roughness:c.r, envMapIntensity:1.3}); };
+const plainMat = (c, r=.6, m=0) => vm(THREE.MeshStandardMaterial, {color:c, roughness:r, metalness:m});
+function mesh(g, mat, grp, y=0){ const m = new THREE.Mesh(g, mat); m.position.y = y; m.castShadow = !mat.userData?.glass; m.receiveShadow = true; grp.add(m); return m; }
+const lathe = (pts, k, seg=96) => new THREE.LatheGeometry(pts.map(([r,y]) => new THREE.Vector2(Math.max(0,r*k), y*k)), seg);
+// cylinder with knurled (ribbed) side — bottle caps, jar lids
+function knurl(r, h, n, depth=.025){
+  const g = new THREE.CylinderGeometry(r, r, h, Math.max(120, n*6), 3), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++){ const x = p.getX(i), z = p.getZ(i), rr = Math.hypot(x,z);
+    if (rr > r*.97 && Math.abs(p.getY(i)) < h/2 - .01){ const f = 1 - depth*(.5+.5*Math.cos(Math.atan2(z,x)*n)); p.setX(i,x*f); p.setZ(i,z*f); } }
+  g.computeVertexNormals(); return g;
+}
+// container under the label; returns the radius the label wraps at and the height of its top
+function vesselMeshes(kind, D, H, grp){
+  const V = VESSELS[kind]; if (!V || kind==='none') return {R:0, top:0};
+  const k = kind==='ptube' ? 1 : D / V.D, gl = glassMat(S.vglass!=='auto' ? S.vglass : (V.glass || 'clear')), cap = capMat(S.vcap!=='auto' ? S.vcap : (V.cap || 'gold'));
+  const fillKey = S.vfill!=='auto' ? S.vfill : (kind==='candle' ? 'cream' : 'jam'), F = FILLS[fillKey];
+  if (kind==='wine'){
+    mesh(lathe([[0,12],[13,8.5],[29,2],[35.8,.4],[37.5,4],[37.5,205],[36.8,214],[34,224],[28,236],[21,247],[16,256],[14.6,262],[14.6,288],[15.6,290],[15.6,296],[14,299.6],[10,300],[9.6,297]], k), gl, grp);
+    mesh(lathe([[16.3,257],[15.25,262],[15.25,288],[16.15,290],[16.15,299],[15.8,301],[0,301.4]], k), vm(THREE.MeshStandardMaterial, {color:0x4a0e1d, metalness:.55, roughness:.32}), grp);
+    mesh(new THREE.TorusGeometry(16.2*k, .35*k, 8, 96), plainMat(0xcaa54b,.3,1), grp, 286*k).rotation.x = PI/2;
+  } else if (kind==='beer'){
+    mesh(lathe([[0,6],[20,3.2],[28.6,.5],[30,3.5],[30,115],[29,125],[25,140],[18,155],[13.6,168],[12.8,176],[12.8,214],[13.7,216.5],[13.7,221],[12.4,222.5],[9,222.5]], k), gl, grp);
+    const c = mesh(knurl(14.3*k, 6.5*k, 21, .045), cap, grp, 224.5*k);
+    mesh(new THREE.CylinderGeometry(13.2*k, 14.2*k, 1.2*k, 64), cap, grp, 228.2*k); c.castShadow = true;
+  } else if (kind==='jar'){
+    mesh(lathe([[0,.2],[35,0],[39.2,1.4],[40,5],[40,80],[39.2,84],[36.5,87],[36.5,96]], k), gl, grp);
+    if (fillKey!=='none' && !(GLASS[S.vglass]?.o === undefined && S.vglass!=='auto')) mesh(new THREE.CylinderGeometry(38.2*k, 38.2*k, 76*k, 72), plainMat(F.c, F.r), grp, 40*k);
+    mesh(knurl(41*k, 14*k, 90, .012), cap, grp, 94*k);
+    mesh(new THREE.TorusGeometry(40.4*k, .9*k, 10, 96), cap, grp, 100.4*k).rotation.x = PI/2;
+    mesh(new THREE.CylinderGeometry(37*k, 37*k, .6*k, 72), cap, grp, 100.9*k);
+  } else if (kind==='can'){
+    const tin = vm(THREE.MeshStandardMaterial, {color:0xcdd1d4, metalness:1, roughness:.26, envMapIntensity:1.4});
+    mesh(lathe([[0,2.6],[31,2.8],[34.5,1.6],[36.8,.2],[37.5,1.6],[37.5,3.6],[36.5,4.6],[36.5,105.4],[37.5,106.4],[37.5,108.4],[36.8,109.8],[34.5,108.4],[31,107.2],[0,107.4]], k), tin, grp);
+    for (const r of [8,16,24]) mesh(new THREE.TorusGeometry(r*k, .55*k, 8, 72), tin, grp, 107.3*k).rotation.x = PI/2;
+    for (let y = 9; y < 102; y += 7) if (y < S.lblY || y > S.lblY + S.H) mesh(new THREE.TorusGeometry(36.5*k, .45*k, 8, 96), tin, grp, y*k).rotation.x = PI/2;
+  } else if (kind==='dropper'){
+    mesh(lathe([[0,2.2],[13,.3],[15.6,1.2],[16,3],[16,52],[15.3,56],[12.4,59.5],[9.6,61.6],[9.2,64],[9.2,66.5]], k), gl, grp);
+    mesh(knurl(10.6*k, 14*k, 36, .03), cap, grp, 70*k);
+    mesh(lathe([[9.7,76.8],[9.9,79],[8.8,83],[7.4,89],[7.9,94],[8.4,98],[7.5,102],[4.8,104.4],[0,105]], k), vm(THREE.MeshPhysicalMaterial, {color:0x1c1c1e, roughness:.45, clearcoat:.4}), grp);
+  } else if (kind==='candle'){
+    mesh(lathe([[0,.1],[35,0],[39,1.2],[40,4],[40,88.5],[39.3,90],[38.2,89.5],[38,6.5],[0,7]], k), gl, grp);
+    if (fillKey!=='none') mesh(new THREE.CylinderGeometry(37.9*k, 37.9*k, 62*k, 72), plainMat(F.c||0xefe6d2, .85), grp, 38*k);
+    mesh(new THREE.CylinderGeometry(.7*k, .9*k, 9*k, 10), plainMat(0x1d1a17,.9), grp, 73.5*k);
+  } else if (kind==='pump'){
+    mesh(lathe([[0,1],[21,0],[24.4,1.4],[25,5],[25,118],[24.2,123.5],[21,128],[15,131.5],[12.6,132.6],[12.6,136]], k), gl, grp);
+    mesh(knurl(13.8*k, 9*k, 48, .02), cap, grp, 138.5*k);
+    mesh(new THREE.CylinderGeometry(3.4*k, 3.4*k, 9*k, 24), cap, grp, 147*k);
+    mesh(lathe([[0,150.5],[8.6,150.5],[9.4,152],[9.4,159.5],[8.2,161.6],[0,162]], k), cap, grp);
+    const nz = mesh(new THREE.BoxGeometry(17*k, 4.2*k, 5.2*k), cap, grp, 158.4*k); nz.position.x = 13*k;
+  } else if (kind==='ptube'){
+    const r = D/2 - .15, t = bgMat();
+    mesh(new THREE.CylinderGeometry(r, r, H, 96, 1, true), plainMat(0x9c7a52,.9), grp, H/2);
+    mesh(new THREE.CylinderGeometry(r+.35, r+.35, 1.6, 96), t, grp, H-.8);
+    mesh(new THREE.CylinderGeometry(r+.2, r+.2, 1.2, 96), t, grp, .6);
+    mesh(new THREE.TorusGeometry(r+.45, .45, 8, 120), plainMat(0x111111,.8), grp, H*.74).rotation.x = PI/2;
+    mesh(new THREE.TorusGeometry(r+.35, .9, 10, 120), t, grp, H-.3).rotation.x = PI/2;
+    return {R: r+.3, top: H+.6};
+  }
+  return {R: D/2 + .3, top: V.top*k};
+}
+function bgMat(){ const m = vm(THREE.MeshStandardMaterial, {color:S.bg, roughness:.7}); bgTint.push(m); return m; }
+function gridGeo(nu, nv, uvOf){
+  const g = new THREE.BufferGeometry(), pos = new Float32Array((nu+1)*(nv+1)*3), uv = [], idx = [];
+  for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) uv.push(...uvOf(i/nu, j/nv));
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++){ const a = j*(nu+1)+i, b = a+1, c = a+nu+1, d = c+1; idx.push(a,b,d,a,d,c); }
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx); return g;
+}
+const sheetUV = (x,y) => [(x-G.b.minX)/G.b.w, (y-G.b.minY)/G.b.h];
+function maskTexture(){
+  const {minX,maxY,w,h} = G.b, ms = Math.min(4, 2048/Math.max(w,h)), c = document.createElement('canvas'); c.width = Math.ceil(w*ms); c.height = Math.ceil(h*ms);
+  const x = c.getContext('2d'), path = p => p.forEach(([px,py],i) => x[i?'lineTo':'moveTo']((px-minX)*ms, (maxY-py)*ms));
+  x.fillStyle = '#000'; x.fillRect(0,0,c.width,c.height); x.fillStyle = '#fff';
+  for (const n of G.N){ x.beginPath(); path(n.poly); x.closePath(); for (const hl of n.holes){ path(hl); x.closePath(); } x.fill('evenodd'); }
+  const t = new THREE.CanvasTexture(c); vMats.push(t); return t;
+}
+function label3D(){
+  const Lb = G.lbl, grp = new THREE.Group(); wrapper.add(grp);
+  const V = vesselMeshes(Lb.vessel, Lb.D, Lb.H, grp), mask = maskTexture();
+  lblMat.alphaMap = lblBack.alphaMap = mask; lblMat.needsUpdate = lblBack.needsUpdate = true;
+  const nu = 180, nv = 40, top = Lb.place==='top' && Lb.vessel!=='none';
+  const geo = gridGeo(nu, nv, (u,v) => sheetUV(u*Lb.L, v*Lb.H)), pos = geo.attributes.position;
+  const a = mesh(geo, lblMat, grp), b = mesh(geo, lblBack, grp); a.castShadow = b.castShadow = true;
+  if (Lb.vessel==='none'){   // sticker on its backing liner, standing on a little easel angle
+    const lean = new THREE.Group(); lean.rotation.x = -12*DEG; grp.add(lean); lean.add(a, b);
+    const sh = new THREE.Shape(roundRect(Lb.L/2, Lb.H/2, Lb.L+12, Lb.H+12, 3).map(([x,y]) => new THREE.Vector2(x-Lb.L/2, y)));
+    const liner = mesh(new THREE.ExtrudeGeometry(sh, {depth:.25, bevelEnabled:false, curveSegments:6}), vm(THREE.MeshPhysicalMaterial, {color:0xd9dde2, roughness:.3, clearcoat:.6}), lean); liner.position.z = -.3;
+  }
+  customPose = t => {
+    const R = V.R;
+    for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++){
+      const x = i/nu*Lb.L, y = j/nv*Lb.H, s = x - Lb.L/2, n = j*(nu+1)+i; let px, py, pz;
+      if (Lb.vessel==='none'){ px = s; py = y; pz = 0; }
+      else if (top){ px = s; pz = -(y - Lb.H/2); py = V.top + .25 + (1-t)*(1-t)*70; }
+      else { const Rv = R + (s > PI*R - 3 ? .35 : 0);
+        if (t < 1e-3){ px = s; pz = Rv; } else { const Rt = Rv/t, an = s/Rt; px = Rt*Math.sin(an); pz = Rv - Rt*(1-Math.cos(an)); }
+        pz += (1-t)*(1-t)*(R*1.4 + 30); py = Lb.y + y; }
+      pos.setXYZ(n, px, py, pz); }
+    pos.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
+  };
+}
+function cup3D(){
+  const c = G.cup, grp = new THREE.Group(), sleeve = c.kind==='sleeve'; wrapper.add(grp);
+  const nu = 160, nv = 30, pt = (r,f) => [r*Math.sin(f), r*Math.cos(f)-c.rho0];
+  const geo = gridGeo(nu, nv, (u,v) => sheetUV(...pt(c.rho0 + v*c.s, -c.A/2 + u*c.A))), pos = geo.attributes.position;
+  const a = mesh(geo, outMat, grp), b = mesh(geo, inMat, grp);
+  const eb = sleeve ? c.H*.55 : 0, ea = sleeve ? c.H*.5 : 0, rAt = y => c.R0 + (c.R1-c.R0)*y/c.H;
+  const extras = new THREE.Group(); grp.add(extras);
+  const paper = plainMat(0xf7f5f0, .65), plastic = vm(THREE.MeshPhysicalMaterial, {color:0xf6f6f4, roughness:.35, clearcoat:.5, side:THREE.DoubleSide});
+  let topY = c.H, topR = c.R1;
+  if (sleeve){   // the plain cup the sleeve sits on
+    const yb = -eb, yt = c.H + ea; topY = yt; topR = rAt(yt);
+    const body = mesh(new THREE.LatheGeometry([[rAt(yb)-1.2, yb], [rAt(yb), yb+.8], [rAt(yt), yt]].map(([r,y]) => new THREE.Vector2(r,y)), 96), vm(THREE.MeshStandardMaterial, {color:0xf7f5f0, roughness:.6, side:THREE.DoubleSide}), grp);
+    mesh(new THREE.CylinderGeometry(rAt(yb+7), rAt(yb+7), .6, 72), paper, grp, yb+7);
+    mesh(new THREE.TorusGeometry(topR+.4, 1.6, 10, 120), paper, grp, topY).rotation.x = PI/2;
+    grp.position.y = eb; body.castShadow = true;
+  } else {
+    mesh(new THREE.CylinderGeometry(rAt(7), rAt(7), .6, 72), paper, extras, 7);
+    mesh(new THREE.TorusGeometry(c.R1+.5, 1.7, 10, 120), bgMat(), extras, c.H).rotation.x = PI/2;
+  }
+  if (c.lid) mesh(new THREE.LatheGeometry([[topR-1.5,topY-2],[topR+2.3,topY-1.4],[topR+2.6,topY+3.2],[topR+1.4,topY+5.2],[topR*.87,topY+6.2],[topR*.85,topY+11],[topR*.62,topY+13.2],[topR*.3,topY+13.6],[0,topY+13.4]].map(([r,y]) => new THREE.Vector2(r,y)), 96), plastic, sleeve ? grp : extras);
+  const sinF = c.R1 / c.rho1, off = sleeve ? .9 : 0, ovFrom = c.A/2 - (c.A - c.th);
+  customPose = t => {
+    const sa = 1 + (sinF - 1)*t, ca = Math.sqrt(Math.max(0, 1 - sa*sa));
+    const dz = sleeve ? (1-t)*(c.R1 + 25 - c.rho0) : -(1-t)*(c.rho0 + c.s/2);
+    for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++){
+      const rho = c.rho0 + j/nv*c.s, f = -c.A/2 + i/nu*c.A, psi = f/sa, r = rho*sa + (off + (f > ovFrom ? .3 : 0))*t;
+      pos.setXYZ(j*(nu+1)+i, r*Math.sin(psi), (rho - c.rho0)*ca - (sleeve ? (1-t)*eb : 0), r*Math.cos(psi) + dz); }
+    pos.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
+    extras.visible = t > .985;
+  };
+}
+// card extras: string through a hang tag, a bag under a header card, a bottle for a neck hanger
+function cardExtras(by){
+  if (G.tag){ const {x, y, r} = G.tag, top = G.P.H, g = by.front;
+    const pts = [[x, y-r+.8, 1.4], [x+.6, y+r+5, 2.4], [x+1.2, top+26, .8], [x, top+34, 0], [x-1.2, top+26, -.8], [x-.6, y+r+5, -2.4], [x, y-r+.8, -1.4]].map(p => new THREE.Vector3(...p));
+    mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 160, .55, 8, true), plainMat(0xb3925f, .95), g);
+  }
+  if (G.topper){ const {L, H} = G.topper, g = by.front, bw = L - 10, bh = H*1.9, y1 = H*.62, y0 = y1 - bh;
+    const bag = vm(THREE.MeshPhysicalMaterial, {color:0xffffff, roughness:.12, transparent:true, opacity:.28, clearcoat:1, side:THREE.DoubleSide, depthWrite:false}); bag.userData.glass = true;
+    const bul = (u,v) => 9*Math.sin(PI*u)*Math.pow(Math.sin(PI*Math.min(1,(1-v)*1.15)),.7)*(1-Math.pow(v,3));
+    for (const sgn of [1,-1]){ const geo = gridGeo(24, 24, () => [0,0]), p = geo.attributes.position;
+      for (let j = 0; j <= 24; j++) for (let i = 0; i <= 24; i++){ const u = i/24, v = j/24; p.setXYZ(j*25+i, 5 + u*bw, y0 + v*bh, -1 + sgn*bul(u,v)); }
+      geo.computeVertexNormals(); mesh(geo, bag, g); }
+    const cols = [S.bg, S.bg2, S.ink, '#e8b04b', '#d9534f'];
+    for (let i = 0; i < 26; i++){ const r = 5 + (i*7919 % 30)/10, u = .12 + ((i*37) % 76)/100, v = .06 + ((i*53) % 34)/100;
+      const m = mesh(new THREE.SphereGeometry(r, 18, 12), plainMat(cols[i%cols.length], .35), g); m.position.set(5 + u*bw, y0 + v*bh, -1 + (i%3-1)*3); }
+  }
+  if (G.neck) vesselMeshes('wine', 75, 0, wrapper);
+}
+// board thickness: side walls along every cut edge, flute pattern on corrugated
+let fluteTex = null;
+function edgeMaterial(){
+  const t = thickOf(S), corr = t >= 1.2, kraft = S.mat==='kraft' || S.inside==='kraft';
+  if (corr && !fluteTex){ const c = document.createElement('canvas'); c.width = 64; c.height = 32; const x = c.getContext('2d');
+    x.fillStyle = '#c6a377'; x.fillRect(0,0,64,32); x.strokeStyle = '#8f6c45'; x.lineWidth = 3; x.beginPath();
+    for (let i = 0; i <= 64; i++) x.lineTo(i, 16 + 11*Math.sin(i/64*2*PI)); x.stroke(); x.fillStyle = '#a9875c'; x.fillRect(0,0,64,3); x.fillRect(0,29,64,3);
+    fluteTex = new THREE.CanvasTexture(c); fluteTex.wrapS = THREE.RepeatWrapping; fluteTex.colorSpace = THREE.SRGBColorSpace; }
+  return vm(THREE.MeshStandardMaterial, corr ? {map:fluteTex, roughness:.95, side:THREE.DoubleSide} : {color: kraft ? 0xb08a5e : 0xe9e4d8, roughness:.95, side:THREE.DoubleSide});
+}
+function edgeGeo(n, cutSet, t, corr){
+  const pos = [], uv = [], [ox,oy] = n.origin, k = p => p[0].toFixed(2)+','+p[1].toFixed(2);
+  for (const loop of [n.poly, ...n.holes]) for (let i = 0; i < loop.length; i++){ const a = loop[i], b = loop[(i+1)%loop.length], ka = k(a), kb = k(b);
+    if (ka===kb || !cutSet.has(ka<kb ? ka+'|'+kb : kb+'|'+ka)) continue;
+    const ax = a[0]-ox, ay = a[1]-oy, bx = b[0]-ox, by = b[1]-oy, l = Math.hypot(bx-ax, by-ay)/(corr ? t*2.2 : 10);
+    pos.push(ax,ay,0, bx,by,0, bx,by,-t, ax,ay,0, bx,by,-t, ax,ay,-t); uv.push(0,1, l,1, l,0, 0,1, l,0, 0,0); }
+  if (!pos.length) return null;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2)); g.computeVertexNormals(); return g;
+}
 function rebuild3D(){
   wrapper.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-  wrapper.clear(); groups = []; roots = [];
+  for (const m of vMats) m.dispose(); vMats = []; bgTint = [];
+  wrapper.clear(); groups = []; roots = []; customPose = null;
   if (G.pouch){
     for (const g of pouchMeshes(G)){ const m = new THREE.Mesh(g,pouchMat); m.castShadow = true; wrapper.add(m); }
     wrapper.position.set(0,0,0); wrapper.updateMatrixWorld(true);
-    box3.setFromObject(wrapper); box3.getCenter(c1); c0.copy(c1); box3.getSize(foldedSize);
+    box3.setFromObject(wrapper); box3.getCenter(c1); c0.copy(c1); box3.getSize(foldedSize); flatSize.copy(foldedSize);
     const size = foldedSize.length();
     Object.assign(key.shadow.camera, {left:-size,right:size,top:size,bottom:-size,near:1,far:size*6}); key.shadow.camera.updateProjectionMatrix();
     ground.scale.set(size*8,size*8,1); sceneSize = size; applyScene();
     return;
   }
-  const by = {}, {minX,minY,maxX,maxY,w,h} = G.b;
-  for (const n of G.N){
-    const grp = new THREE.Group(); by[n.id] = grp; grp.userData.n = n;
-    const p = n.parent ? G.N.find(q=>q.id===n.parent) : null;
-    if (p){ by[p.id].add(grp); grp.position.set(n.origin[0]-p.origin[0], n.origin[1]-p.origin[1], 0); groups.push(grp); }
-    else { wrapper.add(grp); const fl = n.flat || n.final;
-      grp.userData.p0 = new THREE.Vector3(...fl.p); grp.userData.q0 = fl.q;
-      grp.userData.p1 = new THREE.Vector3(...n.final.p); grp.userData.q1 = n.final.q; roots.push(grp); }
-    const [ox,oy] = n.origin, shape = new THREE.Shape(n.poly.map(([x,y])=>new THREE.Vector2(x-ox,y-oy)));
-    for (const hl of n.holes) shape.holes.push(new THREE.Path(hl.map(([x,y])=>new THREE.Vector2(x-ox,y-oy))));
-    const geo = new THREE.ShapeGeometry(shape, 4);
-    const pos = geo.attributes.position, uv = new Float32Array(pos.count*2);
-    for (let i=0;i<pos.count;i++){ uv[i*2]=(pos.getX(i)+ox-minX)/w; uv[i*2+1]=(pos.getY(i)+oy-minY)/h; }
-    geo.setAttribute('uv', new THREE.BufferAttribute(uv,2));
-    const a = new THREE.Mesh(geo,outMat), b = new THREE.Mesh(geo,inMat);
-    a.castShadow = b.castShadow = true; grp.add(a,b);
+  const {minX,minY,w,h} = G.b;
+  if (G.lbl) label3D();
+  else if (G.cup) cup3D();
+  else {
+    const by = {}, tk = BOX.has(S.type) ? thickOf(S) : 0, cutSet = new Set(), k = p => p[0].toFixed(2)+','+p[1].toFixed(2);
+    for (const [a,b] of G.cuts){ const ka = k(a), kb = k(b); cutSet.add(ka<kb ? ka+'|'+kb : kb+'|'+ka); }
+    const eMat = tk > .05 ? edgeMaterial() : null;
+    for (const n of G.N){
+      const grp = new THREE.Group(); by[n.id] = grp; grp.userData.n = n;
+      const p = n.parent ? G.N.find(q=>q.id===n.parent) : null;
+      if (p){ by[p.id].add(grp); grp.position.set(n.origin[0]-p.origin[0], n.origin[1]-p.origin[1], 0); groups.push(grp); }
+      else { wrapper.add(grp); const fl = n.flat || n.final;
+        grp.userData.p0 = new THREE.Vector3(...fl.p); grp.userData.q0 = fl.q;
+        grp.userData.p1 = new THREE.Vector3(...n.final.p); grp.userData.q1 = n.final.q; roots.push(grp); }
+      const [ox,oy] = n.origin, shape = new THREE.Shape(n.poly.map(([x,y])=>new THREE.Vector2(x-ox,y-oy)));
+      for (const hl of n.holes) shape.holes.push(new THREE.Path(hl.map(([x,y])=>new THREE.Vector2(x-ox,y-oy))));
+      const geo = new THREE.ShapeGeometry(shape, 4);
+      const pos = geo.attributes.position, uv = new Float32Array(pos.count*2);
+      for (let i=0;i<pos.count;i++){ uv[i*2]=(pos.getX(i)+ox-minX)/w; uv[i*2+1]=(pos.getY(i)+oy-minY)/h; }
+      geo.setAttribute('uv', new THREE.BufferAttribute(uv,2));
+      const a = new THREE.Mesh(geo,outMat), b = new THREE.Mesh(geo,inMat);
+      a.castShadow = b.castShadow = true; grp.add(a,b);
+      if (eMat){ const eg = edgeGeo(n, cutSet, tk, tk >= 1.2); if (eg){ const e = new THREE.Mesh(eg, eMat); e.castShadow = true; grp.add(e); } }
+    }
+    if (S.type==='card') cardExtras(by);
   }
   // measure the assembled box
   wrapper.position.set(0,0,0);
@@ -1312,7 +1757,9 @@ function rebuild3D(){
   key.shadow.camera.updateProjectionMatrix();
   ground.scale.set(size*8,size*8,1); sceneSize = size; applyScene();
 }
+const isStatic = () => !!(G?.pouch || G?.stat || G?.lbl?.stat);
 function setPose(t){
+  if (customPose) customPose(t);
   for (const g of groups){ const n = g.userData.n, [a,b] = n.stage; g.rotation[n.axis] = n.angle*ease(clamp((t-a)/(b-a),0,1)); }
   const km = ease(clamp((t-.8)/.2,0,1));   // separate pieces (lid, sleeve) slide into place at the end
   for (const r of roots){ r.position.lerpVectors(r.userData.p0, r.userData.p1, km); r.quaternion.slerpQuaternions(r.userData.q0, r.userData.q1, km); }
@@ -1328,7 +1775,7 @@ function applyFold(t, fitCam){
 function fitCamera(){
   const aspect = camera.aspect, tanH = Math.tan(camera.fov*DEG/2);
   const fit = v => { const d = v.length(); return Math.max(d, d/aspect)/(2*tanH); };
-  const dist = G.pouch ? fit(foldedSize)*1.2 : Math.max(fit(foldedSize)*1.3, fit(flatSize)*.62);
+  const dist = isStatic() ? fit(foldedSize)*1.25 : G.lbl || G.cup ? fit(foldedSize)*1.35 : Math.max(fit(foldedSize)*1.3, fit(flatSize)*.62);
   const dir = camera.position.clone().sub(controls.target);
   if (dir.lengthSq() < 1e-6) dir.set(.55,.38,1);
   controls.target.set(0,0,0); camera.position.copy(dir.normalize().multiplyScalar(dist));
@@ -1396,7 +1843,7 @@ function applyScene(){
   fill.color.setHex(L.fc); fill.intensity = L.f*m; fill.position.set(-Math.sin(a)*d, d*.25, -Math.cos(a)*d*.6);
   rim.intensity = L.r*m; rim.position.set(-Math.sin(a)*d*.6, d*.7, -Math.cos(a)*d);
   const em = S.finish==='metal' ? 2.2 : S.finish==='gloss' ? 1.3 : 1;
-  for (const mt of [outMat, inMat, pouchMat]){ mt.envMapIntensity = L.env*m*(mt===inMat?1:em); }
+  for (const mt of [outMat, inMat, pouchMat, lblMat]){ mt.envMapIntensity = L.env*m*(mt===inMat?1:em); }
   ground.material.opacity = S.shadow/100;
   const c = bgColors();
   $('view3d').style.background = c ? `radial-gradient(ellipse at 50% 40%, ${c[0]} 0%, ${c[1]} 100%)`
@@ -1427,7 +1874,7 @@ const SHEETS = { sra3:['SRA3 · 320×450',320,450], a3p:['A3+ · 330×488',330,4
 $('sheetFmt').innerHTML = Object.entries(SHEETS).map(([k,v]) => `<option value="${k}">${v[0]}</option>`).join('');
 function renderProd(){
   const m = G.Pm, t = thickOf(S);
-  $('prodNote').textContent = S.type==='pouch' ? '' : S.dimMode==='mfg' ? 'Dimensions are used as crease-to-crease, without thickness compensation.'
+  $('prodNote').textContent = !BOX.has(S.type) ? '' : S.dimMode==='mfg' ? 'Dimensions are used as crease-to-crease, without thickness compensation.'
     : `Thickness ${t} mm. Crease to crease: ${+m.L.toFixed(1)}×${+m.W.toFixed(1)}×${+m.H.toFixed(1)} mm.`;
   const w = [];
   if (S.sides!=='44' && hasInside()) w.push(['bad','There is print inside but colours are set to 4+0 — switch to 4+4 or remove the inside print.']);
@@ -1554,7 +2001,7 @@ function doRefresh(){
   if (geomDirty){
     BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
     G = build(S); rebuild3D(); applyFold(T, !keepCam); keepCam = false; geomDirty = false;
-    $('sheet').textContent = `${S.L}×${S.W}×${S.H} mm · sheet ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm`;
+    $('sheet').textContent = `${tplSize(S)} · sheet ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm`;
     renderProd(); renderImp();
     gen++; renderSlots(); renderEls();
   }
@@ -1567,7 +2014,10 @@ function doRefresh(){
   outMat.roughness = S.finish==='gloss' ? .28 : S.finish==='metal' ? .32 : .82; outMat.metalness = S.finish==='metal' ? .75 : 0;
   pouchMat.map = outMat.map; pouchMat.roughness = S.finish==='matte' ? .7 : S.finish==='metal' ? .3 : .22;
   pouchMat.metalness = S.finish==='metal' ? .8 : 0; pouchMat.clearcoat = S.finish==='matte' ? 0 : .8; pouchMat.needsUpdate = true;
-  document.querySelector('.fold').hidden = !!G.pouch;
+  if (lblMat.map !== outMat.map){ lblMat.map = outMat.map; lblMat.needsUpdate = true; }
+  lblMat.roughness = S.finish==='gloss' ? .22 : S.finish==='metal' ? .3 : .75; lblMat.metalness = S.finish==='metal' ? .7 : 0; lblMat.clearcoat = S.finish==='gloss' ? .7 : 0;
+  for (const m of bgTint) m.color.set(S.bg);
+  document.querySelector('.fold').hidden = isStatic();
   $('insideBgWrap').hidden = S.inside!=='color';
   if (!$('view2d').hidden) render2D();
 }
@@ -1627,10 +2077,11 @@ function syncUI(){
   $('bgOpts').hidden = S.bgMode==='solid'; $('gradOpts').hidden = S.bgMode!=='grad'; $('patOpts').hidden = S.bgMode!=='pattern';
   $('gradAngO').textContent = S.gradAng+'°'; $('patScaleO').textContent = S.patScale+' mm';
   $('thickWrap').hidden = S.mat!=='custom'; $('tearOpts').hidden = !S.tear; $('cornerRO').textContent = S.cornerR+' mm';
-  $('conCommon').hidden = S.type==='pouch'; $('sheetCustom').hidden = S.sheetFmt!=='custom';
+  $('conCommon').hidden = !(BOX.has(S.type) || S.type==='label' || S.type==='card'); $('conBox').hidden = !BOX.has(S.type); $('sheetCustom').hidden = S.sheetFmt!=='custom';
   $('lidOpenO').textContent = S.lidOpen+'%';
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a); if (el.type==='checkbox') el.checked=!!S[k]; else el.value=S[k]; }
-  const dl = DIM_LABELS[S.type] || ['Length','Width','Height']; ['lL','lW','lH'].forEach((id,i)=>$(id).textContent=dl[i]);
+  const dl = DIM_LABELS[S.type] || ['Length','Width','Height']; ['lL','lW','lH'].forEach((id,i)=>{ $(id).textContent = dl[i] || ''; $(id).closest('label').hidden = dl[i]===null; });
+  $('dimModeWrap').hidden = !BOX.has(S.type); syncTypeUI();
   for (const id of SEL) $(id).value = S[id];
   for (const id of CHK) $(id).checked = !!S[id];
   document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== S.type);
@@ -1639,20 +2090,98 @@ function syncUI(){
   document.querySelectorAll('.tpl').forEach(b => b.setAttribute('aria-pressed', b.dataset.id===S.tpl));
   $('presets').innerHTML = (SIZE_CHIPS[S.type]||[]).map(([n,d])=>`<button class="chip" data-d="${d}">${n} ${d.replaceAll(',','×')}</button>`).join('');
 }
-function custom(){ S.tpl = null; document.querySelectorAll('.tpl').forEach(b => b.setAttribute('aria-pressed', false)); }
+// type-specific controls and notes in the Structure pane
+function syncTypeUI(){
+  const lab = S.type==='label', none = S.vessel==='none', wrapOn = lab && S.wrap && !none && S.place!=='top';
+  $('L').disabled = wrapOn; if (wrapOn) $('L').value = +(labelL(S)/UF()).toFixed(1);
+  $('H').disabled = lab && S.lshape==='circle'; if ($('H').disabled) $('H').value = +(labelL(S)/UF()).toFixed(1);
+  if (lab){
+    const V = VESSELS[S.vessel] || VESSELS.wine, glassy = ['wine','beer','jar','dropper','candle','pump'].includes(S.vessel);
+    $('placeWrap').hidden = none || S.vessel==='ptube' && false; $('wrapWrap').hidden = none || S.place==='top'; $('overlapWrap').hidden = !wrapOn;
+    $('lblYWrap').hidden = none || S.place==='top';
+    $('vglassWrap').hidden = !glassy; $('vcapWrap').hidden = !['beer','jar','dropper','pump'].includes(S.vessel); $('vfillWrap').hidden = !['jar','candle'].includes(S.vessel);
+    const L = labelL(S), D = +S.W, half = PI*D/2, n = [];
+    if (none) n.push('A kiss-cut sticker on a backing liner. Rounded corners: “Corner radius” below.');
+    else if (S.place==='top') n.push(`Sticker on the top of the ${V.n.toLowerCase()}.`);
+    else if (wrapOn) n.push(`Full wrap: π × ${D} + ${S.overlap} mm overlap = ${L} mm. The front panel is in the middle, the seam at the back.`);
+    else { n.push(`Visible from the front: about ${Math.min(L, D).toFixed(0)} mm of ${L} mm.`);
+      if (L > half) n.push(`Wider than half the circumference (${half.toFixed(0)} mm) — the edges wrap out of sight.`); }
+    if (!none && S.place!=='top' && S.vessel!=='ptube'){ const k = D/V.D, top = V.zone[1]*k, bot = V.zone[0]*k;
+      if (+S.lblY + (S.lshape==='circle' ? L : +S.H) > top + .5) n.push(`⚠ The label runs past the straight part of the container (ends at ${top.toFixed(0)} mm) — it will wrinkle on the shoulder.`);
+      else if (+S.lblY < bot - .5) n.push(`⚠ Below ${bot.toFixed(0)} mm the container curves into the base.`); }
+    $('lblNote').textContent = n.join(' ');
+  }
+  if (S.type==='cup'){ const c = cupGeom(S);
+    $('cupNote').textContent = `Fan: outer radius ${c.rho1.toFixed(1)} mm, inner ${c.rho0.toFixed(1)} mm, angle ${(c.A/DEG).toFixed(1)}° incl. ${c.ov} mm glue overlap. Slant height ${c.s.toFixed(1)} mm. ${c.kind==='sleeve' ? 'Sleeve: rim Ø and base Ø are measured on the cup where the sleeve sits.' : 'Rim curl and bottom disc are not part of the print.'}`; }
+  if (S.type==='card'){ const f = S.fold, L = +S.L, H = +S.H, flat = {bi:[2*L,H], tri:[3*L-2,H], z:[3*L,H], tent:[L,2*H+Math.min(20,H*.3)], topper:[L,2*H]}[f] || [L,H];
+    $('holeWrap').hidden = !['tag','neck'].includes(f);
+    $('cardNote').textContent = `Flat sheet ${flat[0]} × ${flat[1]} mm` + (['bi','tri','z','tent','topper'].includes(f) ? `, folded ${L} × ${H} mm.` : '.') +
+      ({tri:' The fold-in panel is 2 mm narrower so it tucks in.', neck:' Relief cuts around the hole let it slip over the neck.', topper:' Folds over the bag top and is stapled; euro hole through both layers.', env:' Glue the side flaps to the bottom flap; the top flap seals.', tent:' Glue the tab inside the front panel.'}[f] || '');
+  }
+}
+// ---------- templates: pick inside the editor, ask before replacing a customised project
+const TPL_LOOK = {
+  label:{bg:'#f3ede2', ink:'#2b2320', title:'MAISON', sub:'artisan · small batch', inside:'white'},
+  round:{bg:'#b8462f', ink:'#fff4e6', title:'DAILY BREW', sub:'coffee · roasted fresh', inside:'white'},
+  print:{bg:'#ece3d3', ink:'#2e2a26', title:'THANK YOU', sub:'for your order', inside:'white'},
+};
+const BASE_SKIP = new Set(['pid','pname','base','tpl','lidOpen','pull','scBg','scBgColor','light','lInt','lAng','shadow','unit','sheetFmt','sheetW','sheetH','grip','impGap','qty']);
+const sigOf = () => { const o = {}; for (const k of Object.keys(S).sort()) if (!BASE_SKIP.has(k)) o[k] = S[k]; return String(hash(JSON.stringify(o))); };
+const markBase = () => { S.base = sigOf(); persist(); };
+const customized = () => Object.keys(IMGS).length > 0 || Object.keys(ELIMG).length > 0 || S.base !== sigOf();
 function selectTpl(id){
   const t = TPL.find(x=>x.id===id); if (!t) return;
-  if (S.type !== t.type) Object.assign(S, TYPE_DIMS[t.type]);
+  if (S.type !== t.type){ Object.assign(S, TYPE_DIMS[t.type], {cornerR:0});
+    S.mat = TYPE_MAT[t.type] || (MATS[S.mat] && BOX.has(t.type) && !['paper80','vinyl','kraftp','card350','cupb'].includes(S.mat) ? S.mat : 'carton05'); }
   Object.assign(S, {type:t.type, tpl:t.id}, t.set);
+  T = 1; $('t').value = 1000; anim = null;
   syncUI(); refresh(true);
 }
-function renderTpls(){
-  $('tpls').innerHTML = TPL.map(t => {
-    const P = {...DEFAULTS, ...TYPE_DIMS[t.type], type:t.type, ...t.set};
-    return `<button class="tpl" data-id="${t.id}" aria-pressed="false">${thumbSvg(build(P))}<span>${t.name}</span></button>`;
-  }).join('');
-  $('tpls').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) selectTpl(b.dataset.id); });
+function startFromTpl(id, pid){
+  const t = TPL.find(x=>x.id===id); if (!t) return;
+  const keep = {}; for (const k of ['scBg','scBgColor','light','lInt','lAng','shadow','unit','bleed','safe','method','sheetFmt','sheetW','sheetH','grip','impGap']) keep[k] = S[k];
+  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
+  Object.assign(S, DEFAULTS, keep, {els:[]}, TPL_LOOK[t.cat] || {});
+  selectTpl(id); newProject(t.name, pid); markBase(); syncEl(); renderEls();
 }
+let tplCat = store.get('skladka-tplcat', 'all'), pendingTpl = null;
+const tplP = t => ({...DEFAULTS, ...TYPE_DIMS[t.type], type:t.type, ...t.set});
+function tplSize(P){
+  if (P.type==='label') return P.vessel==='none' ? `${labelL(P)}×${P.lshape==='circle' ? labelL(P) : P.H} mm` : `${labelL(P)}×${P.lshape==='circle' ? labelL(P) : P.H} mm · Ø ${P.W}`;
+  if (P.type==='cup') return `Ø ${P.L} / ${P.W} × ${P.H} mm`;
+  if (P.type==='card') return `${P.L}×${P.H} mm`;
+  return `${P.L}×${P.W}×${P.H} mm`;
+}
+const TPL_THUMB = {};
+const tplThumb = t => TPL_THUMB[t.id] ??= thumbSvg(build(tplP(t)));
+const catChips = (cur) => [['all','All'], ...Object.entries(TPL_CATS)].map(([k,n]) => `<button type="button" class="chip" data-cat="${k}" aria-pressed="${k===cur}">${n}</button>`).join('');
+function renderTpls(){
+  $('tplCats').innerHTML = catChips(tplCat);
+  if (!$('tpls').children.length) $('tpls').innerHTML = TPL.map(t => `<button class="tpl" data-id="${t.id}" data-c="${t.cat}" aria-pressed="false" title="${esc(TPL_DESC[t.id]||'')}">${tplThumb(t)}<span>${t.name}</span></button>`).join('');
+  $('tpls').querySelectorAll('.tpl').forEach(b => b.hidden = tplCat!=='all' && b.dataset.c!==tplCat);
+  $('tpls').querySelectorAll('.tpl').forEach(b => b.setAttribute('aria-pressed', b.dataset.id===S.tpl));
+}
+$('tplCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; tplCat = b.dataset.cat; store.set('skladka-tplcat', tplCat); renderTpls(); });
+$('tpls').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) pickTpl(b.dataset.id); });
+function pickTpl(id){
+  const t = TPL.find(x=>x.id===id); if (!t) return;
+  if (!S.pid){ startFromTpl(id); return; }
+  if (!customized()){ startFromTpl(id, S.pid); return; }     // untouched project: just switch it
+  pendingTpl = id; $('tplDlgName').textContent = t.name; $('tplDlgCur').textContent = S.pname || 'this project'; $('tplDlg').showModal();
+}
+$('tplNew').addEventListener('click', async () => { $('tplDlg').close(); const id = pendingTpl, old = S.pname; if (!id) return;
+  clearTimeout(saveT); await saveProject(); startFromTpl(id); toast(`“${old}” is saved in My projects. New project: ${S.pname}`); });
+$('tplHere').addEventListener('click', () => { $('tplDlg').close(); const id = pendingTpl; if (!id) return;
+  selectTpl(id); renderEls(); toast('Template applied — your design is kept.'); });
+let homeCat = 'all';
+function renderHomeTpls(){
+  const n = c => TPL.filter(t => c==='all' || t.cat===c).length;
+  $('homeTpls').innerHTML = [['all','All templates'], ...Object.entries(TPL_CATS)].map(([k,nm]) =>
+    `<button class="nav${k===homeCat?' on':''}" type="button" data-cat="${k}"><span>${nm}</span><em>${n(k)}</em></button>`).join('');
+  $('homeCats').innerHTML = catChips(homeCat);
+  $('tplGrid').innerHTML = TPL.filter(t => homeCat==='all' || t.cat===homeCat).map(t => cardHTML(tplThumb(t), t.name, esc(TPL_DESC[t.id]||''), tplSize(tplP(t)), `data-tpl="${t.id}"`)).join('');
+}
+function custom(){ S.tpl = null; document.querySelectorAll('.tpl').forEach(b => b.setAttribute('aria-pressed', false)); }
 const VIEW_ONLY = ['pull','lidOpen','sheetW','sheetH','grip','impGap','qty'];
 const UF = () => ({mm:1, cm:10, in:25.4}[S.unit] || 1), UNAME = {mm:'mm', cm:'cm', in:'in'};
 let keepCam = false;
@@ -1663,12 +2192,18 @@ function bindInputs(){
       if (['sheetW','sheetH','grip','impGap','qty'].includes(id)){ S.sheetFmt = ['sheetW','sheetH'].includes(id) ? 'custom' : S.sheetFmt; persist(); renderImp(); return; }
       if (VIEW_ONLY.includes(id)){ keepCam = true; if ($(id+'O')) $(id+'O').textContent = S[id]+'%'; }
       else if (!['L','W','H'].includes(id)) custom();
+      if (['L','W','H','lblY','overlap'].includes(id)) syncTypeUI();
       refresh(true); });
     el.addEventListener('change',()=>{ el.value = ['L','W','H'].includes(id) ? +(S[id]/UF()).toFixed(S.unit==='mm'?1:2) : S[id]; }); }
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a);
     if (el.type==='checkbox') el.addEventListener('change',()=>{ S[k]=el.checked; custom(); syncUI(); refresh(true); });
     else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
+  for (const id of ['vessel','lshape','place','vglass','vcap','vfill','cupKind','fold']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
+    if (id==='vessel'){ const V = VESSELS[S.vessel]; if (V.D) S.W = V.D; if (S.vessel==='none'){ S.place='side'; S.wrap=false; } else S.lblY = S.vessel==='ptube' ? 0 : Math.round(V.zone[0] + (V.zone[1]-V.zone[0])*.12); }
+    if (id==='fold' && ['neck','tag'].includes(S.fold)) S.holeD = S.fold==='neck' ? 31 : 5;
+    custom(); syncUI(); refresh(true); });
+  for (const id of ['wrap','cupLid']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; custom(); syncUI(); refresh(true); });
   for (const id of ['notch','window','hang','dbl','tear']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
   for (const id of ['bg','ink','title','sub','inside','finish','bg2','pattern']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
   $('bgMode').addEventListener('input',()=>{ S.bgMode=$('bgMode').value; syncUI(); refresh(); });
@@ -1686,7 +2221,7 @@ function bindInputs(){
   const tabs = [$('t3d'),$('t2d')];
   tabs.forEach(tb=>tb.addEventListener('click',()=>{ const is2 = tb.id==='t2d';
     tabs.forEach(x=>x.setAttribute('aria-selected', x===tb)); $('view2d').hidden=!is2;
-    document.querySelector('main').classList.toggle('board-mode', is2); document.querySelector('.fold').hidden = !!G.pouch;
+    document.querySelector('main').classList.toggle('board-mode', is2); document.querySelector('.fold').hidden = isStatic();
     if (is2){ sig2d=''; render2D(); } }));
 }
 function renderSlots(){
@@ -1846,7 +2381,7 @@ async function saveProject(){
   catch { $('savedState').textContent = 'Not saving: the browser blocked storage. Use “Export → Project file .json”.'; }
 }
 function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Saving…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
-function newProject(name){ S.pid = uid()+Date.now().toString(36); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
+function newProject(name, pid){ S.pid = pid || uid()+Date.now().toString(36); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
 async function openProject(id){
   const rec = await idb.get(id).catch(()=>null); if (!rec){ toast('Project not found'); return; }
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
@@ -1906,9 +2441,7 @@ function cardHTML(svg, name, desc, mm, attrs){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const navItem = (svg, name, title, attrs) => `<button class="nav" type="button" ${attrs} title="${title}">${svg}<span>${name}</span></button>`;
 function renderHome(){
-  $('homeTpls').innerHTML = TPL.map(t => { const d = TYPE_DIMS[t.type];
-    const P = {...DEFAULTS, ...d, type:t.type, ...t.set};
-    return navItem(thumbSvg(build(P)), t.name, esc((TPL_DESC[t.id]||'')+` · ${d.L}×${d.W}×${d.H} mm`), `data-tpl="${t.id}"`); }).join('');
+  renderHomeTpls();
   $('homeMineSec').hidden = !mine.length;
   $('homeMine').innerHTML = mine.map((m,i) => navItem(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), `${TYPE_NAMES[m.s.type]||''} · ${m.s.L}×${m.s.W}×${m.s.H} mm`, `data-mine="${i}"`)).join('');
   renderProjects();
@@ -1928,11 +2461,12 @@ $('nbGo').addEventListener('click', () => {
   Object.assign(S, DEFAULTS, TYPE_DIMS[t], {type:t, tpl:null, L:v('nbL'), W:v('nbW'), H:v('nbH'),
     title:'', sub:'', showText:false, bg:'#ffffff', ink:'#1b211f', els:[]});
   if (t==='tube') Object.assign(S, TUBE_BASE);
-  selId = null; newProject('New project · ' + TYPE_NAMES[t]); syncUI(); syncEl(); refresh(true); openEditor();
+  if (TYPE_MAT[t]) S.mat = TYPE_MAT[t];
+  selId = null; newProject('New project · ' + TYPE_NAMES[t]); markBase(); syncUI(); syncEl(); renderEls(); refresh(true); openEditor();
 });
-$('homeTpls').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (!b) return;
-  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = [];
-  selectTpl(b.dataset.tpl); newProject(TPL.find(t=>t.id===b.dataset.tpl).name); syncEl(); renderEls(); openEditor(); });
+$('tplGrid').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (!b) return; startFromTpl(b.dataset.tpl); openEditor(); });
+$('homeTpls').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; homeCat = b.dataset.cat; renderHomeTpls(); $('tplSec').scrollIntoView({behavior:'smooth'}); });
+$('homeCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; homeCat = b.dataset.cat; renderHomeTpls(); });
 $('homeMine').addEventListener('click', e => { const b = e.target.closest('[data-mine]'); if (!b) return; const m = mine[+b.dataset.mine];
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = [];
   Object.assign(S, m.s); newProject(m.name); syncUI(); syncEl(); renderEls(); refresh(true); openEditor(); });
@@ -2173,7 +2707,7 @@ async function makePdf(){
       r += `${pn(x+sx*o)} ${pn(y)} m ${pn(x+sx*(o+L))} ${pn(y)} l ${pn(x)} ${pn(y+sy*o)} m ${pn(x)} ${pn(y+sy*(o+L))} l\n`; }
     return `q 0.2 w 0 0 0 1 K /GSop gs\n${r}S Q`; };
   const typeName = TYPE_NAMES[S.type] || S.type, nameStr = S.pname ? `«${S.pname}» · ` : '';
-  const head = `${nameStr}${typeName} ${S.L}×${S.W}×${S.H} mm (inside) · sheet ${w.toFixed(1)}×${h.toFixed(1)} mm incl. ${BLEED} mm bleed · trim at crop marks · safe zone ${SAFE} mm · CMYK ${dpi} dpi · text outlined`;
+  const head = `${nameStr}${typeName} ${BOX.has(S.type) ? `${S.L}×${S.W}×${S.H} mm (inside)` : tplSize(S)} · sheet ${w.toFixed(1)}×${h.toFixed(1)} mm incl. ${BLEED} mm bleed · trim at crop marks · safe zone ${SAFE} mm · CMYK ${dpi} dpi · text outlined`;
   const foot = 'Layers: Artwork — print · WHITE / VARNISH / FOIL / EMBOSS — finishing spots (overprint) · CUT — cut (CutContour, 100% M) · CREASE — crease (Crease, 100% C, dashed) · Info — do not print';
   const pages = [], pagesId = pdf.id();
   const page = async (title, body) => {
@@ -2198,12 +2732,16 @@ async function makePdf(){
     const P = G.Pm || G.P, t = thickOf(S), tube = S.type==='tube', I = impCalc(), tpl = TPL.find(x => x.id===S.tpl);
     const sec = [];
     const add = (title, rows) => sec.push({title, rows: rows.filter(r => r && r[1]!=='' && r[1]!=null)});
-    add('Size', [['Entered as', ot('dimMode')], [S.dimMode==='mfg' ? 'Crease to crease' : 'Inside (L×W×H)', `${S.L} × ${S.W} × ${S.H} mm`],
-      S.type!=='pouch' && S.dimMode!=='mfg' && ['Crease to crease', `${+(+P.L).toFixed(1)} × ${+(+P.W).toFixed(1)} × ${+(+P.H).toFixed(1)} mm`],
+    const bx = BOX.has(S.type), cg = S.type==='cup' && cupGeom(S);
+    add('Size', [bx && ['Entered as', ot('dimMode')], bx ? [S.dimMode==='mfg' ? 'Crease to crease' : 'Inside (L×W×H)', `${S.L} × ${S.W} × ${S.H} mm`] : ['Size', tplSize(S)],
+      cg && ['Fan radii', `${cg.rho0.toFixed(1)} / ${cg.rho1.toFixed(1)} mm, ${(cg.A/DEG).toFixed(1)}°`],
+      bx && S.dimMode!=='mfg' && ['Crease to crease', `${+(+P.L).toFixed(1)} × ${+(+P.W).toFixed(1)} × ${+(+P.H).toFixed(1)} mm`],
       ['Flat size (trim)', `${(w-2*BLEED).toFixed(1)} × ${(h-2*BLEED).toFixed(1)} mm`], ['With bleed', `${w.toFixed(1)} × ${h.toFixed(1)} mm`]]);
     add('Structure', [['Type', TYPE_NAMES[S.type]||S.type], tpl && ['Style', tpl.name],
       tube && ['Top', ot('topClose') + (S.topClose==='tuck' ? ', flap on ' + ot('topLid') : '')],
       tube && ['Bottom', ot('botClose') + (S.botClose==='tuck' ? ', flap on ' + ot('botLid') : '')],
+      S.type==='label' && ['Container', VESSELS[S.vessel]?.n], S.type==='label' && ['Label', ot('lshape') + (S.wrap && S.vessel!=='none' ? `, full wrap with ${S.overlap} mm overlap` : '') + (S.place==='top' ? ', on the lid' : '')],
+      S.type==='cup' && ['Printed part', ot('cupKind')], S.type==='card' && ['Format', ot('fold')], S.type==='tray' && S.hdr > 0 && ['Display header', mm(S.hdr)],
       tube && ['Tuck / glue flap', `${S.tuck} / ${S.glue} mm`], tube && S.window && ['Window', `${S.winW} × ${S.winH} mm`],
       tube && S.hang && ['Euro hang tab', mm(S.hangH)], tube && S.notch && ['Thumb notch', 'yes'],
       S.type==='tray' && ['Glue tabs', mm(S.tab) + (S.dbl2 ? ', double long walls' : '')],
@@ -2211,7 +2749,7 @@ async function makePdf(){
       S.type==='drawer' && ['Sleeve clearance', mm(S.dgap)], S.type==='drawer' && ['Glue tabs', mm(S.tab3) + (S.dbl ? ', double long walls' : '')],
       S.cornerR > 0 && ['Corner radius', mm(S.cornerR)], S.vents > 0 && ['Vent holes', `${S.vents} per side, Ø ${S.ventD} mm`],
       S.tear && ['Tear strip', `${S.tearW} mm at ${S.tearY}% of wall`]]);
-    add('Material', [['Board', S.mat==='custom' ? 'Custom' : ot('mat')], S.type!=='pouch' && ['Thickness', mm(t)], ['Inside', ot('inside')], ['Coating', ot('finish')],
+    add('Material', [['Board', S.mat==='custom' ? 'Custom' : ot('mat')], bx && ['Thickness', mm(t)], bx && ['Inside', ot('inside')], ['Coating', ot('finish')],
       S.white && ['White underprint', ot('white')], S.grain!=='any' && ['Grain', ot('grain')]]);
     add('Print', [['Method', ot('method')], ['Colours', ot('sides')], ['Colour mode', `CMYK, ${dpi} dpi, text outlined`], ['Bleed / safe zone', `${BLEED} mm / ${SAFE} mm`],
       ['Quantity', `${S.qty} pcs`], ['Sheet', SHEETS[S.sheetFmt]?.[1] ? SHEETS[S.sheetFmt][0] : `${S.sheetW} × ${S.sheetH} mm`],
@@ -2242,7 +2780,7 @@ async function makePdf(){
     const ACC = '#731eff', MUT = '#7f7f7f', LINE = '#e6e6e6', mg = 14;
     let o = `${pn(K)} 0 0 ${pn(-K)} 0 ${pn(CH*K)} cm\n1 1 1 rg 0 0 ${CW} ${CH} re f\n`;
     o += T(name, mg, 22, 8, {b:true, maxW: 190});
-    o += T([TYPE_NAMES[S.type], tpl?.name, `${S.L}×${S.W}×${S.H} mm`, new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})].filter(Boolean).join('  ·  '), mg, 29, 3.2, {col:MUT, maxW: 200});
+    o += T([TYPE_NAMES[S.type], tpl?.name, tplSize(S), new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})].filter(Boolean).join('  ·  '), mg, 29, 3.2, {col:MUT, maxW: 200});
     o += T('Skladka', CW-mg, 20, 3.6, {b:true, col:ACC, align:'right'}) + T('Packaging specification', CW-mg, 25.5, 2.6, {col:MUT, align:'right'});
     o += `${rgbOp(LINE,'RG')} 0.3 w ${mg} 34 m ${CW-mg} 34 l S\n`;
     // left column: 3D render + flat dieline
@@ -2352,7 +2890,13 @@ const importProject = e=>{ const f=e.target.files[0]; if(!f) return; const r=new
 $('openProj').addEventListener('change', importProject);
 $('openProjHome').addEventListener('change', importProject);
 
-bindInputs(); syncUI(); renderMine(); setPane(store.get('skladka-pane','size')); resize();
+$('mat').innerHTML = Object.entries(MATS).map(([k,v]) => `<option value="${k}">${v[0]}</option>`).join('');
+$('vessel').innerHTML = Object.entries(VESSELS).map(([k,v]) => `<option value="${k}">${v.n}</option>`).join('');
+const autoOpt = '<option value="auto">Default</option>';
+$('vglass').innerHTML = autoOpt + Object.entries(GLASS).map(([k,v]) => `<option value="${k}">${v.n}</option>`).join('');
+$('vcap').innerHTML = autoOpt + Object.entries(CAPS).map(([k,v]) => `<option value="${k}">${v.n}</option>`).join('');
+$('vfill').innerHTML = autoOpt + Object.entries(FILLS).map(([k,v]) => `<option value="${k}">${v.n}</option>`).join('');
+bindInputs(); renderTpls(); syncUI(); renderMine(); setPane(store.get('skladka-pane','size')); resize();
 camera.position.set(.55,.38,1);
 BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
