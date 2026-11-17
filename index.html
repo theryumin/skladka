@@ -134,6 +134,10 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
   padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1}
 .savewrap{position:relative}
+.imp{background:var(--stage);border-radius:10px;padding:10px;display:grid;place-items:center}
+.imp svg{width:100%;height:auto;max-height:260px;display:block}
+.kv{display:grid;grid-template-columns:auto auto;gap:4px 12px;font-size:13px}
+.kv span{color:var(--muted)} .kv b{text-align:right;font:600 13px var(--mono)}
 .sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .empty{margin:0;padding:22px;border:1.5px dashed var(--line);border-radius:12px;color:var(--muted);font-size:14px;line-height:1.5;max-width:none}
 .sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -302,13 +306,18 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 
   <aside id="aside">
     <section data-pane="size">
-      <h2>Размеры, мм (внутренние)</h2>
+      <h2 id="dimTitle">Размеры, мм (внутренние)</h2>
+      <div class="row2">
+        <label class="f">Размеры заданы<select id="dimMode"><option value="inner">Внутренние</option><option value="outer">Наружные</option><option value="mfg">По линиям сгиба</option></select></label>
+        <label class="f">Единицы<select id="unit"><option value="mm">мм</option><option value="cm">см</option><option value="in">дюймы</option></select></label>
+      </div>
       <div class="row">
         <label class="f"><span id="lL">Длина</span><input id="L" type="number" min="10" max="800" step="1"></label>
         <label class="f"><span id="lW">Ширина</span><input id="W" type="number" min="10" max="800" step="1"></label>
         <label class="f"><span id="lH">Высота</span><input id="H" type="number" min="5" max="800" step="1"></label>
       </div>
       <div class="presets" id="presets"></div>
+      <p class="note" id="prodNote"></p>
     </section>
 
     <section data-pane="build">
@@ -427,6 +436,35 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       </div>
       <p class="note" id="elHint">Логотип — PNG с прозрачным фоном или SVG. Внутри можно напечатать, например, «Спасибо за заказ!» на крышке.</p>
     </section>
+    <section data-pane="print">
+      <h2>Допечатка</h2>
+      <div class="row2">
+        <label class="f">Вылеты<select id="bleed"><option value="3">3 мм</option><option value="5">5 мм</option></select></label>
+        <label class="f">Безопасная зона<select id="safe"><option value="3">3 мм</option><option value="5">5 мм</option></select></label>
+        <label class="f">Способ печати<select id="method"><option value="digital">Цифровая</option><option value="offset">Офсет</option><option value="flexo">Флексография</option></select></label>
+        <label class="f">Красочность<select id="sides"><option value="40">4+0 (снаружи)</option><option value="44">4+4 (снаружи и внутри)</option><option value="10">1+0 (одна краска)</option></select></label>
+      </div>
+      <div id="printWarn" class="btns"></div>
+    </section>
+    <section data-pane="print">
+      <h2>Раскладка на печатный лист</h2>
+      <div class="row2">
+        <label class="f">Формат листа<select id="sheetFmt"></select></label>
+        <label class="f">Тираж, шт<input id="qty" type="number" min="1" max="10000000" step="50"></label>
+      </div>
+      <div class="row2" id="sheetCustom">
+        <label class="f">Ширина листа, мм<input id="sheetW" type="number" min="100" max="2000" step="1"></label>
+        <label class="f">Высота листа, мм<input id="sheetH" type="number" min="100" max="2000" step="1"></label>
+      </div>
+      <div class="row2">
+        <label class="f">Поля (захват), мм<input id="grip" type="number" min="0" max="50" step="1"></label>
+        <label class="f">Между развёртками, мм<input id="impGap" type="number" min="0" max="30" step="1"></label>
+      </div>
+      <div class="imp" id="impPrev"></div>
+      <div class="kv" id="impStat"></div>
+      <button class="btn" id="impPdf" style="text-align:center">Скачать раскладку штампа (PDF)</button>
+      <p class="note">Развёртки ставятся сеткой, лучший из двух поворотов. Расход считается с 5% на приладку.</p>
+    </section>
     <section data-pane="scene">
       <h2>3D-сцена</h2>
       <div class="f">Фон</div>
@@ -442,6 +480,12 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
     </section>
     <section data-pane="material">
       <h2>Материал</h2>
+      <label class="f">Картон<select id="mat">
+        <option value="carton03">Картон 0,3 мм (≈250 г/м²)</option><option value="carton05">Картон 0,5 мм (≈350 г/м²)</option>
+        <option value="kraft">Крафт-картон 0,45 мм</option><option value="micro_e">Микрогофра E, 1,5 мм</option>
+        <option value="corr_b">Гофрокартон B, 3 мм</option><option value="custom">Своя толщина…</option></select></label>
+      <label class="f" id="thickWrap">Толщина, мм<input id="thick" type="number" min="0" max="8" step="0.05"></label>
+      <p class="note">Толщина учитывается в развёртке: линии сгиба сдвигаются так, чтобы коробка получилась нужного размера.</p>
       <div class="row2">
         <label class="f">Внутри<select id="inside"><option value="white">Белый картон</option><option value="kraft">Крафт</option><option value="color">Печать цветом</option></select></label>
         <label class="f" id="insideBgWrap">Цвет внутри<input id="insideBg" type="color"></label>
@@ -493,8 +537,8 @@ const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
 const ease = p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
 const lerp = (a,b,k) => a + (b-a)*k;
 const DEG = Math.PI/180, PI = Math.PI;
-const BLEED = 3;   // вылет под обрез, мм
-const SAFE = 3;    // зона безопасности от линии реза/сгиба, мм
+let BLEED = 3;     // вылет под обрез, мм (настраивается)
+let SAFE = 3;      // зона безопасности от линии реза/сгиба, мм
 let WARN = {};
 
 /* ---------- settings & templates ---------- */
@@ -544,6 +588,8 @@ const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck
   winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0,
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
+  mat:'carton05', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
+  sheetFmt:'sra3', sheetW:320, sheetH:450, grip:10, impGap:4, qty:500,
   scBg:'studio', scBgColor:'#dfe6e2', light:'studio', lInt:100, lAng:-35, shadow:20 };
 const S = {...DEFAULTS};
 const IMGS = {};
@@ -552,12 +598,12 @@ const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|Montserrat','Montserrat']
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
 const uid = () => Math.random().toString(36).slice(2,9);
 const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
-const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
+const NUM = ['thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
 const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
-const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor'];
+const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt'];
 const CHK = ['notch','window','hang','showText','showLines','dbl'];
-const STRUCT = ['type','tpl','L','W','H',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
+const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
 
 const store = {
   get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -750,8 +796,19 @@ function buildMailer(P,B){
   B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
   return {};
 }
+const MATS = { carton03:['Картон 0,3 мм (≈250 г/м²)',.3], carton05:['Картон 0,5 мм (≈350 г/м²)',.5], kraft:['Крафт-картон 0,45 мм',.45],
+  micro_e:['Микрогофра E, 1,5 мм',1.5], corr_b:['Гофрокартон B, 3 мм',3], custom:['Своя толщина',null] };
+const thickOf = P => P.mat==='custom' ? clamp(+P.thick||0,0,8) : (MATS[P.mat]?.[1] ?? 0);
+// entered size -> crease-to-crease size of the dieline, so the box comes out right with real board thickness
+function prodDims(P){
+  if (P.type==='pouch' || P.dimMode==='mfg') return {};
+  const t = thickOf(P), tray = P.type!=='tube'; let {L,W,H} = P;
+  if (P.dimMode==='outer'){ L -= 2*t; W -= 2*t; H -= tray ? t : 2*t; }
+  return tray ? {L:L+2*t, W:W+2*t, H:H+t} : {L:L+t, W:W+t, H:H+2*t};
+}
 function build(P){
   P = {...P}; for (const k of NUM) P[k] = +P[k];
+  const Pin = {...P}; Object.assign(P, prodDims(P));
   const B = maker();
   const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, drawer:buildDrawer, pouch:buildPouch}[P.type] || buildTube)(P,B) || {};
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -771,7 +828,7 @@ function build(P){
     : Math.abs(a[1]-y0)<.01 && Math.abs(b[1]-y0)<.01 && ov(a[0],b[0],x0,x1) > 1);
   for (const f of B.faces){ const [x0,y0,x1,y1] = f.r;
     f.clip = [x0-(onCrease(x0,y0,x0,y1)?0:BLEED), y0-(onCrease(x0,y0,x1,y0)?0:BLEED), x1+(onCrease(x1,y0,x1,y1)?0:BLEED), y1+(onCrease(x0,y1,x1,y1)?0:BLEED)]; }
-  return { ...extra, N:B.N, faces:B.faces, cuts, creases, P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY} };
+  return { ...extra, N:B.N, faces:B.faces, cuts, creases, P:Pin, Pm:P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY} };
 }
 
 /* ---------- artwork ---------- */
@@ -1105,14 +1162,54 @@ function mockupBlob(){
   return new Promise(r => cv.toBlob(r, 'image/png'));
 }
 
+/* ---------- production & imposition ---------- */
+const SHEETS = { sra3:['SRA3 · 320×450',320,450], a3p:['A3+ · 330×488',330,488], sra2:['SRA2 · 450×640',450,640],
+  b2:['B2 · 500×700',500,700], f70:['70×100',700,1000], f72:['72×102',720,1020], custom:['Свой размер',0,0] };
+$('sheetFmt').innerHTML = Object.entries(SHEETS).map(([k,v]) => `<option value="${k}">${v[0]}</option>`).join('');
+function renderProd(){
+  const m = G.Pm, t = thickOf(S);
+  $('prodNote').textContent = S.type==='pouch' ? '' : S.dimMode==='mfg' ? 'Размеры берутся как есть, по линиям сгиба — без поправки на толщину.'
+    : `Толщина ${String(t).replace('.',',')} мм. По линиям сгиба: ${+m.L.toFixed(1)}×${+m.W.toFixed(1)}×${+m.H.toFixed(1)} мм.`;
+  const w = [];
+  if (S.sides!=='44' && hasInside()) w.push(['bad','Внутри есть печать, а красочность 4+0 — переключите на 4+4 или уберите печать внутри.']);
+  if (S.sides==='10') w.push(['','1+0: печать одной краской. Цветные фото и градиенты получатся одним цветом.']);
+  if (S.method==='flexo') w.push(['','Флексография: мелкий текст держите от 6 pt, тонкие линии от 0,25 мм. Для фото лучше офсет или цифра.']);
+  if (S.method==='digital' && S.qty > 2000) w.push(['','Тираж больше 2000 шт — офсет обычно выходит дешевле цифры.']);
+  if (S.method==='offset' && S.qty < 300) w.push(['','Тираж меньше 300 шт — цифровая печать обычно дешевле офсета.']);
+  if (thickOf(S) >= 1.5 && S.type==='tube') w.push(['','Гофрокартон для коробки с клапанами — проверьте у производителя: обычно его делают из картона 0,3–0,6 мм.']);
+  $('printWarn').innerHTML = w.map(([c,t]) => `<p class="warn ${c}">${t}</p>`).join('');
+}
+const polyArea = p => Math.abs(p.reduce((a,[x,y],i)=>{ const [u,v] = p[(i+1)%p.length]; return a + x*v - u*y; }, 0))/2;
+function impCalc(){
+  const SW = +S.sheetW, SH = +S.sheetH, m = +S.grip, g = +S.impGap, {w,h} = G.b, AW = SW-2*m, AH = SH-2*m;
+  const fit = (iw,ih) => ({nx: Math.max(0,Math.floor((AW+g)/(iw+g))), ny: Math.max(0,Math.floor((AH+g)/(ih+g)))});
+  const a = fit(w,h), b = fit(h,w), rot = b.nx*b.ny > a.nx*a.ny, f = rot ? b : a;
+  return {SW, SH, m, g, rot, ...f, n: f.nx*f.ny, iw: rot ? h : w, ih: rot ? w : h};
+}
+function renderImp(){
+  if (!G || !$('impPrev')) return; const I = impCalc();
+  const area = G.N.reduce((a,n) => a + polyArea(n.poly) - n.holes.reduce((s,h)=>s+polyArea(h),0), 0);
+  const {minX,maxY,w,h} = G.b, ln = l => l.map(([p,q]) => `M${f2(p[0]-minX)} ${f2(maxY-p[1])}L${f2(q[0]-minX)} ${f2(maxY-q[1])}`).join('');
+  const item = `<g id="impItem"><path d="${ln(G.creases)}" stroke="var(--crease)" stroke-dasharray="3 2" stroke-width="${f2(Math.max(I.SW,I.SH)/300)}" fill="none"/><path d="${ln(G.cuts)}" stroke="var(--accent)" stroke-width="${f2(Math.max(I.SW,I.SH)/250)}" fill="none"/></g>`;
+  let uses = '';
+  for (let i = 0; i < I.nx; i++) for (let j = 0; j < I.ny; j++){ const x = I.m + i*(I.iw+I.g), y = I.m + j*(I.ih+I.g);
+    uses += I.rot ? `<g transform="translate(${f2(x+h)} ${f2(y)}) rotate(90)">${i||j ? '<use href="#impItem"/>' : item}</g>` : `<g transform="translate(${f2(x)} ${f2(y)})">${i||j ? '<use href="#impItem"/>' : item}</g>`; }
+  $('impPrev').innerHTML = `<svg viewBox="-4 -4 ${I.SW+8} ${I.SH+8}" role="img" aria-label="Раскладка: ${I.n} шт на листе"><rect width="${I.SW}" height="${I.SH}" fill="#fff" stroke="var(--line)" stroke-width="${f2(I.SW/200)}"/><rect x="${I.m}" y="${I.m}" width="${I.SW-2*I.m}" height="${I.SH-2*I.m}" fill="none" stroke="#c9c7d0" stroke-dasharray="6 4" stroke-width="${f2(I.SW/400)}"/>${I.n ? uses : `<text x="${I.SW/2}" y="${I.SH/2}" text-anchor="middle" font-size="${I.SW/14}" fill="var(--cut)">не помещается</text>`}</svg>`;
+  const sheets = I.n ? Math.ceil(S.qty/I.n*1.05) : 0, use = I.n ? I.n*area/(I.SW*I.SH)*100 : 0;
+  $('impStat').innerHTML = `<span>На листе</span><b>${I.n} шт${I.rot?' (повёрнуты)':''}</b><span>Листов на тираж ${S.qty} шт</span><b>${sheets || '—'}</b>
+    <span>Использование картона</span><b>${use.toFixed(0)}%</b><span>Отходы</span><b>${I.n ? (100-use).toFixed(0)+'%' : '—'}</b>`;
+}
+
 /* ---------- refresh ---------- */
 let pending = 0, geomDirty = true;
 function refresh(geom){ if (geom) geomDirty = true; persist(); if (!pending) pending = requestAnimationFrame(doRefresh); }
 function doRefresh(){
   pending = 0;
   if (geomDirty){
+    BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
     G = build(S); rebuild3D(); applyFold(T, !keepCam); keepCam = false; geomDirty = false;
     $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
+    renderProd(); renderImp();
     gen++; renderSlots(); renderEls();
   }
   const sTex = Math.min(10, 4096/Math.max(G.b.w,G.b.h));
@@ -1177,6 +1274,9 @@ $('view2d').addEventListener('pointercancel', () => { dragging = false; pan = nu
 /* ---------- UI ---------- */
 function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
+  for (const id of ['L','W','H']) $(id).value = +(S[id]/UF()).toFixed(S.unit==='mm'?1:2);
+  $('dimTitle').textContent = `Размеры, ${UNAME[S.unit]} (${{inner:'внутренние',outer:'наружные',mfg:'по линиям сгиба'}[S.dimMode]})`;
+  $('thickWrap').hidden = S.mat!=='custom'; $('sheetCustom').hidden = S.sheetFmt!=='custom';
   $('lidOpenO').textContent = S.lidOpen+'%';
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a); if (el.type==='checkbox') el.checked=!!S[k]; else el.value=S[k]; }
   const dl = DIM_LABELS[S.type] || ['Длина','Ширина','Высота']; ['lL','lW','lH'].forEach((id,i)=>$(id).textContent=dl[i]);
@@ -1202,21 +1302,27 @@ function renderTpls(){
   }).join('');
   $('tpls').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) selectTpl(b.dataset.id); });
 }
-const VIEW_ONLY = ['pull','lidOpen'];
+const VIEW_ONLY = ['pull','lidOpen','sheetW','sheetH','grip','impGap','qty'];
+const UF = () => ({mm:1, cm:10, in:25.4}[S.unit] || 1), UNAME = {mm:'мм', cm:'см', in:'дюймы'};
 let keepCam = false;
 function bindInputs(){
   for (const id of NUM){ const el=$(id); if (!el || ['lInt','lAng','shadow'].includes(id)) continue;
-    el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[id]=clamp(v,+el.min,+el.max);
+    el.addEventListener('input',()=>{ let v=parseFloat(el.value); if (!isFinite(v)) return; if (['L','W','H'].includes(id)) v*=UF(); S[id]=clamp(v,+el.min,+el.max);
+      if (['sheetW','sheetH','grip','impGap','qty'].includes(id)){ S.sheetFmt = ['sheetW','sheetH'].includes(id) ? 'custom' : S.sheetFmt; persist(); renderImp(); return; }
       if (VIEW_ONLY.includes(id)){ keepCam = true; if ($(id+'O')) $(id+'O').textContent = S[id]+'%'; }
       else if (!['L','W','H'].includes(id)) custom();
       refresh(true); });
-    el.addEventListener('change',()=>{ el.value=S[id]; }); }
+    el.addEventListener('change',()=>{ el.value = ['L','W','H'].includes(id) ? +(S[id]/UF()).toFixed(S.unit==='mm'?1:2) : S[id]; }); }
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a);
     if (el.type==='checkbox') el.addEventListener('change',()=>{ S[k]=el.checked; custom(); syncUI(); refresh(true); });
     else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
   for (const id of ['notch','window','hang','dbl']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
   for (const id of ['bg','ink','title','sub','inside','finish']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
+  for (const id of ['mat','dimMode','bleed','safe','method','sides','sheetFmt']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
+    if (id==='sheetFmt' && SHEETS[S.sheetFmt]?.[1]) [S.sheetW,S.sheetH] = SHEETS[S.sheetFmt].slice(1);
+    syncUI(); refresh(true); });
+  $('unit').addEventListener('input',()=>{ S.unit=$('unit').value; syncUI(); persist(); });
   for (const id of ['showText','showLines']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; refresh(); });
   $('presets').addEventListener('click',e=>{ const d=e.target.closest('[data-d]')?.dataset.d; if(!d) return;
     [S.L,S.W,S.H]=d.split(',').map(Number); syncUI(); refresh(true); });
@@ -1638,6 +1744,22 @@ async function makePdf(){
   if (!vec) toast('Шрифты не загрузились — текст в PDF картинкой 300 dpi, не в кривых.');
   return pdf.finish(cat, inf);
 }
+$('impPdf').addEventListener('click', async () => {
+  const I = impCalc(); if (!I.n){ toast('Развёртка не помещается на этот лист.'); return; }
+  if (!window.CompressionStream){ toast('Этот браузер не умеет собирать PDF.'); return; }
+  const K = 72/25.4, pdf = PdfW(), {minX,maxY,h} = G.b; let cut = '', crs = '';
+  const ln = (l, tf) => l.map(([a,b]) => { const [x1,y1] = tf(a[0]-minX, maxY-a[1]), [x2,y2] = tf(b[0]-minX, maxY-b[1]); return `${pn(x1)} ${pn(y1)} m ${pn(x2)} ${pn(y2)} l`; }).join('\n');
+  for (let i = 0; i < I.nx; i++) for (let j = 0; j < I.ny; j++){ const x0 = I.m + i*(I.iw+I.g), y0 = I.m + j*(I.ih+I.g);
+    const tf = I.rot ? (x,y) => [x0+h-y, y0+x] : (x,y) => [x0+x, y0+y]; cut += ln(G.cuts, tf)+'\n'; crs += ln(G.creases, tf)+'\n'; }
+  const sep = (n,c) => `[/Separation /${n} /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [${c}] /N 1 >>]`;
+  const cs = `${pn(K)} 0 0 ${pn(-K)} 0 ${pn(I.SH*K)} cm\nq 0.2 w 0 0 0 0.4 K 0 0 ${I.SW} ${I.SH} re S Q\nq /GSop gs /CsCrease CS 1 SCN 0.25 w [3 1.5] 0 d\n${crs}S Q\nq /GSop gs /CsCut CS 1 SCN 0.25 w\n${cut}S Q`;
+  const c = pdf.id(), pg = pdf.id(), pages = pdf.id(), cat = pdf.id(), inf = pdf.id();
+  pdf.stream(c, '/Filter /FlateDecode', await deflate(enc.encode(cs)));
+  pdf.obj(pg, `<< /Type /Page /Parent ${pages} 0 R /MediaBox [0 0 ${pn(I.SW*K)} ${pn(I.SH*K)}] /Contents ${c} 0 R /Resources << /ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >> >> >>`);
+  pdf.obj(pages, `<< /Type /Pages /Kids [${pg} 0 R] /Count 1 >>`); pdf.obj(cat, `<< /Type /Catalog /Pages ${pages} 0 R >>`);
+  pdf.obj(inf, `<< /Title ${pdfStr(`Раскладка штампа ${I.n} шт, лист ${I.SW}×${I.SH} мм`)} /Creator (Skladka) >>`);
+  saveFile(fname(`-raskladka-${I.n}sht-${I.SW}x${I.SH}.pdf`), pdf.finish(cat, inf));
+});
 $('exPdf').addEventListener('click', async () => { toast('Собираю PDF для типографии…'); const b = await makePdf(); if (b) saveFile(fname('-tipografiya.pdf'), b); });
 $('exZip').addEventListener('click', async () => {
   if (!window.JSZip){ toast('Библиотека архива не загрузилась. Обновите страницу.'); return; }
@@ -1691,8 +1813,10 @@ $('openProjHome').addEventListener('change', importProject);
 
 bindInputs(); syncUI(); renderMine(); setPane(store.get('skladka-pane','size')); resize();
 camera.position.set(.55,.38,1);
+BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
 $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
+renderProd(); renderImp();
 document.fonts?.ready.then(()=>refresh());
 $('pname').value = S.pname || '';
 if (S.pid && location.hash === '#editor') openProject(S.pid);
