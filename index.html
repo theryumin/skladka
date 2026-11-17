@@ -30,9 +30,10 @@
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
 *{box-sizing:border-box}
-.app{height:100%;display:grid;grid-template-columns:350px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px;
-  padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.app{height:100%;display:grid;grid-template-columns:350px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:8px;
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.app header .btn{padding:6px 11px}
 .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .brand b{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .brand span{color:var(--muted);font-size:13px}
@@ -123,7 +124,7 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
 .sw button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:1px}
 .sw button.dk{color:#e8ece9}
 .sw .tr{background:repeating-conic-gradient(#d9dcd8 0 25%,#ffffff 0 50%) 0 0/12px 12px}
-.pname{width:min(320px,50vw);font:600 15px var(--sans)!important;border-color:transparent!important;background:transparent!important}
+.pname{flex:0 1 460px;min-width:0;padding:4px 8px!important;font:700 19px var(--sans)!important;letter-spacing:-.01em;border-color:transparent!important;background:transparent!important}
 .pname:hover,.pname:focus{border-color:var(--line)!important;background:var(--field)!important}
 .saved{font-size:12px;color:var(--muted)}
 .card.proj{position:relative;display:block}
@@ -234,8 +235,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 <div class="app" hidden>
   <header>
     <button class="btn" id="goHome">← Все шаблоны</button>
-    <div class="brand"><b>Складка</b></div>
-    <input id="pname" type="text" class="pname" aria-label="Название проекта" placeholder="Название проекта">
+    <input id="pname" type="text" class="pname" aria-label="Название проекта" placeholder="Название проекта" title="Нажмите, чтобы переименовать">
     <span class="saved" id="savedState" aria-live="polite"></span>
     <div class="sp"></div>
     <div class="savewrap">
@@ -1321,13 +1321,15 @@ $('projGrid').addEventListener('click', async e => {
     await idb.del(d.dataset.del).catch(()=>{}); if (S.pid === d.dataset.del) S.pid = null; renderProjects(); return; }
   const o = e.target.closest('[data-pid]'); if (o) openProject(o.dataset.pid);
 });
-$('pname').addEventListener('input', () => { S.pname = $('pname').value; persist(); autosave(); });
+const setDocTitle = () => { document.title = location.hash === '#editor' && S.pname ? S.pname + ' — Складка' : 'Складка'; };
+$('pname').addEventListener('input', () => { S.pname = $('pname').value; setDocTitle(); persist(); autosave(); });
 
 /* ---------- home page ---------- */
 function showView(){
   const ed = location.hash === '#editor';
   $('home').hidden = ed; document.querySelector('.app').hidden = !ed;
-  if (ed){ resize(); fitCamera(); } else renderHome();
+  if (ed){ $('pname').value = S.pname || ''; resize(); fitCamera(); } else renderHome();
+  setDocTitle();
   window.scrollTo(0,0);
 }
 function openEditor(){ if (location.hash === '#editor') showView(); else location.hash = 'editor'; }
