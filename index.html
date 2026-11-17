@@ -201,7 +201,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
         <label class="btn" style="position:relative;overflow:hidden">Загрузить проект из файла (.json)<input id="openProjHome" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить проект из файла"></label></div>
       <p class="empty" id="projEmpty">Пока нет проектов. Откройте шаблон или создайте пустой проект ниже — он сохранится здесь автоматически. Проект с другого компьютера или с claude.ai загрузите кнопкой «Загрузить проект из файла».</p>
       <div class="home-grid" id="projGrid"></div>
-      <p class="note" id="projNote">Проекты сохраняются автоматически в этом браузере вместе с логотипами. Чтобы перенести на другой компьютер — «Сохранить → Проект .json».</p>
+      <p class="note" id="projNote">Проекты сохраняются автоматически в этом браузере вместе с логотипами. Чтобы перенести на другой компьютер — «Экспорт → Файл проекта .json».</p>
     </div>
     <div class="home-sec">
       <h2>Начать</h2>
@@ -239,14 +239,14 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
     <span class="saved" id="savedState" aria-live="polite"></span>
     <div class="sp"></div>
     <div class="savewrap">
-      <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Сохранить ▾</button>
+      <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Экспорт ▾</button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
         <button class="btn" role="menuitem" id="exZip"><b>Всё одним архивом</b><small>ZIP — PDF, SVG, PNG и проект сразу</small></button>
         <button class="btn" role="menuitem" id="exPdf"><b>PDF для типографии</b><small>1:1 в мм, вылеты, метки реза, штамп отдельной страницей</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Развёртка SVG</b><small>дизайн + контур слоями</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Шаблон SVG</b><small>только линии — верстать в Illustrator / Figma</small></button>
         <button class="btn" role="menuitem" id="exPng"><b>Мокап PNG</b><small>текущий ракурс 3D с выбранным фоном и светом</small></button>
-        <button class="btn" role="menuitem" id="saveProj"><b>Проект .json</b><small>чтобы потом открыть и продолжить здесь</small></button>
+        <button class="btn" role="menuitem" id="saveProj"><b>Файл проекта .json</b><small>копия проекта — открыть на другом компьютере</small></button>
         <p class="note">Контур реза — 100% Magenta, биговка — 100% Cyan пунктиром, вылеты 3 мм, зона безопасности 3 мм. Картинки в RGB — типография переведёт в CMYK.</p>
       </div>
     </div>
@@ -1292,7 +1292,7 @@ async function saveProject(){
   const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
   try { await idb.put({id:S.pid, name:S.pname || 'Без названия', updated:Date.now(), settings:{...S}, imgs, elimgs, thumb:snapThumb()});
     $('savedState').textContent = 'Сохранено'; }
-  catch { $('savedState').textContent = 'Не сохраняется: браузер запретил хранилище. Используйте «Сохранить → Проект .json».'; }
+  catch { $('savedState').textContent = 'Не сохраняется: браузер запретил хранилище. Используйте «Экспорт → Файл проекта .json».'; }
 }
 function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Сохраняю…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
 function newProject(name){ S.pid = uid()+Date.now().toString(36); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
