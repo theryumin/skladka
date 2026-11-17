@@ -309,6 +309,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <button class="btn" role="menuitem" id="exSvgArt"><b>Dieline with artwork, SVG</b><small>design + die lines as layers</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Blank template, SVG</b><small>lines only — design in Illustrator / Figma</small></button>
         <button class="btn" role="menuitem" id="exRender"><b>Renders, PNG</b><small>angles and size are set in the “Scene” tab</small></button>
+        <button class="btn" role="menuitem" id="exVideo"><b>Video, MP4</b><small>turntable or fold animation — settings in “Scene”</small></button>
         <button class="btn" role="menuitem" id="exPng"><b>Mockup, PNG</b><small>current 3D view with the chosen background and light</small></button>
         <button class="btn" role="menuitem" id="saveProj"><b>Project file .json</b><small>a copy of the project — open it on another computer</small></button>
         <p class="note">Scale 1:1, mm. CMYK, images at 300 dpi, fonts outlined. 3 mm bleed, 3 mm safe zone. Cut on the CUT layer (spot CutContour), creases on the CREASE layer (spot Crease), both overprinting.</p>
@@ -546,6 +547,16 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       <div class="angs" id="rAngles"></div>
       <button class="btn pri" id="rGo" style="text-align:center">Download renders</button>
       <p class="note">Several angles come as one ZIP. Background, light and fold state match the current 3D view.</p>
+    </section>
+    <section data-pane="scene">
+      <h2>Video</h2>
+      <label class="f">Motion<select id="vMotion"><option value="spin">360° turntable</option><option value="fold">Folds up from flat</option><option value="foldspin">Folds up, then turns 360°</option><option value="unfold">Unfolds to flat</option></select></label>
+      <div class="row2">
+        <label class="f">Length<select id="vDur"><option value="4">4 s</option><option value="6" selected>6 s</option><option value="8">8 s</option><option value="12">12 s</option></select></label>
+        <label class="f">Size<select id="vSize"><option value="1920x1080">1920×1080</option><option value="1280x720">1280×720</option><option value="1080x1080">1080×1080</option><option value="1080x1920">1080×1920 (Stories)</option></select></label>
+      </div>
+      <button class="btn pri" id="vGo" style="text-align:center">Record video</button>
+      <p class="note" id="vNote">Records in real time at 30 fps with the current background and light. MP4 where the browser supports it, otherwise WebM.</p>
     </section>
     <section data-pane="material">
       <h2>Material</h2>
@@ -1323,7 +1334,9 @@ function resize(){
 }
 new ResizeObserver(resize).observe(host);
 let anim = null;
+let recording = false;
 function loop(now){
+  if (recording) return requestAnimationFrame(loop);
   if (anim){ const p = clamp((now-anim.t0)/anim.dur,0,1); const t = lerp(anim.from, anim.to, p); applyFold(t,false); $('t').value = Math.round(t*1000); if (p>=1) anim=null; }
   controls.update(); renderer.render(scene,camera); requestAnimationFrame(loop);
 }
@@ -1447,6 +1460,57 @@ async function renderShots(){
   saveFile(fname(`-renders-${W}x${H}.zip`), await zip.generateAsync({type:'blob'}));
 }
 $('rGo').addEventListener('click', renderShots);
+
+/* ---------- video ---------- */
+const VMIME = ['video/mp4;codecs=avc1.640028','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
+  .find(m => window.MediaRecorder?.isTypeSupported?.(m));
+if (!VMIME){ $('vGo').disabled = true; $('vNote').textContent = 'This browser cannot record video. Use Chrome, Edge, Safari or Firefox.'; }
+async function recordVideo(){
+  if (!VMIME || recording) return;
+  const [W,H] = $('vSize').value.split('x').map(Number), dur = +$('vDur').value*1000, motion = $('vMotion').value, fps = 30;
+  const keepPos = camera.position.clone(), keepTgt = controls.target.clone(), keepAspect = camera.aspect, keepT = T;
+  const keepSize = renderer.getSize(new THREE.Vector2()), pr = renderer.getPixelRatio();
+  const vc = document.createElement('canvas'); vc.width = W; vc.height = H; const vx = vc.getContext('2d');
+  const bg = bgColors() || ['#ffffff','#e9eaec'];
+  const grad = vx.createRadialGradient(W/2, H*.4, 0, W/2, H*.4, Math.hypot(W,H)*.6); grad.addColorStop(0,bg[0]); grad.addColorStop(1,bg[1]);
+  recording = true; $('vGo').disabled = true;
+  let rec, chunks = [];
+  try {
+    renderer.setPixelRatio(1); renderer.setSize(W, H, false); camera.aspect = W/H; camera.updateProjectionMatrix();
+    // camera distance that fits both the flat sheet and the folded box at this aspect
+    const sph = new THREE.Sphere(), vf = camera.fov*DEG/2, fovE = Math.min(vf, Math.atan(Math.tan(vf)*W/H));
+    const el = Math.asin(.42/Math.hypot(.62,.42,1)), az0 = Math.atan2(.62,1);
+    const pose = p => { // p: 0..1 → fold state and camera azimuth
+      const e = x => x<.5 ? 2*x*x : 1-Math.pow(-2*x+2,2)/2; let t = 1, az = az0;
+      if (motion==='spin'){ az = az0 + p*2*PI; }
+      else if (motion==='fold'){ t = e(clamp((p-.08)/.8,0,1)); az = az0 - .9 + p*.9; }
+      else if (motion==='unfold'){ t = 1-e(clamp((p-.12)/.8,0,1)); az = az0 + p*.9; }
+      else { const q = clamp(p/.45,0,1); t = e(clamp((q-.08)/.84,0,1)); az = az0 - .6 + q*.6 + e(clamp((p-.5)/.5,0,1))*2*PI; }
+      applyFold(t,false); box3.getBoundingSphere(sph); const dist = sph.radius/Math.sin(fovE)*1.2, c = sph.center;
+      camera.position.set(c.x + Math.sin(az)*Math.cos(el)*dist, c.y + Math.sin(el)*dist, c.z + Math.cos(az)*Math.cos(el)*dist); camera.lookAt(c);
+      renderer.render(scene,camera); vx.fillStyle = grad; vx.fillRect(0,0,W,H); vx.drawImage(renderer.domElement,0,0,W,H); };
+    pose(0);
+    const stream = vc.captureStream(fps);
+    rec = new MediaRecorder(stream, {mimeType: VMIME, videoBitsPerSecond: Math.round(W*H*fps*.2)});
+    rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    const stopped = new Promise(r => rec.onstop = r);
+    rec.start(250);
+    const t0 = performance.now();
+    await new Promise(done => { const step = () => { const p = clamp((performance.now()-t0)/dur,0,1); pose(p);
+      $('vGo').textContent = `Recording… ${Math.round(p*100)}%`; if (p < 1) requestAnimationFrame(step); else setTimeout(done, 200); }; requestAnimationFrame(step); });
+    rec.stop(); await stopped; stream.getTracks().forEach(t => t.stop());
+  } catch(e){ console.warn('video', e); toast('Could not record the video: ' + (e.message||e)); chunks = []; }
+  finally {
+    renderer.setPixelRatio(pr); renderer.setSize(keepSize.x, keepSize.y, false); camera.aspect = keepAspect; camera.updateProjectionMatrix();
+    applyFold(keepT,false); controls.target.copy(keepTgt); camera.position.copy(keepPos); camera.lookAt(keepTgt); controls.update();
+    recording = false; $('vGo').disabled = false; $('vGo').textContent = 'Record video';
+  }
+  if (!chunks.length) return;
+  const ext = VMIME.startsWith('video/mp4') ? 'mp4' : 'webm';
+  saveFile(fname(`-${motion}-${W}x${H}.${ext}`), new Blob(chunks, {type: VMIME.split(';')[0]}));
+}
+$('vGo').addEventListener('click', recordVideo);
+$('exVideo').addEventListener('click', () => { if (location.hash==='#editor' && $('view3d').hidden) $('t3d').click(); setPane('scene'); recordVideo(); });
 $('exRender').addEventListener('click', () => { if (location.hash==='#editor' && $('view3d').hidden) $('t3d').click(); renderShots(); });
 
 /* ---------- refresh ---------- */
