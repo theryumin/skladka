@@ -255,11 +255,6 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 
   <aside>
     <section>
-      <h2>Шаблон</h2>
-      <div class="tpls" id="tpls"></div>
-    </section>
-
-    <section>
       <h2>Размеры, мм (внутренние)</h2>
       <div class="row">
         <label class="f"><span id="lL">Длина</span><input id="L" type="number" min="10" max="800" step="1"></label>
@@ -317,6 +312,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
         <p class="note">Это 3D-мокап пакета для показа дизайна. Развёртка — раскладка сторон для вёрстки, не штамп: точный шаблон для печати выдаёт производитель пакетов. Для пакета подходят покрытия «Глянец», «Мат» и «Металлик».</p>
       </div>
       <div data-for="lidbase" class="sub" style="padding-left:0">
+        <label class="rng"><span>Открыть крышку</span><input id="lidOpen" type="range" min="0" max="100" step="5"><output id="lidOpenO"></output></label>
         <div class="row2">
           <label class="f">Высота крышки<input id="lidH" type="number" min="8" max="400" step="1"></label>
           <label class="f">Зазор крышки<input id="gap" type="number" min="0" max="10" step="0.5"></label>
@@ -499,7 +495,7 @@ const SIZE_CHIPS = {
   pouch:[['250 г','130,70,200'],['500 г','160,90,250'],['1 кг','190,110,300']],
 };
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
-  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false,
+  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0,
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
   scBg:'studio', scBgColor:'#dfe6e2', light:'studio', lInt:100, lAng:-35, shadow:20 };
@@ -510,7 +506,7 @@ const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|Montserrat','Montserrat']
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
 const uid = () => Math.random().toString(36).slice(2,9);
 const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
-const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lInt','lAng','shadow'];
+const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
 const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
 const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor'];
@@ -664,7 +660,8 @@ function buildLidBase(P,B){
   addTray(B,'b',0,L,W,H,P.tab,false,{p:[0,0,0],q:Q_UP},false,false);
   B.face('bottom',[0,0,L,W]);
   const ox = L + H + Hl + 12;
-  addTray(B,'l',ox,Ll,Wl,Hl,P.tab,true,{p:[-L/2-Ll/2, H+.6, -W/2+Wl/2], q:Q_LID},true,false);
+  const lift = clamp(P.lidOpen,0,100)/100 * (Hl + H*.8 + 15);   // lid raised above the base to show the inside
+  addTray(B,'l',ox,Ll,Wl,Hl,P.tab,true,{p:[-L/2-Ll/2, H+.6+lift, -W/2+Wl/2], q:Q_LID},true,false);
   B.N.find(n=>n.id==='lbase').flat = {p:[-L/2-Ll/2 - (L+2*H)/2 - (Ll+2*Hl)/2 - 20, Hl+.6, -W/2+Wl/2], q:Q_LID};
   return {};
 }
@@ -1060,7 +1057,7 @@ function refresh(geom){ if (geom) geomDirty = true; persist(); if (!pending) pen
 function doRefresh(){
   pending = 0;
   if (geomDirty){
-    G = build(S); rebuild3D(); applyFold(T, true); geomDirty = false;
+    G = build(S); rebuild3D(); applyFold(T, !keepCam); keepCam = false; geomDirty = false;
     $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
     gen++; renderSlots(); renderEls();
   }
@@ -1126,6 +1123,7 @@ $('view2d').addEventListener('pointercancel', () => { dragging = false; pan = nu
 /* ---------- UI ---------- */
 function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
+  $('lidOpenO').textContent = S.lidOpen+'%';
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a); if (el.type==='checkbox') el.checked=!!S[k]; else el.value=S[k]; }
   const dl = DIM_LABELS[S.type] || ['Длина','Ширина','Высота']; ['lL','lW','lH'].forEach((id,i)=>$(id).textContent=dl[i]);
   for (const id of SEL) $(id).value = S[id];
@@ -1150,10 +1148,14 @@ function renderTpls(){
   }).join('');
   $('tpls').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) selectTpl(b.dataset.id); });
 }
+const VIEW_ONLY = ['pull','lidOpen'];
+let keepCam = false;
 function bindInputs(){
   for (const id of NUM){ const el=$(id); if (!el || ['lInt','lAng','shadow'].includes(id)) continue;
     el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[id]=clamp(v,+el.min,+el.max);
-      if (!['L','W','H'].includes(id)) custom(); refresh(true); });
+      if (VIEW_ONLY.includes(id)){ keepCam = true; if ($(id+'O')) $(id+'O').textContent = S[id]+'%'; }
+      else if (!['L','W','H'].includes(id)) custom();
+      refresh(true); });
     el.addEventListener('change',()=>{ el.value=S[id]; }); }
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a);
     if (el.type==='checkbox') el.addEventListener('change',()=>{ S[k]=el.checked; custom(); syncUI(); refresh(true); });
@@ -1486,7 +1488,7 @@ const importProject = e=>{ const f=e.target.files[0]; if(!f) return; const r=new
 $('openProj').addEventListener('change', importProject);
 $('openProjHome').addEventListener('change', importProject);
 
-renderTpls(); bindInputs(); syncUI(); renderMine(); resize();
+bindInputs(); syncUI(); renderMine(); resize();
 camera.position.set(.55,.38,1);
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
 $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
