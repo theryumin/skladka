@@ -135,6 +135,17 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
   padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1}
 .savewrap{position:relative}
+.icons{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.icons button{aspect-ratio:1;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--fg);cursor:pointer;display:grid;place-items:center;padding:4px;font:700 9px var(--sans)}
+.icons button:hover{border-color:var(--accent);color:var(--accent)}
+.icons svg{width:100%;height:100%}
+.els{grid-template-columns:minmax(0,1fr)}
+section>*{min-width:0}
+.elrow{display:flex;gap:4px;align-items:stretch;min-width:0}
+.elrow>.btn:first-child{flex:1;min-width:0}
+.elrow .mini{flex:none;width:30px;padding:0;display:grid;place-items:center;text-align:center;font-size:13px}
+.elrow .mini[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.elrow.off>.btn:first-child{opacity:.5}
 .imp{background:var(--stage);border-radius:10px;padding:10px;display:grid;place-items:center}
 .imp svg{width:100%;height:auto;max-height:260px;display:block}
 .kv{display:grid;grid-template-columns:auto auto;gap:4px 12px;font-size:13px}
@@ -411,6 +422,15 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <label class="f">Цвет фона<input id="bg" type="color"></label>
         <label class="f">Цвет текста<input id="ink" type="color"></label>
       </div>
+      <div class="row2">
+        <label class="f">Заливка фона<select id="bgMode"><option value="solid">Сплошная</option><option value="grad">Градиент</option><option value="pattern">Узор</option></select></label>
+        <label class="f" id="bgOpts">Второй цвет<input id="bg2" type="color"></label>
+      </div>
+      <label class="rng" id="gradOpts"><span>Угол градиента</span><input id="gradAng" type="range" min="0" max="360" step="5"><output id="gradAngO"></output></label>
+      <div id="patOpts" class="btns">
+        <label class="f">Узор<select id="pattern"><option value="dots">Горошек</option><option value="stripes">Полоски</option><option value="grid">Сетка</option><option value="checks">Клетка</option><option value="logo">Логотип повтором</option></select></label>
+        <label class="rng"><span>Шаг узора</span><input id="patScale" type="range" min="3" max="60" step="1"><output id="patScaleO"></output></label>
+      </div>
       <label class="chk"><input id="showText" type="checkbox"> Текст на сторонах без картинок</label>
       <label class="f">Название<input id="title" type="text"></label>
       <label class="f">Подпись<input id="sub" type="text"></label>
@@ -419,11 +439,17 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       <p class="note">Картинка ложится на сторону с обрезкой по краям. Для точной вёрстки скачайте шаблон SVG, нарисуйте дизайн поверх и загрузите PNG того же размера в «Вся развёртка».</p>
     </section>
     <section data-pane="elements">
-      <h2>Логотипы и надписи</h2>
+      <h2>Элементы</h2>
       <div class="row2">
         <label class="btn" style="position:relative;overflow:hidden;text-align:center">+ Логотип<input id="addLogo" type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить логотип"></label>
         <button class="btn" id="addText" style="text-align:center">+ Надпись</button>
+        <button class="btn" id="addShape" style="text-align:center">+ Фигура</button>
+        <button class="btn" id="addInfo" style="text-align:center">+ Состав</button>
+        <button class="btn" id="addEan" style="text-align:center">+ Штрихкод EAN-13</button>
+        <button class="btn" id="addQr" style="text-align:center">+ QR-код</button>
       </div>
+      <div class="f">Значки</div>
+      <div class="icons" id="iconBar"></div>
       <div class="els" id="els"></div>
       <div class="edit" id="elEdit" hidden>
         <div class="row2">
@@ -431,10 +457,14 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
           <label class="f">Грань<select id="elFace"></select></label>
         </div>
         <div id="elTextOpts" class="edit" style="border:0;padding:0">
-          <label class="f">Текст<textarea id="elText" rows="2"></textarea></label>
+          <label class="f"><span id="elTextLbl">Текст</span><textarea id="elText" rows="2"></textarea></label>
           <div class="row2">
-            <label class="f">Шрифт<select id="elFont"></select></label>
+            <label class="f" id="elFontWrap">Шрифт<select id="elFont"></select></label>
+            <label class="f" id="elAlignWrap">Выравнивание<select id="elAlign"><option value="center">По центру</option><option value="left">Влево</option><option value="right">Вправо</option></select></label>
             <label class="f">Цвет<input id="elColor" type="color"></label>
+            <label class="f" id="elShapeWrap">Фигура<select id="elShape"><option value="rect">Прямоугольник</option><option value="round">Скруглённый</option><option value="circle">Круг / овал</option><option value="frame">Рамка</option></select></label>
+            <label class="f" id="elHWrap">Высота, мм<input id="elH" type="number" min="0.3" max="400" step="0.5"></label>
+            <label class="f" id="elIconWrap">Значок<select id="elIcon"></select></label>
           </div>
         </div>
         <label class="rng"><span id="elSizeLbl">Размер, мм</span><input id="elSize" type="range" min="2" max="300" step="1"><output id="elSizeO"></output></label>
@@ -609,20 +639,20 @@ const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck
   winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0,
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
-  mat:'carton05', white:'', cornerR:0, vents:0, ventD:8, tear:false, tearY:70, tearW:6, grain:'any', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
+  mat:'carton05', white:'', bgMode:'solid', bg2:'#c9a227', gradAng:90, pattern:'dots', patScale:10, cornerR:0, vents:0, ventD:8, tear:false, tearY:70, tearW:6, grain:'any', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
   sheetFmt:'sra3', sheetW:320, sheetH:450, grip:10, impGap:4, qty:500,
   scBg:'studio', scBgColor:'#dfe6e2', light:'studio', lInt:100, lAng:-35, shadow:20 };
 const S = {...DEFAULTS};
 const IMGS = {};
 const ELIMG = {};
-const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|Montserrat','Montserrat'],['700|Montserrat','Montserrat жирный'],
+const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|IBM Plex Sans','Plex Sans обычный'],['400|IBM Plex Mono','Plex Mono'],['400|Montserrat','Montserrat'],['700|Montserrat','Montserrat жирный'],
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
 const uid = () => Math.random().toString(36).slice(2,9);
 const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
-const NUM = ['cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
+const NUM = ['gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
 const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
-const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain'];
+const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern'];
 const CHK = ['notch','window','hang','showText','showLines','dbl','tear'];
 const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
 
@@ -631,8 +661,8 @@ const store = {
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
 Object.assign(S, store.get('skladka-settings-2', {}));
-S.els = (S.els||[]).filter(e => e.kind==='text');   // logos live in project files, not in browser storage
-const persist = () => { store.set('skladka-settings-2', {...S, els:S.els.filter(e=>e.kind==='text')}); if (typeof autosave === 'function') autosave(); };
+S.els = (S.els||[]).filter(e => e.kind!=='image');   // logos live in project files, not in browser storage
+const persist = () => { store.set('skladka-settings-2', {...S, els:S.els.filter(e=>e.kind!=='image')}); if (typeof autosave === 'function') autosave(); };
 
 /* ---------- geometry helpers ---------- */
 const QI = new THREE.Quaternion();
@@ -915,6 +945,7 @@ function placeholder(ctx, key, w, h, s){
   } else if (key==='back'){
     if (t){ const fs = fitFont(ctx,t,600,Math.min(w*.1,h*.12),w*.8); ctx.fillText(t,0,-h*.32);
       if (sub){ fitFont(ctx,sub,400,fs*.55,w*.8); ctx.fillText(sub,0,-h*.32+fs*1.1); } }
+    if (S.els.some(e => e.kind==='barcode')) return;   // a real EAN-13 element replaces the sample barcode
     const bw = Math.min(w*.5, 34*s), bh = Math.min(h*.22, 18*s), bx = -bw/2, by = h/2-bh-Math.min(7*s,h*.08);
     ctx.fillStyle='#ffffff'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle='#111111';
     let r = hash(t+sub), cx = bx+bw*.08; const u = bw*.84/95;
@@ -937,13 +968,90 @@ function faceX(G, f, s, side){
   return { cx: side==='in' ? (maxX-(x0+x1)/2)*s : ((x0+x1)/2-minX)*s, cy:(maxY-(y0+y1)/2)*s,
     cw, ch, rot: side==='in' ? -f.rot : f.rot, lw:q?ch:cw, lh:q?cw:ch };
 }
+function drawShape(ctx, el, s){
+  const w = el.size*s, h = (el.h || el.size)*s; ctx.fillStyle = el.color; ctx.strokeStyle = el.color;
+  if (el.shape==='circle'){ ctx.beginPath(); ctx.ellipse(0,0,w/2,h/2,0,0,2*PI); ctx.fill(); }
+  else if (el.shape==='frame'){ const t = Math.max(.2, el.t || .5)*s; ctx.lineWidth = t; ctx.strokeRect(-w/2+t/2,-h/2+t/2,w-t,h-t); }
+  else if (el.shape==='round'){ ctx.beginPath(); ctx.roundRect(-w/2,-h/2,w,h,Math.min(w,h)*.22); ctx.fill(); }
+  else ctx.fillRect(-w/2,-h/2,w,h);
+  return [w,h];
+}
+// EAN-13: 95 modules + quiet zones, human-readable digits under the bars
+const EAN_L = ['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+const EAN_P = ['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+function eanDigits(code){ const d = String(code||'').replace(/\D/g,'').slice(0,12).padEnd(12,'0');
+  const sum = [...d].reduce((a,c,i) => a + (+c)*(i%2 ? 3 : 1), 0); return d + ((10 - sum%10) % 10); }
+function drawEAN(ctx, el, s){
+  const d = eanDigits(el.text), Rc = c => EAN_L[c].replace(/./g, b => b==='0' ? '1' : '0'), Gc = c => [...Rc(c)].reverse().join('');
+  let bits = '101'; for (let i = 1; i < 7; i++) bits += EAN_P[+d[0]][i-1]==='L' ? EAN_L[+d[i]] : Gc(+d[i]);
+  bits += '01010'; for (let i = 7; i < 13; i++) bits += Rc(+d[i]); bits += '101';
+  const W = el.size*s, mod = W/113, H = W*.68, x0 = -W/2 + 11*mod, hb = H*.8, top = -H/2 + H*.04;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(-W/2,-H/2,W,H); ctx.fillStyle = el.color || '#000000';
+  [...bits].forEach((b,i) => { if (b==='1'){ const guard = i<3 || (i>=45 && i<50) || i>=92; ctx.fillRect(x0+i*mod, top, mod*1.001, guard ? hb+mod*5 : hb); } });
+  ctx.font = `400 ${mod*8.5}px "IBM Plex Mono", ui-monospace, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const yb = top + hb + mod*8.5; ctx.fillText(d[0], -W/2+5*mod, yb); ctx.fillText(d.slice(1,7), x0+24*mod, yb); ctx.fillText(d.slice(7), x0+71*mod, yb);
+  return [W,H];
+}
+const QRC = {}; let qrP = null;
+function qrMatrix(t){
+  if (QRC[t]) return QRC[t];
+  if (!window.qrcode){ qrP ??= new Promise(r => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+    sc.onload = () => { gen++; refresh(); r(); }; sc.onerror = () => { toast('Не получилось загрузить генератор QR. Проверьте интернет.'); r(); }; document.head.appendChild(sc); }); return null; }
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8']; const q = qrcode(0,'M'); q.addData(t || ' '); q.make();
+  const n = q.getModuleCount(), m = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) m.push(q.isDark(r,c)); return QRC[t] = {n, m};
+}
+function drawQR(ctx, el, s){
+  const W = el.size*s, M = qrMatrix(el.text || ' '); ctx.fillStyle = '#ffffff'; ctx.fillRect(-W/2,-W/2,W,W);
+  if (!M){ ctx.fillStyle = '#d9d9d9'; ctx.fillRect(-W/2+W*.12,-W/2+W*.12,W*.76,W*.76); return [W,W]; }
+  const q = W/(M.n+8); ctx.fillStyle = el.color || '#000000';
+  for (let r = 0; r < M.n; r++) for (let c = 0; c < M.n; c++) if (M.m[r*M.n+c]) ctx.fillRect(-W/2+(c+4)*q, -W/2+(r+4)*q, q*1.02, q*1.02);
+  return [W,W];
+}
+const ICONS = {
+  up:['Этой стороной вверх','M7 20V5M4 8l3-3 3 3M17 20V5M14 8l3-3 3 3M3 22h18'],
+  fragile:['Хрупкое','M7.5 2.5h9l-.6 6a3.9 3.9 0 0 1-7.8 0zM12 12.5V20M8 20.5h8M11 3l1.3 2.2-1.4 1.6 1.6 1.7'],
+  dry:['Беречь от влаги','M3 12a9 9 0 0 1 18 0zM12 12v6.5a2 2 0 0 0 4 0M6 15.5v2M8.5 18v2M18.5 15.5v2'],
+  recycle:['Переработка','M13 4.5l5 8.6M18 13.1l.1-3.3M18 13.1l-2.9-1.5M17 18.5H7M7 18.5l2.8-1.7M7 18.5l2.8 1.8M6 14l5-8.7M11 5.3l-3 .2M11 5.3l.9 3'],
+  pap:['Картон PAP 21','M13 3.5l4 6.9M17 10.4l.1-2.8M17 10.4l-2.5-1.3M15.5 14.5h-7M8.5 14.5l2.3-1.4M8.5 14.5l2.3 1.4M7 10.4l4-6.9M11 3.5l-2.6.2M11 3.5l.8 2.6'],
+  food:['Для пищевых продуктов','M6 3h6l-.5 5.5a2.5 2.5 0 0 1-5 0zM9 11v8M6.5 19.5h5M17 3v17M15 3v4.5a2 2 0 0 0 4 0V3'],
+  leaf:['Эко','M5 19c0-8.5 6-14 15-14 0 9-6 15-14.5 14.5M5 19l7.5-7.5'],
+  eac:['EAC',''],
+};
+function drawIcon(ctx, el, s){
+  const W = el.size*s, k = W/24, ic = el.icon || 'up';
+  ctx.save(); ctx.strokeStyle = ctx.fillStyle = el.color || '#000000';
+  if (ic==='eac'){ ctx.font = `700 ${W*.62}px "Montserrat", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('EAC', 0, W*.03); ctx.restore(); return [W, W*.6]; }
+  ctx.scale(k,k); ctx.translate(-12,-12); ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(new Path2D(ICONS[ic][1]));
+  if (ic==='pap'){ ctx.font = '600 4.2px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('21', 12, 10.6); ctx.font = '700 4.4px "IBM Plex Sans", sans-serif'; ctx.fillText('PAP', 12, 19.6); }
+  ctx.restore(); return [W,W];
+}
 function drawEl(ctx, el, s){
   if (el.kind==='image'){ const im = ELIMG[el.id]?.img; if (!im) return null;
     const w = el.size*s, h = w*im.naturalHeight/im.naturalWidth; ctx.drawImage(im,-w/2,-h/2,w,h); return [w,h]; }
-  const [wt,fam] = el.font.split('|'), fs = el.size*s, lh = fs*1.2, lines = String(el.text||'').split('\n');
-  ctx.font = `${wt} ${fs}px "${fam}", system-ui, sans-serif`; ctx.fillStyle = el.color; ctx.textAlign='center'; ctx.textBaseline='middle';
-  let mw = 0; lines.forEach((ln,i)=>{ ctx.fillText(ln,0,(i-(lines.length-1)/2)*lh); mw=Math.max(mw,ctx.measureText(ln).width); });
+  if (el.kind==='shape') return drawShape(ctx, el, s);
+  if (el.kind==='barcode') return drawEAN(ctx, el, s);
+  if (el.kind==='qr') return drawQR(ctx, el, s);
+  if (el.kind==='icon') return drawIcon(ctx, el, s);
+  const [wt,fam] = el.font.split('|'), fs = el.size*s, lh = fs*1.2, lines = String(el.text||'').split('\n'), al = el.align || 'center';
+  ctx.font = `${wt} ${fs}px "${fam}", system-ui, sans-serif`; ctx.fillStyle = el.color; ctx.textAlign = al; ctx.textBaseline = 'middle';
+  const mw = Math.max(0, ...lines.map(ln => ctx.measureText(ln).width)), x = al==='left' ? -mw/2 : al==='right' ? mw/2 : 0;
+  lines.forEach((ln,i) => ctx.fillText(ln, x, (i-(lines.length-1)/2)*lh));
   return [mw, lh*lines.length];
+}
+function bgPaint(ctx, w, h, s){
+  ctx.save();
+  if (S.bgMode==='grad'){ const a = S.gradAng*DEG, cx = w/2, cy = h/2, r = Math.abs(w/2*Math.cos(a)) + Math.abs(h/2*Math.sin(a));
+    const g = ctx.createLinearGradient(cx-Math.cos(a)*r, cy-Math.sin(a)*r, cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+    g.addColorStop(0, S.bg); g.addColorStop(1, S.bg2); ctx.fillStyle = g; ctx.fillRect(0,0,w,h); }
+  else if (S.bgMode==='pattern'){ const p = Math.max(2, +S.patScale||10)*s; ctx.fillStyle = ctx.strokeStyle = S.bg2;
+    if (S.pattern==='dots'){ for (let y = 0, j = 0; y < h+p; y += p*.866, j++) for (let x = (j%2)*p/2; x < w+p; x += p){ ctx.beginPath(); ctx.arc(x,y,p*.16,0,2*PI); ctx.fill(); } }
+    else if (S.pattern==='stripes'){ ctx.lineWidth = p*.28; ctx.beginPath(); for (let x = -h; x < w+h; x += p){ ctx.moveTo(x,0); ctx.lineTo(x+h,h); } ctx.stroke(); }
+    else if (S.pattern==='grid'){ ctx.lineWidth = Math.max(1, p*.05); ctx.beginPath(); for (let x = 0; x < w; x += p){ ctx.moveTo(x,0); ctx.lineTo(x,h); } for (let y = 0; y < h; y += p){ ctx.moveTo(0,y); ctx.lineTo(w,y); } ctx.stroke(); }
+    else if (S.pattern==='checks'){ for (let y = 0, j = 0; y < h; y += p, j++) for (let x = (j%2)*p; x < w; x += 2*p) ctx.fillRect(x,y,p,p); }
+    else if (S.pattern==='logo'){ const lg = S.els.find(e => e.kind==='image' && ELIMG[e.id]); const im = lg && ELIMG[lg.id].img;
+      if (im){ const lw = p*.6, lh = lw*im.naturalHeight/im.naturalWidth; ctx.globalAlpha = .9;
+        for (let y = 0, j = 0; y < h+p; y += p, j++) for (let x = (j%2)*p/2; x < w+p; x += p) ctx.drawImage(im, x-lw/2, y-lh/2, lw, lh); } } }
+  ctx.restore();
 }
 let lastClip = null, curElId = null;
 const elSpecial = el => ['foil_gold','foil_silver','emboss','deboss'].includes(el.fin) || !!el.spot;
@@ -972,6 +1080,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
   const ctx = canvas.getContext('2d'), X = side==='in' ? x=>(maxX-x)*s : x=>(x-minX)*s, Y = y=>(maxY-y)*s;
   ctx.fillStyle = side==='in' ? insideColor() : S.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
   if (o.oy) ctx.translate(0,-o.oy);
+  if (side==='out' && S.bgMode && S.bgMode!=='solid') bgPaint(ctx, FW, FH, s);
   if (o.text==='skip') ctx.fillText = () => {};
   if (o.rec) ctx.fillText = (t,x,y) => o.rec.push({t:String(t), x, y, el:curElId, m:ctx.getTransform(), font:ctx.font, fill:ctx.fillStyle, align:ctx.textAlign, base:ctx.textBaseline, clip:lastClip});
   if (side==='out'){
@@ -991,7 +1100,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
     }
   }
   for (const el of S.els){
-    if (el.side!==side) continue; const f = G.faces.find(f=>f.key===el.face); if (!f) continue;
+    if (el.side!==side || el.hidden) continue; const f = G.faces.find(f=>f.key===el.face); if (!f) continue;
     if (o.print && elSpecial(el) && !o.rec && !o.els) continue;      // foil / emboss / Pantone are not part of the CMYK image
     const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
     ctx.save(); clipFace(ctx,G,f,s,side);
@@ -1329,7 +1438,7 @@ function render2D(){
 // drag the selected logo/text on the flat sheet
 let dragging = false, dragWrap = null;
 function placeAt(e){
-  const el = curEl(); const hit = document.elementFromPoint(e.clientX, e.clientY); const wrap = hit?.closest('[data-side]') || (dragWrap ??= null);
+  const el = curEl(); if (el?.locked){ toast('Элемент заблокирован — снимите замок в списке.'); return; } const hit = document.elementFromPoint(e.clientX, e.clientY); const wrap = hit?.closest('[data-side]') || (dragWrap ??= null);
   const svg = wrap?.querySelector('svg'); if (!el || !svg) return; dragWrap = wrap;
   const side = wrap.dataset.side, pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
   const p = pt.matrixTransform(svg.getScreenCTM().inverse());
@@ -1359,6 +1468,8 @@ function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
   for (const id of ['L','W','H']) $(id).value = +(S[id]/UF()).toFixed(S.unit==='mm'?1:2);
   $('dimTitle').textContent = `Размеры, ${UNAME[S.unit]} (${{inner:'внутренние',outer:'наружные',mfg:'по линиям сгиба'}[S.dimMode]})`;
+  $('bgOpts').hidden = S.bgMode==='solid'; $('gradOpts').hidden = S.bgMode!=='grad'; $('patOpts').hidden = S.bgMode!=='pattern';
+  $('gradAngO').textContent = S.gradAng+'°'; $('patScaleO').textContent = S.patScale+' мм';
   $('thickWrap').hidden = S.mat!=='custom'; $('tearOpts').hidden = !S.tear; $('cornerRO').textContent = S.cornerR+' мм';
   $('conCommon').hidden = S.type==='pouch'; $('sheetCustom').hidden = S.sheetFmt!=='custom';
   $('lidOpenO').textContent = S.lidOpen+'%';
@@ -1392,6 +1503,7 @@ let keepCam = false;
 function bindInputs(){
   for (const id of NUM){ const el=$(id); if (!el || ['lInt','lAng','shadow'].includes(id)) continue;
     el.addEventListener('input',()=>{ let v=parseFloat(el.value); if (!isFinite(v)) return; if (['L','W','H'].includes(id)) v*=UF(); S[id]=clamp(v,+el.min,+el.max);
+      if (['gradAng','patScale'].includes(id)){ $(id+'O').textContent = S[id] + (id==='gradAng'?'°':' мм'); persist(); refresh(); return; }
       if (['sheetW','sheetH','grip','impGap','qty'].includes(id)){ S.sheetFmt = ['sheetW','sheetH'].includes(id) ? 'custom' : S.sheetFmt; persist(); renderImp(); return; }
       if (VIEW_ONLY.includes(id)){ keepCam = true; if ($(id+'O')) $(id+'O').textContent = S[id]+'%'; }
       else if (!['L','W','H'].includes(id)) custom();
@@ -1402,7 +1514,8 @@ function bindInputs(){
     else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
   for (const id of ['notch','window','hang','dbl','tear']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
-  for (const id of ['bg','ink','title','sub','inside','finish']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
+  for (const id of ['bg','ink','title','sub','inside','finish','bg2','pattern']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
+  $('bgMode').addEventListener('input',()=>{ S.bgMode=$('bgMode').value; syncUI(); refresh(); });
   for (const id of ['mat','dimMode','bleed','safe','method','sides','sheetFmt','white','grain']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
     if (id==='sheetFmt' && SHEETS[S.sheetFmt]?.[1]) [S.sheetW,S.sheetH] = SHEETS[S.sheetFmt].slice(1);
     syncUI(); refresh(true); });
@@ -1450,11 +1563,19 @@ function renderEls(){
   const box = $('els'); box.innerHTML = '';
   S.els.forEach(el => {
     const b = document.createElement('button'); b.className='btn'; b.setAttribute('aria-pressed', el.id===selId);
-    const name = el.kind==='image' ? 'Логотип' : (String(el.text).split('\n')[0] || 'Надпись');
+    const name = {image:'Логотип', shape:'Фигура', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR · '+String(el.text||'').slice(0,24), icon:'Значок · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || (String(el.text).split('\n')[0] || 'Надпись');
     const where = (el.side==='in'?'внутри · ':'')+(FACE_NAMES[el.face]||el.face)+(G.faces.some(f=>f.key===el.face)?'':' — нет в этом шаблоне');
     b.append(name); const em=document.createElement('em'); em.textContent=where; b.append(em);
     b.addEventListener('click',()=>{ selId = el.id===selId ? null : el.id; renderEls(); syncEl(); refresh(); });
-    box.append(b);
+    const row = document.createElement('div'); row.className = 'elrow' + (el.hidden ? ' off' : ''); row.append(b);
+    const i = S.els.indexOf(el);
+    for (const [act, txt, lbl, on] of [['up','↑','Выше (поверх)',false],['down','↓','Ниже',false],['hide',el.hidden?'◌':'●',el.hidden?'Показать':'Скрыть',!!el.hidden],['lock',el.locked?'🔒':'🔓',el.locked?'Разблокировать':'Заблокировать перемещение',!!el.locked]]){
+      const m = document.createElement('button'); m.className = 'btn mini'; m.textContent = txt; m.title = lbl; m.setAttribute('aria-label', lbl); if (act==='hide'||act==='lock') m.setAttribute('aria-pressed', on);
+      if ((act==='up' && i===S.els.length-1) || (act==='down' && i===0)) m.disabled = true;
+      m.addEventListener('click', () => { if (act==='up'||act==='down'){ const j = act==='up' ? i+1 : i-1; [S.els[i], S.els[j]] = [S.els[j], S.els[i]]; }
+        else if (act==='hide') el.hidden = !el.hidden; else el.locked = !el.locked; renderEls(); refresh(); });
+      row.append(m); }
+    box.append(row);
   });
   $('elHint').hidden = S.els.length>0;
 }
@@ -1462,9 +1583,17 @@ function syncEl(){
   const el = curEl(); $('elEdit').hidden = !el; if (!el) return;
   $('elFace').innerHTML = [...new Set(G.faces.map(f=>f.key))].map(k=>`<option value="${k}">${FACE_NAMES[k]}</option>`).join('');
   $('elFace').value = el.face; $('elSide').value = el.side;
-  $('elTextOpts').hidden = el.kind!=='text';
-  $('elSizeLbl').textContent = el.kind==='text' ? 'Кегль, мм' : 'Ширина, мм';
-  if (el.kind==='text'){ $('elText').value = el.text; $('elFont').value = el.font; $('elColor').value = el.color; }
+  const k = el.kind, show = (id, on) => $(id).hidden = !on;
+  $('elTextOpts').hidden = k==='image';
+  $('elText').closest('label').hidden = !['text','barcode','qr'].includes(k);
+  $('elTextLbl').textContent = k==='barcode' ? 'Код (12–13 цифр, контрольная посчитается сама)' : k==='qr' ? 'Ссылка или текст' : 'Текст';
+  show('elFontWrap', k==='text'); show('elAlignWrap', k==='text'); show('elShapeWrap', k==='shape'); show('elHWrap', k==='shape'); show('elIconWrap', k==='icon');
+  $('elSizeLbl').textContent = k==='text' ? 'Кегль, мм' : 'Ширина, мм';
+  if (document.activeElement !== $('elText')) $('elText').value = el.text || '';
+  if (k==='text'){ $('elFont').value = el.font; $('elAlign').value = el.align || 'center'; }
+  if (el.color) $('elColor').value = el.color;
+  if (k==='shape'){ $('elShape').value = el.shape || 'rect'; $('elH').value = el.h || el.size; }
+  if (k==='icon') $('elIcon').value = el.icon;
   $('elSize').value = el.size; $('elSizeO').textContent = el.size;
   $('elX').value = (el.x*100).toFixed(1); $('elXO').textContent = Math.round(el.x*100)+'%';
   $('elY').value = (el.y*100).toFixed(1); $('elYO').textContent = Math.round(el.y*100)+'%';
@@ -1512,12 +1641,25 @@ onEl('elX', (el,v)=>{ el.x=v/100; });
 onEl('elY', (el,v)=>{ el.y=v/100; });
 onEl('elRot', (el,v)=>{ el.rot=+v; });
 onEl('elFin', (el,v)=>{ el.fin=v; });
+onEl('elAlign', (el,v)=>{ el.align=v; });
+onEl('elShape', (el,v)=>{ el.shape=v; });
+onEl('elH', (el,v)=>{ el.h=clamp(+v||1,.3,400); });
+onEl('elIcon', (el,v)=>{ el.icon=v; });
+$('elIcon').innerHTML = Object.entries(ICONS).map(([k,v]) => `<option value="${k}">${v[0]}</option>`).join('');
+$('iconBar').innerHTML = Object.entries(ICONS).map(([k,v]) => `<button type="button" data-icon="${k}" title="${v[0]}" aria-label="${v[0]}">${k==='eac' ? 'EAC' : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${v[1]}"/></svg>`}</button>`).join('');
+$('iconBar').addEventListener('click', e => { const b = e.target.closest('[data-icon]'); if (!b) return;
+  addEl({id:uid(), kind:'icon', icon:b.dataset.icon, side:'out', face:G.faces.some(f=>f.key==='back') ? 'back' : defaultFace(), x:.5, y:.85, size:9, rot:0, color:'#000000'}); });
+$('addShape').addEventListener('click', () => addEl({id:uid(), kind:'shape', shape:'rect', side:'out', face:defaultFace(), x:.5, y:.5, size:30, h:12, rot:0, color:S.ink}));
+$('addEan').addEventListener('click', () => addEl({id:uid(), kind:'barcode', text:'460000000000', side:'out', face:G.faces.some(f=>f.key==='back') ? 'back' : defaultFace(), x:.5, y:.82, size:37, rot:0, color:'#000000'}));
+$('addQr').addEventListener('click', () => addEl({id:uid(), kind:'qr', text:'https://', side:'out', face:G.faces.some(f=>f.key==='back') ? 'back' : defaultFace(), x:.75, y:.8, size:18, rot:0, color:'#000000'}));
+$('addInfo').addEventListener('click', () => addEl({id:uid(), kind:'text', side:'out', face:G.faces.some(f=>f.key==='back') ? 'back' : defaultFace(), x:.5, y:.45, size:2.4, rot:0, align:'left',
+  text:'Состав: …\nМасса нетто: … г\nПищевая ценность на 100 г: …\nХранить при температуре от … до … °C\nСрок годности: … мес. Дата изготовления: см. на упаковке\nИзготовитель: …, адрес: …', font:'400|IBM Plex Sans', color:'#1b211f'}));
 onEl('elSpot', (el,v)=>{ el.spot=v.trim(); });
 $('elDup').addEventListener('click', () => { const el = curEl(); if (!el) return; const id = uid();
   if (ELIMG[el.id]) ELIMG[id] = ELIMG[el.id];
   addEl({...el, id, x:clamp(el.x+.06,0,1), y:clamp(el.y+.06,0,1)}); });
 $('elDel').addEventListener('click', () => { const i = S.els.findIndex(e=>e.id===selId); if (i<0) return;
-  delete ELIMG[S.els[i].id]; S.els.splice(i,1); selId = null; renderEls(); syncEl(); refresh(); });
+  S.els.splice(i,1); selId = null; renderEls(); syncEl(); refresh(); });
 
 /* ---------- my projects (IndexedDB: survives reloads, keeps logos) ---------- */
 const idb = (() => { let p;
@@ -1555,7 +1697,7 @@ async function openProject(id){
   Object.assign(S, DEFAULTS, rec.settings, {pid:rec.id, pname:rec.name}); lastThumb = rec.thumb || '';
   await Promise.all(Object.entries(rec.elimgs||{}).map(([i,src])=>loadElImg(i,src)));
   await Promise.all(Object.entries(rec.imgs||{}).map(([k,src])=>loadImg(k,src)));
-  S.els = (S.els||[]).filter(e => e.kind==='text' || ELIMG[e.id]);
+  S.els = (S.els||[]).filter(e => e.kind!=='image' || ELIMG[e.id]);
   $('pname').value = S.pname; syncUI(); syncEl(); refresh(true); openEditor();
 }
 const fmtDate = t => new Date(t).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -1684,7 +1826,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidd
 $('exSvg').addEventListener('click',()=>saveFile(fname('-shablon.svg'), new Blob([svgDoc(G,null,false,true)],{type:'image/svg+xml'})));
 /* ---------- print: text to outlines ---------- */
 const OT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js', FS_VER = '5.3.0';
-const VEC_FAMS = ['IBM Plex Sans','Montserrat','Playfair Display','Oswald','Caveat'];
+const VEC_FAMS = ['IBM Plex Sans','IBM Plex Mono','Montserrat','Playfair Display','Oswald','Caveat'];
 let otP = null; const otCache = {};
 const loadOT = () => otP ??= new Promise((res, rej) => { if (window.opentype) return res(window.opentype);
   const sc = document.createElement('script'); sc.src = OT_URL; sc.onload = () => res(window.opentype); sc.onerror = rej; document.head.appendChild(sc); });
@@ -1922,7 +2064,7 @@ const importProject = e=>{ const f=e.target.files[0]; if(!f) return; const r=new
       Object.assign(S,{type:'tube',els:[]},d.settings||{}); for (const k in IMGS) delete IMGS[k];
       for (const k in ELIMG) delete ELIMG[k]; selId = null;
       await Promise.all(Object.entries(d.elimgs||{}).map(([id,src])=>loadElImg(id,src)));
-      S.els = (S.els||[]).filter(e => e.kind==='text' || ELIMG[e.id]);
+      S.els = (S.els||[]).filter(e => e.kind!=='image' || ELIMG[e.id]);
       if (Array.isArray(d.mine)) for (const m of d.mine) if (m?.name && !mine.some(x=>x.name===m.name)) mine.push(m);
       store.set('skladka-mine',mine); renderMine();
       await Promise.all(Object.entries(d.imgs||{}).map(([k,src])=>loadImg(k,src)));
