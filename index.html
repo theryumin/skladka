@@ -135,6 +135,8 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
   padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1}
 .savewrap{position:relative}
+.angs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
+.angs label{display:flex;gap:8px;align-items:center;font-size:13px}
 .icons{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
 .icons button{aspect-ratio:1;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--fg);cursor:pointer;display:grid;place-items:center;padding:4px;font:700 9px var(--sans)}
 .icons button:hover{border-color:var(--accent);color:var(--accent)}
@@ -224,6 +226,12 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 .zoom{display:flex;align-items:center;gap:4px;right:12px;bottom:12px;background:var(--panel);padding:4px;border-radius:8px;border:1px solid var(--line)}
 .zoom button{width:30px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;cursor:pointer;font:600 15px var(--sans)}
 .zoom button.wide{width:auto;padding:0 10px;font-size:12.5px;font-weight:500}
+.zoom button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.ruler{position:absolute;z-index:2;background:color-mix(in srgb,var(--panel) 92%,transparent);pointer-events:none}
+.ruler.rx{left:22px;width:calc(100% - 22px);top:0;height:22px;border-bottom:1px solid var(--line)}
+.ruler.ry{top:22px;height:calc(100% - 22px);left:0;width:22px;border-right:1px solid var(--line)}
+#view2d .legend{top:34px;left:34px}
+#view2d:not(.grid) .gridl{display:none}
 .zoom output{font:12px var(--mono);width:46px;text-align:center;color:var(--muted)}
 #view2d.panning{cursor:grabbing}
 @media (max-width:860px){
@@ -289,6 +297,8 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
     <span class="vsep"></span>
     <input id="pname" type="text" class="pname" aria-label="Название проекта" placeholder="Название проекта" title="Нажмите, чтобы переименовать">
     <span class="saved" id="savedState" aria-live="polite"></span>
+    <button class="ibtn" id="undoBtn" title="Отменить (⌘Z)" aria-label="Отменить" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="ibtn" id="redoBtn" title="Повторить (⇧⌘Z)" aria-label="Повторить" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <div class="sp"></div>
     <label class="btn ghost" style="position:relative;overflow:hidden">Открыть .json<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
     <div class="savewrap">
@@ -298,6 +308,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <button class="btn" role="menuitem" id="exPdf"><b>PDF для типографии</b><small>1:1 в мм, CMYK 300 dpi, текст в кривых, слои CUT и CREASE</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Развёртка SVG</b><small>дизайн + контур слоями</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Шаблон SVG</b><small>только линии — верстать в Illustrator / Figma</small></button>
+        <button class="btn" role="menuitem" id="exRender"><b>Рендеры PNG</b><small>ракурсы и размер — во вкладке «Сцена»</small></button>
         <button class="btn" role="menuitem" id="exPng"><b>Мокап PNG</b><small>текущий ракурс 3D с выбранным фоном и светом</small></button>
         <button class="btn" role="menuitem" id="saveProj"><b>Файл проекта .json</b><small>копия проекта — открыть на другом компьютере</small></button>
         <p class="note">Масштаб 1:1, мм. Цвет CMYK, картинки 300 dpi, шрифты в кривых. Вылеты 3 мм, безопасная зона 3 мм. Рез — слой CUT (spot CutContour), биговка — слой CREASE (spot Crease), оба с overprint.</p>
@@ -528,6 +539,14 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       <label class="rng"><span>Тень</span><input id="shadow" type="range" min="0" max="60" step="2"><output id="shadowO"></output></label>
       <p class="note">Фон и свет сохраняются в мокап PNG. «Прозрачный» — для вставки на сайт или в презентацию.</p>
     </section>
+    <section data-pane="scene">
+      <h2>Рендеры</h2>
+      <label class="f">Размер<select id="rSize"><option value="1920x1080">Full HD · 1920×1080</option><option value="2048x2048">Квадрат · 2048×2048</option><option value="1080x1350">Instagram · 1080×1350</option><option value="3000x2000">Печать · 3000×2000</option><option value="3840x2160">4K · 3840×2160</option></select></label>
+      <div class="f">Ракурсы</div>
+      <div class="angs" id="rAngles"></div>
+      <button class="btn pri" id="rGo" style="text-align:center">Скачать рендеры</button>
+      <p class="note">Несколько ракурсов придут одним ZIP. Фон, свет и степень сборки — как сейчас на 3D.</p>
+    </section>
     <section data-pane="material">
       <h2>Материал</h2>
       <label class="f">Картон<select id="mat">
@@ -555,6 +574,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
     <div id="view3d"></div>
     <div id="view2d" hidden>
       <div class="board-inner" id="boardInner"></div>
+      <canvas class="ruler rx board-ov" id="rulerX" aria-hidden="true"></canvas><canvas class="ruler ry board-ov" id="rulerY" aria-hidden="true"></canvas>
       <div class="legend board-ov">
         <span><i></i>рез (CutContour)</span><span><i class="c"></i>биговка (сгиб)</span>
         <span><i class="s"></i>зона безопасности 3 мм</span><span><i class="b"></i>вылеты 3 мм</span><span><i class="p"></i>перфорация</span>
@@ -562,6 +582,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       <div class="zoom board-ov" id="zoomBar">
         <button id="zOut" aria-label="Уменьшить">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Увеличить">+</button>
         <button id="zFit" class="wide">Вписать</button><button id="z11" class="wide" title="Натуральный размер на экране">1:1</button>
+        <button id="gridBtn" class="wide" aria-pressed="false" title="Сетка 10 мм">Сетка</button><button id="snapBtn" class="wide" aria-pressed="true" title="Привязка к центру грани и к миллиметрам при перетаскивании">Привязка</button>
       </div>
       <p class="board-hint board-ov">Колесо или перетаскивание — двигать · Ctrl/⌘ + колесо или щипок — масштаб</p>
     </div>
@@ -662,7 +683,7 @@ const store = {
 };
 Object.assign(S, store.get('skladka-settings-2', {}));
 S.els = (S.els||[]).filter(e => e.kind!=='image');   // logos live in project files, not in browser storage
-const persist = () => { store.set('skladka-settings-2', {...S, els:S.els.filter(e=>e.kind!=='image')}); if (typeof autosave === 'function') autosave(); };
+const persist = () => { if (typeof histTick === 'function') histTick(); store.set('skladka-settings-2', {...S, els:S.els.filter(e=>e.kind!=='image')}); if (typeof autosave === 'function') autosave(); };
 
 /* ---------- geometry helpers ---------- */
 const QI = new THREE.Quaternion();
@@ -1392,6 +1413,37 @@ function renderImp(){
     <span>Использование картона</span><b>${use.toFixed(0)}%</b><span>Отходы</span><b>${I.n ? (100-use).toFixed(0)+'%' : '—'}</b>`;
 }
 
+/* ---------- renders ---------- */
+const ANGLES = { current:['Текущий ракурс',null], three:['3/4 спереди',[.62,.42,1]], front:['Спереди',[0,.22,1]], side:['Сбоку',[1,.22,0]],
+  back:['Сзади',[-.62,.42,-1]], top:['Сверху',[.05,1,.3]] };
+let rSel = store.get('skladka-angles', ['current','three','front']);
+$('rAngles').innerHTML = Object.entries(ANGLES).map(([k,v]) => `<label><input type="checkbox" value="${k}" ${rSel.includes(k)?'checked':''}> ${v[0]}</label>`).join('');
+$('rAngles').addEventListener('change', () => { rSel = [...$('rAngles').querySelectorAll('input:checked')].map(i => i.value); store.set('skladka-angles', rSel); });
+async function renderShots(){
+  if (!rSel.length){ toast('Отметьте хотя бы один ракурс.'); return; }
+  const [W,H] = $('rSize').value.split('x').map(Number), keepPos = camera.position.clone(), tgt = controls.target.clone(), keepAspect = camera.aspect;
+  const keepSize = renderer.getSize(new THREE.Vector2()), pr = renderer.getPixelRatio(), dist = keepPos.distanceTo(tgt) * Math.max(1, (H/W) / (keepSize.y/keepSize.x) * .8);
+  const shots = [];
+  toast('Рендерю…'); await new Promise(r => setTimeout(r, 30));
+  try {
+    renderer.setPixelRatio(1); renderer.setSize(W, H, false); camera.aspect = W/H; camera.updateProjectionMatrix();
+    for (const k of rSel){
+      if (ANGLES[k][1]){ const d = new THREE.Vector3(...ANGLES[k][1]).normalize().multiplyScalar(dist); camera.position.copy(tgt).add(d); }
+      else camera.position.copy(keepPos);
+      camera.lookAt(tgt); shots.push([k, await mockupBlob()]);
+    }
+  } finally {
+    renderer.setPixelRatio(pr); renderer.setSize(keepSize.x, keepSize.y, false); camera.aspect = keepAspect; camera.updateProjectionMatrix();
+    camera.position.copy(keepPos); camera.lookAt(tgt); controls.update(); renderer.render(scene, camera);
+  }
+  if (shots.length === 1) return saveFile(fname(`-render-${shots[0][0]}-${W}x${H}.png`), shots[0][1]);
+  if (!window.JSZip){ toast('Библиотека архива не загрузилась. Обновите страницу.'); return; }
+  const zip = new JSZip(); for (const [k,b] of shots) zip.file(fname(`-render-${k}-${W}x${H}.png`), b);
+  saveFile(fname(`-renders-${W}x${H}.zip`), await zip.generateAsync({type:'blob'}));
+}
+$('rGo').addEventListener('click', renderShots);
+$('exRender').addEventListener('click', () => { if (location.hash==='#editor' && $('view3d').hidden) $('t3d').click(); renderShots(); });
+
 /* ---------- refresh ---------- */
 let pending = 0, geomDirty = true;
 function refresh(geom){ if (geom) geomDirty = true; persist(); if (!pending) pending = requestAnimationFrame(doRefresh); }
@@ -1430,7 +1482,8 @@ function render2D(){
     return;
   }
   sig2d = sig;
-  const sz = svg => svg.replace('<svg ', `<svg style="width:${(G.b.w*BK).toFixed(1)}px;height:${(G.b.h*BK).toFixed(1)}px" `);
+  const grid = `<g class="gridl" stroke="#7d5cff" stroke-opacity=".5" stroke-width="0.3">${Array.from({length:Math.floor(G.b.w/10)+1},(_,i)=>`<line x1="${i*10+BLEED}" y1="0" x2="${i*10+BLEED}" y2="${f2(G.b.h)}"/>`).join('')}${Array.from({length:Math.floor(G.b.h/10)+1},(_,i)=>`<line x1="0" y1="${i*10+BLEED}" x2="${f2(G.b.w)}" y2="${i*10+BLEED}"/>`).join('')}</g>`;
+  const sz = svg => svg.replace('<svg ', `<svg style="width:${(G.b.w*BK).toFixed(1)}px;height:${(G.b.h*BK).toFixed(1)}px" `).replace('</svg>', grid+'</svg>');
   $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Снаружи · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм</p>${sz(svgDoc(G, out, false, true))}</div>` +
     (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Оборот, внутренняя сторона · зеркально, как печатается</p>${sz(svgDoc(G, inn, true, true))}</div>` : '');
   fitBoard();
@@ -1447,7 +1500,8 @@ function placeAt(e){
   const f = G.faces.find(f=>f.key===el.face && inside(f)) || G.faces.find(inside); if (!f) return;
   const fx = faceX(G,f,1,side), dx = x-(f.r[0]+f.r[2])/2, dy = y-(f.r[1]+f.r[3])/2;
   const ux = side==='in' ? -dx : dx, uy = -dy, r = fx.rot;
-  const lx = ux*Math.cos(r) + uy*Math.sin(r), ly = -ux*Math.sin(r) + uy*Math.cos(r);
+  let lx = ux*Math.cos(r) + uy*Math.sin(r), ly = -ux*Math.sin(r) + uy*Math.cos(r);
+  if (snapOn){ lx = Math.abs(lx) < 2 ? 0 : Math.round(lx); ly = Math.abs(ly) < 2 ? 0 : Math.round(ly); }
   Object.assign(el, {side, face:f.key, x:clamp(lx/fx.lw+.5,0,1), y:clamp(ly/fx.lh+.5,0,1)});
   syncEl(); refresh();
 }
@@ -1729,7 +1783,21 @@ function showView(){
   setDocTitle();
   window.scrollTo(0,0);
 }
-function openEditor(){ if (location.hash === '#editor') showView(); else location.hash = 'editor'; }
+const hist = {u:[], r:[], last:null, t:0};
+const snapState = () => { const {pid, pname, ...rest} = S; return JSON.stringify(rest); };
+function updHist(){ $('undoBtn').disabled = !hist.u.length; $('redoBtn').disabled = !hist.r.length; }
+function histTick(){ clearTimeout(hist.t); hist.t = setTimeout(() => { const cur = snapState(); if (cur === hist.last) return;
+  if (hist.last !== null){ hist.u.push(hist.last); if (hist.u.length > 100) hist.u.shift(); hist.r = []; } hist.last = cur; updHist(); }, 350); }
+function histReset(){ clearTimeout(hist.t); hist.u = []; hist.r = []; hist.last = snapState(); updHist(); }
+function histGo(back){ clearTimeout(hist.t); const from = back ? hist.u : hist.r, to = back ? hist.r : hist.u; if (!from.length) return;
+  const cur = snapState(); if (cur !== hist.last && hist.last !== null) from.push(hist.last), (hist.last = cur);
+  to.push(hist.last); hist.last = from.pop(); Object.assign(S, JSON.parse(hist.last));
+  if (selId && !S.els.some(e => e.id===selId)) selId = null; syncUI(); syncEl(); renderEls(); refresh(true); updHist(); }
+$('undoBtn').addEventListener('click', () => histGo(true));
+$('redoBtn').addEventListener('click', () => histGo(false));
+document.addEventListener('keydown', e => { if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || document.querySelector('.app').hidden) return;
+  if (e.target.closest('input[type=text],input[type=number],textarea')) return; e.preventDefault(); histGo(!e.shiftKey); });
+function openEditor(){ setTimeout(histReset, 400); if (location.hash === '#editor') showView(); else location.hash = 'editor'; }
 function cardHTML(svg, name, desc, mm, attrs){
   return `<button class="card" ${attrs}><div class="pic">${svg}</div><div class="txt"><b>${name}</b>${desc?`<span>${desc}</span>`:''}<span class="mm">${mm}</span></div></button>`;
 }
@@ -1776,7 +1844,26 @@ window.addEventListener('hashchange', showView);
 /* ---------- board: zoom & pan ---------- */
 const BK = 2;                 // px per mm at 100 %
 let bz = 1, bx = 0, by = 0, pan = null;
-function applyBoard(){ $('boardInner').style.transform = `translate(${bx}px,${by}px) scale(${bz})`; $('zVal').textContent = Math.round(bz*100)+'%'; }
+function applyBoard(){ $('boardInner').style.transform = `translate(${bx}px,${by}px) scale(${bz})`; $('zVal').textContent = Math.round(bz*100)+'%'; drawRulers(); }
+function drawRulers(){
+  const v = $('view2d'), svg = v.querySelector('[data-side=out] svg'); if (!svg || v.hidden || !G) return;
+  const vr = v.getBoundingClientRect(), sr = svg.getBoundingClientRect(), ppm = sr.width / G.b.w, dpr = devicePixelRatio || 1;
+  const ox = sr.left - vr.left + BLEED*ppm, oy = sr.top - vr.top + BLEED*ppm;   // 0 mm = trim edge
+  const step = [1,2,5,10,20,50,100,200].find(st => st*ppm >= 6) || 500, cs = getComputedStyle(document.documentElement);
+  for (const [id, horiz] of [['rulerX',true],['rulerY',false]]){
+    const c = $(id), W = c.clientWidth, H = c.clientHeight; c.width = W*dpr; c.height = H*dpr; const x = c.getContext('2d'); x.scale(dpr,dpr);
+    x.strokeStyle = x.fillStyle = cs.getPropertyValue('--muted'); x.font = '9px "IBM Plex Mono", monospace'; x.lineWidth = 1; x.beginPath();
+    const o = horiz ? ox - 22 : oy - 22, len = horiz ? W : H, from = Math.floor(-o/ppm/step)*step;
+    for (let mm = from; mm*ppm + o < len; mm += step){ const p = Math.round(mm*ppm + o) + .5; if (p < 0) continue;
+      const big = mm % (step*10) === 0, mid = mm % (step*5) === 0, t = big ? 22 : mid ? 11 : 6;
+      if (horiz){ x.moveTo(p, 22); x.lineTo(p, 22-t); if (big) x.fillText(String(mm), p+2, 9); }
+      else { x.moveTo(22, p); x.lineTo(22-t, p); if (big){ x.save(); x.translate(9, p+2); x.rotate(-PI/2); x.textAlign = 'right'; x.fillText(String(mm), 0, 0); x.restore(); } } }
+    x.stroke(); }
+}
+let snapOn = store.get('skladka-snap', true);
+$('snapBtn').setAttribute('aria-pressed', snapOn);
+$('snapBtn').addEventListener('click', () => { snapOn = !snapOn; store.set('skladka-snap', snapOn); $('snapBtn').setAttribute('aria-pressed', snapOn); });
+$('gridBtn').addEventListener('click', () => { const on = !$('view2d').classList.contains('grid'); $('view2d').classList.toggle('grid', on); $('gridBtn').setAttribute('aria-pressed', on); });
 function zoomAt(z, px, py){ const v = $('view2d'); px ??= v.clientWidth/2; py ??= v.clientHeight/2;
   z = clamp(z, .1, 12); bx = px-(px-bx)*z/bz; by = py-(py-by)*z/bz; bz = z; applyBoard(); }
 function fitBoard(){ const v = $('view2d'), inr = $('boardInner'), w = inr.offsetWidth, h = inr.offsetHeight; if (!w || !v.clientWidth) return;
