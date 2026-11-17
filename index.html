@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>Складка</title>
+<title>Skladka</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@400;700&family=Playfair+Display:wght@400;700&family=Oswald:wght@500&family=Caveat:wght@500&display=swap">
@@ -118,7 +118,7 @@ main{position:relative}
 .legend{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);top:12px;left:12px;background:var(--panel);padding:10px 12px;border-radius:8px;border:1px solid var(--line)}
 .board-hint{left:12px;bottom:12px;margin:0;font-size:12px;color:var(--muted);background:var(--panel);padding:6px 10px;border-radius:8px;border:1px solid var(--line)}
 main.board-mode #view3d{position:absolute;top:56px;right:12px;width:min(300px,42%);height:220px;z-index:3;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.14)}
-main.board-mode #view3d::after{content:"3D · двойной клик — открыть";position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--muted);pointer-events:none}
+main.board-mode #view3d::after{content:"3D · double-click to open";position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--muted);pointer-events:none}
 .legend i{display:inline-block;width:22px;border-top:2px solid #ec008c;vertical-align:middle;margin-right:6px}
 .legend i.c{border-top:2px dashed #00aeef}
 .legend i.s{border-top:2px dashed #22a04b}
@@ -252,323 +252,323 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 </style>
 
 <div id="home" hidden>
-  <nav class="hside" aria-label="Разделы">
-    <button class="logo" type="button" id="homeLogo"><span class="mk"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Складка</button>
-    <button class="btn pri" type="button" id="newBtn">+ Новый проект</button>
-    <button class="nav on" type="button" id="navProj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>Мои проекты</span><em id="projCount"></em></button>
-    <h2>Шаблоны</h2>
+  <nav class="hside" aria-label="Sections">
+    <button class="logo" type="button" id="homeLogo"><span class="mk"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Skladka</button>
+    <button class="btn pri" type="button" id="newBtn">+ New project</button>
+    <button class="nav on" type="button" id="navProj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>My projects</span><em id="projCount"></em></button>
+    <h2>Templates</h2>
     <div class="navlist" id="homeTpls"></div>
-    <div id="homeMineSec" hidden><h2>Мои шаблоны</h2><div class="navlist" id="homeMine"></div></div>
+    <div id="homeMineSec" hidden><h2>My templates</h2><div class="navlist" id="homeMine"></div></div>
   </nav>
   <div class="hmain">
     <div class="home-in">
       <div class="home-head">
-        <h1>Мои проекты</h1>
+        <h1>My projects</h1>
         <div class="acts">
-          <button class="btn" id="homeContinue" hidden>Продолжить последний →</button>
-          <label class="btn" style="position:relative;overflow:hidden">Загрузить .json<input id="openProjHome" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить проект из файла"></label>
+          <button class="btn" id="homeContinue" hidden>Continue last →</button>
+          <label class="btn" style="position:relative;overflow:hidden">Import .json<input id="openProjHome" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Import a project file"></label>
         </div>
       </div>
       <div class="home-sec" id="projSec">
         <div class="home-grid" id="projGrid"></div>
-        <p class="empty" id="projEmpty">Пока нет проектов. Нажмите «+ Новый проект» или выберите шаблон слева — проект сохранится здесь автоматически.</p>
-        <p class="note" id="projNote">Проекты сохраняются автоматически в этом браузере вместе с логотипами. Чтобы перенести на другой компьютер — «Экспорт → Файл проекта .json».</p>
+        <p class="empty" id="projEmpty">No projects yet. Click “+ New project” or pick a template on the left — it will be saved here automatically.</p>
+        <p class="note" id="projNote">Projects are saved automatically in this browser, logos included. To move one to another computer, use “Export → Project file .json”.</p>
       </div>
     </div>
   </div>
   <dialog class="dlg" id="newDlg">
     <form method="dialog">
-      <h2>Новый проект</h2>
-      <label class="f">Тип упаковки<select id="nbType"></select></label>
+      <h2>New project</h2>
+      <label class="f">Packaging type<select id="nbType"></select></label>
       <div class="row">
-        <label class="f"><span id="nbLL">Длина</span><input id="nbL" type="number" min="10" max="800" value="100"></label>
-        <label class="f"><span id="nbLW">Ширина</span><input id="nbW" type="number" min="10" max="800" value="60"></label>
-        <label class="f"><span id="nbLH">Высота</span><input id="nbH" type="number" min="5" max="800" value="150"></label>
+        <label class="f"><span id="nbLL">Length</span><input id="nbL" type="number" min="10" max="800" value="100"></label>
+        <label class="f"><span id="nbLW">Width</span><input id="nbW" type="number" min="10" max="800" value="60"></label>
+        <label class="f"><span id="nbLH">Height</span><input id="nbH" type="number" min="5" max="800" value="150"></label>
       </div>
-      <p class="note">Внутренние размеры в мм. Всё можно поменять потом в редакторе.</p>
-      <div class="acts"><button class="btn" value="cancel">Отмена</button><button class="btn pri" id="nbGo" type="button">Создать</button></div>
+      <p class="note">Inside dimensions in mm. You can change everything later in the editor.</p>
+      <div class="acts"><button class="btn" value="cancel">Cancel</button><button class="btn pri" id="nbGo" type="button">Create</button></div>
     </form>
   </dialog>
 </div>
 
 <div class="app" hidden>
   <header>
-    <button class="logo" type="button" id="goHome" title="На главную — мои проекты"><span class="mk"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Складка</button>
+    <button class="logo" type="button" id="goHome" title="Home — my projects"><span class="mk"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Skladka</button>
     <span class="vsep"></span>
-    <input id="pname" type="text" class="pname" aria-label="Название проекта" placeholder="Название проекта" title="Нажмите, чтобы переименовать">
+    <input id="pname" type="text" class="pname" aria-label="Project name" placeholder="Project name" title="Click to rename">
     <span class="saved" id="savedState" aria-live="polite"></span>
-    <button class="ibtn" id="undoBtn" title="Отменить (⌘Z)" aria-label="Отменить" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
-    <button class="ibtn" id="redoBtn" title="Повторить (⇧⌘Z)" aria-label="Повторить" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+    <button class="ibtn" id="undoBtn" title="Undo (⌘Z)" aria-label="Undo" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="ibtn" id="redoBtn" title="Redo (⇧⌘Z)" aria-label="Redo" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <div class="sp"></div>
-    <label class="btn ghost" style="position:relative;overflow:hidden">Открыть .json<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+    <label class="btn ghost" style="position:relative;overflow:hidden">Open .json<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
     <div class="savewrap">
-      <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Экспорт ▾</button>
+      <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Export ▾</button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
-        <button class="btn" role="menuitem" id="exZip"><b>Всё одним архивом</b><small>ZIP — PDF, SVG, PNG и проект сразу</small></button>
-        <button class="btn" role="menuitem" id="exPdf"><b>PDF для типографии</b><small>1:1 в мм, CMYK 300 dpi, текст в кривых, слои CUT и CREASE</small></button>
-        <button class="btn" role="menuitem" id="exSvgArt"><b>Развёртка SVG</b><small>дизайн + контур слоями</small></button>
-        <button class="btn" role="menuitem" id="exSvg"><b>Шаблон SVG</b><small>только линии — верстать в Illustrator / Figma</small></button>
-        <button class="btn" role="menuitem" id="exRender"><b>Рендеры PNG</b><small>ракурсы и размер — во вкладке «Сцена»</small></button>
-        <button class="btn" role="menuitem" id="exPng"><b>Мокап PNG</b><small>текущий ракурс 3D с выбранным фоном и светом</small></button>
-        <button class="btn" role="menuitem" id="saveProj"><b>Файл проекта .json</b><small>копия проекта — открыть на другом компьютере</small></button>
-        <p class="note">Масштаб 1:1, мм. Цвет CMYK, картинки 300 dpi, шрифты в кривых. Вылеты 3 мм, безопасная зона 3 мм. Рез — слой CUT (spot CutContour), биговка — слой CREASE (spot Crease), оба с overprint.</p>
+        <button class="btn" role="menuitem" id="exZip"><b>Everything as one archive</b><small>ZIP — PDF, SVG, PNG and the project file</small></button>
+        <button class="btn" role="menuitem" id="exPdf"><b>Print-ready PDF</b><small>1:1 in mm, CMYK 300 dpi, text outlined, CUT and CREASE layers</small></button>
+        <button class="btn" role="menuitem" id="exSvgArt"><b>Dieline with artwork, SVG</b><small>design + die lines as layers</small></button>
+        <button class="btn" role="menuitem" id="exSvg"><b>Blank template, SVG</b><small>lines only — design in Illustrator / Figma</small></button>
+        <button class="btn" role="menuitem" id="exRender"><b>Renders, PNG</b><small>angles and size are set in the “Scene” tab</small></button>
+        <button class="btn" role="menuitem" id="exPng"><b>Mockup, PNG</b><small>current 3D view with the chosen background and light</small></button>
+        <button class="btn" role="menuitem" id="saveProj"><b>Project file .json</b><small>a copy of the project — open it on another computer</small></button>
+        <p class="note">Scale 1:1, mm. CMYK, images at 300 dpi, fonts outlined. 3 mm bleed, 3 mm safe zone. Cut on the CUT layer (spot CutContour), creases on the CREASE layer (spot Crease), both overprinting.</p>
       </div>
     </div>
   </header>
 
-  <nav class="rail" role="tablist" aria-label="Настройки">
-    <button role="tab" data-pane="size" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 20 4M4 20v-5M4 20h5M20 4h-5M20 4v5"/></svg>Размер</button>
-    <button role="tab" data-pane="build" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>Конструкция</button>
-    <button role="tab" data-pane="material" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18M3 12h18M3 16h18"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>Материал</button>
-    <button role="tab" data-pane="design" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="9.5" r="1.3"/><circle cx="14.5" cy="8.5" r="1.3"/><circle cx="16" cy="13" r="1.3"/><path d="M12 20.5c-1.5 0-2-1-1.5-2.2.6-1.4-.3-2.3-1.8-2.3"/></svg>Дизайн</button>
-    <button role="tab" data-pane="elements" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h10M10 6v12"/><rect x="14" y="12" width="6" height="6" rx="1"/></svg>Элементы</button>
-    <button role="tab" data-pane="print" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg>Печать</button>
-    <button role="tab" data-pane="scene" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>Сцена</button>
-    <button role="tab" data-pane="mine" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Шаблоны</button>
+  <nav class="rail" role="tablist" aria-label="Settings">
+    <button role="tab" data-pane="size" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 20 4M4 20v-5M4 20h5M20 4h-5M20 4v5"/></svg>Size</button>
+    <button role="tab" data-pane="build" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>Structure</button>
+    <button role="tab" data-pane="material" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18M3 12h18M3 16h18"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>Material</button>
+    <button role="tab" data-pane="design" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="9.5" r="1.3"/><circle cx="14.5" cy="8.5" r="1.3"/><circle cx="16" cy="13" r="1.3"/><path d="M12 20.5c-1.5 0-2-1-1.5-2.2.6-1.4-.3-2.3-1.8-2.3"/></svg>Design</button>
+    <button role="tab" data-pane="elements" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h10M10 6v12"/><rect x="14" y="12" width="6" height="6" rx="1"/></svg>Elements</button>
+    <button role="tab" data-pane="print" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg>Print</button>
+    <button role="tab" data-pane="scene" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>Scene</button>
+    <button role="tab" data-pane="mine" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Templates</button>
   </nav>
 
   <aside id="aside">
     <section data-pane="size">
-      <h2 id="dimTitle">Размеры, мм (внутренние)</h2>
+      <h2 id="dimTitle">Dimensions, mm (inside)</h2>
       <div class="row2">
-        <label class="f">Размеры заданы<select id="dimMode"><option value="inner">Внутренние</option><option value="outer">Наружные</option><option value="mfg">По линиям сгиба</option></select></label>
-        <label class="f">Единицы<select id="unit"><option value="mm">мм</option><option value="cm">см</option><option value="in">дюймы</option></select></label>
+        <label class="f">Dimensions are<select id="dimMode"><option value="inner">Inside</option><option value="outer">Outside</option><option value="mfg">Crease to crease</option></select></label>
+        <label class="f">Units<select id="unit"><option value="mm">mm</option><option value="cm">cm</option><option value="in">inches</option></select></label>
       </div>
       <div class="row">
-        <label class="f"><span id="lL">Длина</span><input id="L" type="number" min="10" max="800" step="1"></label>
-        <label class="f"><span id="lW">Ширина</span><input id="W" type="number" min="10" max="800" step="1"></label>
-        <label class="f"><span id="lH">Высота</span><input id="H" type="number" min="5" max="800" step="1"></label>
+        <label class="f"><span id="lL">Length</span><input id="L" type="number" min="10" max="800" step="1"></label>
+        <label class="f"><span id="lW">Width</span><input id="W" type="number" min="10" max="800" step="1"></label>
+        <label class="f"><span id="lH">Height</span><input id="H" type="number" min="5" max="800" step="1"></label>
       </div>
       <div class="presets" id="presets"></div>
       <p class="note" id="prodNote"></p>
     </section>
 
     <section data-pane="build">
-      <h2>Конструкция</h2>
+      <h2>Structure</h2>
       <div data-for="tube" class="sub" style="padding-left:0">
         <div class="row2">
-          <label class="f">Верх<select id="topClose"><option value="tuck">Клапан с язычком</option><option value="seal">Склейка</option><option value="open">Открыт</option></select></label>
-          <label class="f">Клапан верха на<select id="topLid"><option value="back">задней стороне</option><option value="front">лицевой стороне</option></select></label>
-          <label class="f">Низ<select id="botClose"><option value="tuck">Клапан с язычком</option><option value="seal">Склейка</option><option value="snap">Защёлка 1-2-3 (без клея)</option><option value="open">Открыт</option></select></label>
-          <label class="f">Клапан низа на<select id="botLid"><option value="front">лицевой стороне</option><option value="back">задней стороне</option></select></label>
+          <label class="f">Top<select id="topClose"><option value="tuck">Tuck flap</option><option value="seal">Glued</option><option value="open">Open</option></select></label>
+          <label class="f">Top flap on<select id="topLid"><option value="back">back panel</option><option value="front">front panel</option></select></label>
+          <label class="f">Bottom<select id="botClose"><option value="tuck">Tuck flap</option><option value="seal">Glued</option><option value="snap">1-2-3 snap lock (no glue)</option><option value="open">Open</option></select></label>
+          <label class="f">Bottom flap on<select id="botLid"><option value="front">front panel</option><option value="back">back panel</option></select></label>
         </div>
         <div class="row">
-          <label class="f">Язычок<input id="tuck" type="number" min="5" max="40" step="1"></label>
-          <label class="f">Клеевой<input id="glue" type="number" min="5" max="30" step="1"></label>
-          <label class="f">Пылевые<input id="dust" type="number" min="0" max="200" step="1" title="0 — подобрать автоматически"></label>
+          <label class="f">Tuck<input id="tuck" type="number" min="5" max="40" step="1"></label>
+          <label class="f">Glue flap<input id="glue" type="number" min="5" max="30" step="1"></label>
+          <label class="f">Dust flaps<input id="dust" type="number" min="0" max="200" step="1" title="0 — automatic"></label>
         </div>
-        <p class="note">Пылевые клапаны: 0 — подобрать автоматически.</p>
-        <label class="chk"><input id="notch" type="checkbox"> Выемка под палец</label>
-        <label class="chk"><input id="window" type="checkbox"> Окошко на лицевой стороне</label>
+        <p class="note">Dust flaps: 0 — sized automatically.</p>
+        <label class="chk"><input id="notch" type="checkbox"> Thumb notch</label>
+        <label class="chk"><input id="window" type="checkbox"> Window on the front</label>
         <div class="sub" id="winOpts">
           <div class="row">
-            <label class="f">Ширина<input id="winW" type="number" min="5" max="500" step="1"></label>
-            <label class="f">Высота<input id="winH" type="number" min="5" max="500" step="1"></label>
-            <label class="f">Центр, % выс.<input id="winY" type="number" min="10" max="90" step="1"></label>
+            <label class="f">Width<input id="winW" type="number" min="5" max="500" step="1"></label>
+            <label class="f">Height<input id="winH" type="number" min="5" max="500" step="1"></label>
+            <label class="f">Centre, % of height<input id="winY" type="number" min="10" max="90" step="1"></label>
           </div>
         </div>
-        <label class="chk"><input id="hang" type="checkbox"> Европодвес (для крючка)</label>
+        <label class="chk"><input id="hang" type="checkbox"> Euro hang tab (for a peg hook)</label>
         <div class="sub" id="hangOpts">
-          <label class="f">Высота подвеса, мм<input id="hangH" type="number" min="18" max="80" step="1"></label>
-          <p class="note">С подвесом верхний клапан всегда на лицевой стороне.</p>
+          <label class="f">Hang tab height, mm<input id="hangH" type="number" min="18" max="80" step="1"></label>
+          <p class="note">With a hang tab the top flap is always on the front.</p>
         </div>
       </div>
       <div data-for="tray" class="sub" style="padding-left:0">
-        <label class="f">Уголки для склейки, мм<input id="tab" type="number" min="5" max="60" step="1"></label>
-        <label class="chk"><input id="dbl2" type="checkbox"> Двойные длинные стенки</label>
-        <p class="note">Уголки приклеиваются изнутри к боковым стенкам. Двойная стенка загибается внутрь и закрывает уголки.</p>
+        <label class="f">Glue tabs, mm<input id="tab" type="number" min="5" max="60" step="1"></label>
+        <label class="chk"><input id="dbl2" type="checkbox"> Double long walls</label>
+        <p class="note">Glue tabs are glued inside to the side walls. A double wall folds inward and covers them.</p>
       </div>
       <div data-for="drawer" class="sub" style="padding-left:0">
         <div class="row2">
-          <label class="f">Ящик выдвинут, %<input id="pull" type="number" min="0" max="80" step="5"></label>
-          <label class="f">Зазор обечайки<input id="dgap" type="number" min="0" max="10" step="0.5"></label>
+          <label class="f">Drawer pulled out, %<input id="pull" type="number" min="0" max="80" step="5"></label>
+          <label class="f">Sleeve clearance<input id="dgap" type="number" min="0" max="10" step="0.5"></label>
         </div>
-        <label class="f">Уголки для склейки, мм<input id="tab3" type="number" min="5" max="60" step="1"></label>
-        <label class="chk"><input id="dbl" type="checkbox"> Двойные длинные стенки</label>
-        <p class="note">Лоток и обечайка на одном листе. Обечайка = размер лотка + зазор. Логотип обычно ставят на «Верх» обечайки.</p>
+        <label class="f">Glue tabs, mm<input id="tab3" type="number" min="5" max="60" step="1"></label>
+        <label class="chk"><input id="dbl" type="checkbox"> Double long walls</label>
+        <p class="note">Tray and sleeve are on one sheet. Sleeve = tray size + clearance. The logo usually goes on the sleeve “Top”.</p>
       </div>
       <div data-for="pouch" class="sub" style="padding-left:0">
-        <p class="note">Это 3D-мокап пакета для показа дизайна. Развёртка — раскладка сторон для вёрстки, не штамп: точный шаблон для печати выдаёт производитель пакетов. Для пакета подходят покрытия «Глянец», «Мат» и «Металлик».</p>
+        <p class="note">This is a 3D pouch mockup for presenting a design. The flat view is a panel layout for artwork, not a die line: the exact print template comes from your pouch manufacturer. Gloss, matte and metallic finishes suit pouches.</p>
       </div>
       <div data-for="lidbase" class="sub" style="padding-left:0">
-        <label class="rng"><span>Открыть крышку</span><input id="lidOpen" type="range" min="0" max="100" step="5"><output id="lidOpenO"></output></label>
+        <label class="rng"><span>Open the lid</span><input id="lidOpen" type="range" min="0" max="100" step="5"><output id="lidOpenO"></output></label>
         <div class="row2">
-          <label class="f">Высота крышки<input id="lidH" type="number" min="8" max="400" step="1"></label>
-          <label class="f">Зазор крышки<input id="gap" type="number" min="0" max="10" step="0.5"></label>
+          <label class="f">Lid height<input id="lidH" type="number" min="8" max="400" step="1"></label>
+          <label class="f">Lid clearance<input id="gap" type="number" min="0" max="10" step="0.5"></label>
         </div>
-        <label class="f">Уголки для склейки, мм<input id="tab2" type="number" min="5" max="60" step="1"></label>
-        <p class="note">Крышка и дно печатаются на одном листе. Зазор добавляется к длине и ширине крышки с каждой стороны.</p>
+        <label class="f">Glue tabs, mm<input id="tab2" type="number" min="5" max="60" step="1"></label>
+        <p class="note">Lid and base print on one sheet. The clearance is added to the lid length and width on each side.</p>
       </div>
       <div class="sub" style="padding-left:0" id="conCommon">
-        <h3>Для всех типов</h3>
-        <label class="rng"><span>Скругление углов</span><input id="cornerR" type="range" min="0" max="15" step="0.5"><output id="cornerRO"></output></label>
+        <h3>For all types</h3>
+        <label class="rng"><span>Corner radius</span><input id="cornerR" type="range" min="0" max="15" step="0.5"><output id="cornerRO"></output></label>
         <div class="row2">
-          <label class="f">Вент. отверстия на боках<input id="vents" type="number" min="0" max="6" step="1"></label>
-          <label class="f">Диаметр, мм<input id="ventD" type="number" min="4" max="30" step="1"></label>
+          <label class="f">Vent holes per side<input id="vents" type="number" min="0" max="6" step="1"></label>
+          <label class="f">Diameter, mm<input id="ventD" type="number" min="4" max="30" step="1"></label>
         </div>
-        <label class="chk"><input id="tear" type="checkbox"> Отрывная лента (перфорация)</label>
+        <label class="chk"><input id="tear" type="checkbox"> Tear strip (perforation)</label>
         <div class="row2" id="tearOpts">
-          <label class="f">Высота, % стенки<input id="tearY" type="number" min="15" max="85" step="1"></label>
-          <label class="f">Ширина ленты, мм<input id="tearW" type="number" min="3" max="20" step="1"></label>
+          <label class="f">Height, % of wall<input id="tearY" type="number" min="15" max="85" step="1"></label>
+          <label class="f">Strip width, mm<input id="tearW" type="number" min="3" max="20" step="1"></label>
         </div>
       </div>
       <div data-for="mailer" class="sub" style="padding-left:0">
-        <p class="note">Двойные боковые стенки, «ушки» и замки в дно, без клея. Обычно делается из микрогофрокартона. Высоту лучше держать меньше ширины.</p>
+        <p class="note">Double side walls, dust ears and locking tabs, no glue. Usually made from E-flute corrugated. Keep the height below the width.</p>
       </div>
     </section>
 
     <section data-pane="mine">
-      <h2>Мои шаблоны</h2>
+      <h2>My templates</h2>
       <div class="inl">
-        <input id="myName" type="text" placeholder="Название, например «Чай 100 г»" aria-label="Название шаблона">
-        <button class="btn" id="mySave">Сохранить</button>
+        <input id="myName" type="text" placeholder="Name, e.g. “Tea 100 g”" aria-label="Template name">
+        <button class="btn" id="mySave">Save</button>
       </div>
       <div class="mine" id="mine"></div>
-      <p class="note">Хранятся в этом браузере. Чтобы перенести на другой компьютер, сохраните проект в файл.</p>
+      <p class="note">Stored in this browser. To move them to another computer, export the project file.</p>
     </section>
 
     <section data-pane="design">
-      <h2>Дизайн</h2>
+      <h2>Design</h2>
       <div class="row2">
-        <label class="f">Цвет фона<input id="bg" type="color"></label>
-        <label class="f">Цвет текста<input id="ink" type="color"></label>
+        <label class="f">Background colour<input id="bg" type="color"></label>
+        <label class="f">Text colour<input id="ink" type="color"></label>
       </div>
       <div class="row2">
-        <label class="f">Заливка фона<select id="bgMode"><option value="solid">Сплошная</option><option value="grad">Градиент</option><option value="pattern">Узор</option></select></label>
-        <label class="f" id="bgOpts">Второй цвет<input id="bg2" type="color"></label>
+        <label class="f">Background fill<select id="bgMode"><option value="solid">Solid</option><option value="grad">Gradient</option><option value="pattern">Pattern</option></select></label>
+        <label class="f" id="bgOpts">Second colour<input id="bg2" type="color"></label>
       </div>
-      <label class="rng" id="gradOpts"><span>Угол градиента</span><input id="gradAng" type="range" min="0" max="360" step="5"><output id="gradAngO"></output></label>
+      <label class="rng" id="gradOpts"><span>Gradient angle</span><input id="gradAng" type="range" min="0" max="360" step="5"><output id="gradAngO"></output></label>
       <div id="patOpts" class="btns">
-        <label class="f">Узор<select id="pattern"><option value="dots">Горошек</option><option value="stripes">Полоски</option><option value="grid">Сетка</option><option value="checks">Клетка</option><option value="logo">Логотип повтором</option></select></label>
-        <label class="rng"><span>Шаг узора</span><input id="patScale" type="range" min="3" max="60" step="1"><output id="patScaleO"></output></label>
+        <label class="f">Pattern<select id="pattern"><option value="dots">Dots</option><option value="stripes">Stripes</option><option value="grid">Grid</option><option value="checks">Checks</option><option value="logo">Repeated logo</option></select></label>
+        <label class="rng"><span>Pattern scale</span><input id="patScale" type="range" min="3" max="60" step="1"><output id="patScaleO"></output></label>
       </div>
-      <label class="chk"><input id="showText" type="checkbox"> Текст на сторонах без картинок</label>
-      <label class="f">Название<input id="title" type="text"></label>
-      <label class="f">Подпись<input id="sub" type="text"></label>
-      <p class="note">Название и подпись — пример. Замените своими или загрузите картинки на стороны.</p>
+      <label class="chk"><input id="showText" type="checkbox"> Sample text on panels without images</label>
+      <label class="f">Title<input id="title" type="text"></label>
+      <label class="f">Subtitle<input id="sub" type="text"></label>
+      <p class="note">The title and subtitle are a sample. Replace them or upload images for the panels.</p>
       <div class="slots" id="slots"></div>
-      <p class="note">Картинка ложится на сторону с обрезкой по краям. Для точной вёрстки скачайте шаблон SVG, нарисуйте дизайн поверх и загрузите PNG того же размера в «Вся развёртка».</p>
+      <p class="note">An image fills its panel and is cropped at the edges. For exact layout, download the SVG template, design over it and upload a PNG of the same size to “Whole dieline”.</p>
     </section>
     <section data-pane="elements">
-      <h2>Элементы</h2>
+      <h2>Elements</h2>
       <div class="row2">
-        <label class="btn" style="position:relative;overflow:hidden;text-align:center">+ Логотип<input id="addLogo" type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Загрузить логотип"></label>
-        <button class="btn" id="addText" style="text-align:center">+ Надпись</button>
-        <button class="btn" id="addShape" style="text-align:center">+ Фигура</button>
-        <button class="btn" id="addInfo" style="text-align:center">+ Состав</button>
-        <button class="btn" id="addEan" style="text-align:center">+ Штрихкод EAN-13</button>
-        <button class="btn" id="addQr" style="text-align:center">+ QR-код</button>
+        <label class="btn" style="position:relative;overflow:hidden;text-align:center">+ Logo<input id="addLogo" type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Upload a logo"></label>
+        <button class="btn" id="addText" style="text-align:center">+ Text</button>
+        <button class="btn" id="addShape" style="text-align:center">+ Shape</button>
+        <button class="btn" id="addInfo" style="text-align:center">+ Product info</button>
+        <button class="btn" id="addEan" style="text-align:center">+ EAN-13 barcode</button>
+        <button class="btn" id="addQr" style="text-align:center">+ QR code</button>
       </div>
-      <div class="f">Значки</div>
+      <div class="f">Symbols</div>
       <div class="icons" id="iconBar"></div>
       <div class="els" id="els"></div>
       <div class="edit" id="elEdit" hidden>
         <div class="row2">
-          <label class="f">Сторона<select id="elSide"><option value="out">Снаружи</option><option value="in">Внутри</option></select></label>
-          <label class="f">Грань<select id="elFace"></select></label>
+          <label class="f">Side<select id="elSide"><option value="out">Outside</option><option value="in">Inside</option></select></label>
+          <label class="f">Panel<select id="elFace"></select></label>
         </div>
         <div id="elTextOpts" class="edit" style="border:0;padding:0">
-          <label class="f"><span id="elTextLbl">Текст</span><textarea id="elText" rows="2"></textarea></label>
+          <label class="f"><span id="elTextLbl">Text</span><textarea id="elText" rows="2"></textarea></label>
           <div class="row2">
-            <label class="f" id="elFontWrap">Шрифт<select id="elFont"></select></label>
-            <label class="f" id="elAlignWrap">Выравнивание<select id="elAlign"><option value="center">По центру</option><option value="left">Влево</option><option value="right">Вправо</option></select></label>
-            <label class="f">Цвет<input id="elColor" type="color"></label>
-            <label class="f" id="elShapeWrap">Фигура<select id="elShape"><option value="rect">Прямоугольник</option><option value="round">Скруглённый</option><option value="circle">Круг / овал</option><option value="frame">Рамка</option></select></label>
-            <label class="f" id="elHWrap">Высота, мм<input id="elH" type="number" min="0.3" max="400" step="0.5"></label>
-            <label class="f" id="elIconWrap">Значок<select id="elIcon"></select></label>
+            <label class="f" id="elFontWrap">Font<select id="elFont"></select></label>
+            <label class="f" id="elAlignWrap">Align<select id="elAlign"><option value="center">Centre</option><option value="left">Left</option><option value="right">Right</option></select></label>
+            <label class="f">Colour<input id="elColor" type="color"></label>
+            <label class="f" id="elShapeWrap">Shape<select id="elShape"><option value="rect">Rectangle</option><option value="round">Rounded</option><option value="circle">Circle / ellipse</option><option value="frame">Frame</option></select></label>
+            <label class="f" id="elHWrap">Height, mm<input id="elH" type="number" min="0.3" max="400" step="0.5"></label>
+            <label class="f" id="elIconWrap">Symbol<select id="elIcon"></select></label>
           </div>
         </div>
-        <label class="rng"><span id="elSizeLbl">Размер, мм</span><input id="elSize" type="range" min="2" max="300" step="1"><output id="elSizeO"></output></label>
-        <label class="rng"><span>Влево / вправо</span><input id="elX" type="range" min="0" max="100" step="0.5"><output id="elXO"></output></label>
-        <label class="rng"><span>Вверх / вниз</span><input id="elY" type="range" min="0" max="100" step="0.5"><output id="elYO"></output></label>
-        <label class="rng"><span>Поворот</span><input id="elRot" type="range" min="-180" max="180" step="1"><output id="elRotO"></output></label>
+        <label class="rng"><span id="elSizeLbl">Size, mm</span><input id="elSize" type="range" min="2" max="300" step="1"><output id="elSizeO"></output></label>
+        <label class="rng"><span>Left / right</span><input id="elX" type="range" min="0" max="100" step="0.5"><output id="elXO"></output></label>
+        <label class="rng"><span>Up / down</span><input id="elY" type="range" min="0" max="100" step="0.5"><output id="elYO"></output></label>
+        <label class="rng"><span>Rotation</span><input id="elRot" type="range" min="-180" max="180" step="1"><output id="elRotO"></output></label>
         <div class="row2">
-          <label class="f">Отделка<select id="elFin"><option value="">Без отделки</option><option value="varnish">Выборочный лак</option><option value="foil_gold">Фольга — золото</option><option value="foil_silver">Фольга — серебро</option><option value="emboss">Тиснение (выпуклое)</option><option value="deboss">Блинт (вдавленное)</option></select></label>
-          <label class="f">Плашка Pantone<input id="elSpot" type="text" placeholder="напр. 186 C" autocomplete="off"></label>
+          <label class="f">Finish<select id="elFin"><option value="">No finish</option><option value="varnish">Spot varnish</option><option value="foil_gold">Foil — gold</option><option value="foil_silver">Foil — silver</option><option value="emboss">Emboss (raised)</option><option value="deboss">Deboss (pressed in)</option></select></label>
+          <label class="f">Pantone spot<input id="elSpot" type="text" placeholder="e.g. 186 C" autocomplete="off"></label>
         </div>
         <p class="note" id="elFinNote"></p>
         <div class="row2">
-          <button class="btn" id="elDup" style="text-align:center">Дублировать</button>
-          <button class="btn" id="elDel" style="text-align:center">Удалить</button>
+          <button class="btn" id="elDup" style="text-align:center">Duplicate</button>
+          <button class="btn" id="elDel" style="text-align:center">Delete</button>
         </div>
         <p class="warn" id="elWarn"></p>
-        <p class="note">На вкладке «Развёртка» выбранный элемент можно перетаскивать мышкой — и снаружи, и на обороте. Чтобы двигать сам лист, снимите выделение с элемента.</p>
+        <p class="note">On the “Dieline” tab you can drag the selected element with the mouse, outside and inside. To pan the sheet, deselect the element.</p>
       </div>
-      <p class="note" id="elHint">Логотип — PNG с прозрачным фоном или SVG. Внутри можно напечатать, например, «Спасибо за заказ!» на крышке.</p>
+      <p class="note" id="elHint">Logo: a PNG with a transparent background, or an SVG. Inside you can print, say, “Thank you for your order!” on the lid.</p>
     </section>
     <section data-pane="print">
-      <h2>Допечатка</h2>
+      <h2>Prepress</h2>
       <div class="row2">
-        <label class="f">Вылеты<select id="bleed"><option value="3">3 мм</option><option value="5">5 мм</option></select></label>
-        <label class="f">Безопасная зона<select id="safe"><option value="3">3 мм</option><option value="5">5 мм</option></select></label>
-        <label class="f">Способ печати<select id="method"><option value="digital">Цифровая</option><option value="offset">Офсет</option><option value="flexo">Флексография</option></select></label>
-        <label class="f">Красочность<select id="sides"><option value="40">4+0 (снаружи)</option><option value="44">4+4 (снаружи и внутри)</option><option value="10">1+0 (одна краска)</option></select></label>
+        <label class="f">Bleed<select id="bleed"><option value="3">3 mm</option><option value="5">5 mm</option></select></label>
+        <label class="f">Safe zone<select id="safe"><option value="3">3 mm</option><option value="5">5 mm</option></select></label>
+        <label class="f">Print method<select id="method"><option value="digital">Digital</option><option value="offset">Offset</option><option value="flexo">Flexo</option></select></label>
+        <label class="f">Colours<select id="sides"><option value="40">4+0 (outside)</option><option value="44">4+4 (outside and inside)</option><option value="10">1+0 (one ink)</option></select></label>
       </div>
       <div id="printWarn" class="btns"></div>
     </section>
     <section data-pane="print">
-      <h2>Раскладка на печатный лист</h2>
+      <h2>Sheet layout (imposition)</h2>
       <div class="row2">
-        <label class="f">Формат листа<select id="sheetFmt"></select></label>
-        <label class="f">Тираж, шт<input id="qty" type="number" min="1" max="10000000" step="50"></label>
+        <label class="f">Sheet size<select id="sheetFmt"></select></label>
+        <label class="f">Quantity, pcs<input id="qty" type="number" min="1" max="10000000" step="50"></label>
       </div>
       <div class="row2" id="sheetCustom">
-        <label class="f">Ширина листа, мм<input id="sheetW" type="number" min="100" max="2000" step="1"></label>
-        <label class="f">Высота листа, мм<input id="sheetH" type="number" min="100" max="2000" step="1"></label>
+        <label class="f">Sheet width, mm<input id="sheetW" type="number" min="100" max="2000" step="1"></label>
+        <label class="f">Sheet height, mm<input id="sheetH" type="number" min="100" max="2000" step="1"></label>
       </div>
-      <label class="f">Направление волокна<select id="grain"><option value="any">Не важно — как выгоднее</option><option value="along">Вдоль длинной стороны листа</option><option value="across">Поперёк длинной стороны листа</option></select></label>
+      <label class="f">Grain direction<select id="grain"><option value="any">Any — whatever fits best</option><option value="along">Along the long sheet edge</option><option value="across">Across the long sheet edge</option></select></label>
       <div class="row2">
-        <label class="f">Поля (захват), мм<input id="grip" type="number" min="0" max="50" step="1"></label>
-        <label class="f">Между развёртками, мм<input id="impGap" type="number" min="0" max="30" step="1"></label>
+        <label class="f">Margins (gripper), mm<input id="grip" type="number" min="0" max="50" step="1"></label>
+        <label class="f">Gap between dielines, mm<input id="impGap" type="number" min="0" max="30" step="1"></label>
       </div>
       <div class="imp" id="impPrev"></div>
       <div class="kv" id="impStat"></div>
-      <button class="btn" id="impPdf" style="text-align:center">Скачать раскладку штампа (PDF)</button>
-      <p class="note">Развёртки ставятся сеткой, лучший из двух поворотов. Расход считается с 5% на приладку.</p>
+      <button class="btn" id="impPdf" style="text-align:center">Download die layout (PDF)</button>
+      <p class="note">Dielines are placed in a grid, best of two rotations. Sheet count includes 5% make-ready spoilage.</p>
     </section>
     <section data-pane="scene">
-      <h2>3D-сцена</h2>
-      <div class="f">Фон</div>
-      <div class="sw" id="bgSw" role="group" aria-label="Фон 3D"></div>
-      <label class="f" id="scBgColorWrap">Свой цвет фона<input id="scBgColor" type="color"></label>
-      <label class="f">Освещение<select id="light">
-        <option value="studio">Студия</option><option value="day">Мягкий дневной</option><option value="drama">Драматичный</option>
-        <option value="warm">Тёплый вечер</option><option value="rim">Контровой (силуэт)</option></select></label>
-      <label class="rng"><span>Яркость</span><input id="lInt" type="range" min="30" max="200" step="5"><output id="lIntO"></output></label>
-      <label class="rng"><span>Направление</span><input id="lAng" type="range" min="-180" max="180" step="5"><output id="lAngO"></output></label>
-      <label class="rng"><span>Тень</span><input id="shadow" type="range" min="0" max="60" step="2"><output id="shadowO"></output></label>
-      <p class="note">Фон и свет сохраняются в мокап PNG. «Прозрачный» — для вставки на сайт или в презентацию.</p>
+      <h2>3D scene</h2>
+      <div class="f">Background</div>
+      <div class="sw" id="bgSw" role="group" aria-label="3D background"></div>
+      <label class="f" id="scBgColorWrap">Custom background colour<input id="scBgColor" type="color"></label>
+      <label class="f">Lighting<select id="light">
+        <option value="studio">Studio</option><option value="day">Soft daylight</option><option value="drama">Dramatic</option>
+        <option value="warm">Warm evening</option><option value="rim">Rim light (silhouette)</option></select></label>
+      <label class="rng"><span>Brightness</span><input id="lInt" type="range" min="30" max="200" step="5"><output id="lIntO"></output></label>
+      <label class="rng"><span>Direction</span><input id="lAng" type="range" min="-180" max="180" step="5"><output id="lAngO"></output></label>
+      <label class="rng"><span>Shadow</span><input id="shadow" type="range" min="0" max="60" step="2"><output id="shadowO"></output></label>
+      <p class="note">Background and lighting are saved into the PNG mockup. Use “Transparent” for websites and slides.</p>
     </section>
     <section data-pane="scene">
-      <h2>Рендеры</h2>
-      <label class="f">Размер<select id="rSize"><option value="1920x1080">Full HD · 1920×1080</option><option value="2048x2048">Квадрат · 2048×2048</option><option value="1080x1350">Instagram · 1080×1350</option><option value="3000x2000">Печать · 3000×2000</option><option value="3840x2160">4K · 3840×2160</option></select></label>
-      <div class="f">Ракурсы</div>
+      <h2>Renders</h2>
+      <label class="f">Size<select id="rSize"><option value="1920x1080">Full HD · 1920×1080</option><option value="2048x2048">Square · 2048×2048</option><option value="1080x1350">Instagram · 1080×1350</option><option value="3000x2000">Print · 3000×2000</option><option value="3840x2160">4K · 3840×2160</option></select></label>
+      <div class="f">Angles</div>
       <div class="angs" id="rAngles"></div>
-      <button class="btn pri" id="rGo" style="text-align:center">Скачать рендеры</button>
-      <p class="note">Несколько ракурсов придут одним ZIP. Фон, свет и степень сборки — как сейчас на 3D.</p>
+      <button class="btn pri" id="rGo" style="text-align:center">Download renders</button>
+      <p class="note">Several angles come as one ZIP. Background, light and fold state match the current 3D view.</p>
     </section>
     <section data-pane="material">
-      <h2>Материал</h2>
-      <label class="f">Картон<select id="mat">
-        <option value="carton03">Картон 0,3 мм (≈250 г/м²)</option><option value="carton05">Картон 0,5 мм (≈350 г/м²)</option>
-        <option value="kraft">Крафт-картон 0,45 мм</option><option value="micro_e">Микрогофра E, 1,5 мм</option>
-        <option value="corr_b">Гофрокартон B, 3 мм</option><option value="custom">Своя толщина…</option></select></label>
-      <label class="f">Белила под печать<select id="white"><option value="">Нет</option><option value="full">Под всей печатью</option><option value="els">Только под логотипами и надписями</option></select></label>
-      <label class="f" id="thickWrap">Толщина, мм<input id="thick" type="number" min="0" max="8" step="0.05"></label>
-      <p class="note">Толщина учитывается в развёртке: линии сгиба сдвигаются так, чтобы коробка получилась нужного размера.</p>
+      <h2>Material</h2>
+      <label class="f">Board<select id="mat">
+        <option value="carton03">Paperboard 0.3 mm (≈250 gsm)</option><option value="carton05">Paperboard 0.5 mm (≈350 gsm)</option>
+        <option value="kraft">Kraft board 0.45 mm</option><option value="micro_e">E-flute, 1.5 mm</option>
+        <option value="corr_b">B-flute corrugated, 3 mm</option><option value="custom">Custom thickness…</option></select></label>
+      <label class="f">White underprint<select id="white"><option value="">None</option><option value="full">Under all print</option><option value="els">Only under logos and text</option></select></label>
+      <label class="f" id="thickWrap">Thickness, mm<input id="thick" type="number" min="0" max="8" step="0.05"></label>
+      <p class="note">Thickness is built into the dieline: creases shift so the finished box comes out at the right size.</p>
       <div class="row2">
-        <label class="f">Внутри<select id="inside"><option value="white">Белый картон</option><option value="kraft">Крафт</option><option value="color">Печать цветом</option></select></label>
-        <label class="f" id="insideBgWrap">Цвет внутри<input id="insideBg" type="color"></label>
-        <label class="f">Покрытие<select id="finish"><option value="matte">Матовое</option><option value="gloss">Глянец</option><option value="metal">Металлик (фольга)</option></select></label>
+        <label class="f">Inside<select id="inside"><option value="white">White board</option><option value="kraft">Kraft</option><option value="color">Printed colour</option></select></label>
+        <label class="f" id="insideBgWrap">Inside colour<input id="insideBg" type="color"></label>
+        <label class="f">Coating<select id="finish"><option value="matte">Matte</option><option value="gloss">Gloss</option><option value="metal">Metallic (foil)</option></select></label>
       </div>
-      <label class="chk"><input id="showLines" type="checkbox"> Показывать линии реза и биговки на 3D</label>
+      <label class="chk"><input id="showLines" type="checkbox"> Show cut and crease lines in 3D</label>
     </section>
   </aside>
 
   <main>
     <div class="tabs" role="tablist">
       <div class="seg"><button class="tab" role="tab" id="t3d" aria-selected="true">3D</button>
-      <button class="tab" role="tab" id="t2d" aria-selected="false">Развёртка</button></div>
+      <button class="tab" role="tab" id="t2d" aria-selected="false">Dieline</button></div>
       <span class="dims" id="sheet"></span>
     </div>
     <div id="view3d"></div>
@@ -576,22 +576,22 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       <div class="board-inner" id="boardInner"></div>
       <canvas class="ruler rx board-ov" id="rulerX" aria-hidden="true"></canvas><canvas class="ruler ry board-ov" id="rulerY" aria-hidden="true"></canvas>
       <div class="legend board-ov">
-        <span><i></i>рез (CutContour)</span><span><i class="c"></i>биговка (сгиб)</span>
-        <span><i class="s"></i>зона безопасности 3 мм</span><span><i class="b"></i>вылеты 3 мм</span><span><i class="p"></i>перфорация</span>
+        <span><i></i>cut (CutContour)</span><span><i class="c"></i>crease (fold)</span>
+        <span><i class="s"></i>safe zone 3 mm</span><span><i class="b"></i>bleed 3 mm</span><span><i class="p"></i>perforation</span>
       </div>
       <div class="zoom board-ov" id="zoomBar">
-        <button id="zOut" aria-label="Уменьшить">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Увеличить">+</button>
-        <button id="zFit" class="wide">Вписать</button><button id="z11" class="wide" title="Натуральный размер на экране">1:1</button>
-        <button id="gridBtn" class="wide" aria-pressed="false" title="Сетка 10 мм">Сетка</button><button id="snapBtn" class="wide" aria-pressed="true" title="Привязка к центру грани и к миллиметрам при перетаскивании">Привязка</button>
+        <button id="zOut" aria-label="Zoom out">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Zoom in">+</button>
+        <button id="zFit" class="wide">Fit</button><button id="z11" class="wide" title="Actual size on screen">1:1</button>
+        <button id="gridBtn" class="wide" aria-pressed="false" title="10 mm grid">Grid</button><button id="snapBtn" class="wide" aria-pressed="true" title="Snap to panel centre and whole millimetres while dragging">Snap</button>
       </div>
-      <p class="board-hint board-ov">Колесо или перетаскивание — двигать · Ctrl/⌘ + колесо или щипок — масштаб</p>
+      <p class="board-hint board-ov">Wheel or drag — pan · Ctrl/⌘ + wheel or pinch — zoom</p>
     </div>
     <div class="fold">
-      <button class="play" id="play" aria-label="Собрать или разобрать коробку">
+      <button class="play" id="play" aria-label="Fold or unfold the box">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 1.5v11l9-5.5z"/></svg>
       </button>
-      <input id="t" type="range" min="0" max="1000" value="1000" aria-label="Степень сборки">
-      <output id="tOut">собрана</output>
+      <input id="t" type="range" min="0" max="1000" value="1000" aria-label="Fold progress">
+      <output id="tOut">folded</output>
     </div>
   </main>
 </div>
@@ -609,8 +609,8 @@ const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
 const ease = p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
 const lerp = (a,b,k) => a + (b-a)*k;
 const DEG = Math.PI/180, PI = Math.PI;
-let BLEED = 3;     // вылет под обрез, мм (настраивается)
-let SAFE = 3;      // зона безопасности от линии реза/сгиба, мм
+let BLEED = 3;     // bleed beyond trim, mm (configurable)
+let SAFE = 3;      // safe distance from cut/crease lines, mm
 let WARN = {};
 
 /* ---------- settings & templates ---------- */
@@ -620,45 +620,45 @@ const TYPE_DIMS = {
 };
 const TUBE_BASE = {topClose:'tuck',topLid:'back',botClose:'tuck',botLid:'front',window:false,hang:false,notch:true};
 const TPL = [
-  {id:'rte',   type:'tube', name:'Клапаны с разных сторон', set:{...TUBE_BASE}},
-  {id:'ste',   type:'tube', name:'Клапаны с одной стороны', set:{...TUBE_BASE, botLid:'back'}},
-  {id:'seal',  type:'tube', name:'Склеиваемые клапаны',     set:{...TUBE_BASE, topClose:'seal', botClose:'seal', notch:false}},
-  {id:'mix',   type:'tube', name:'Клапан + склеенное дно',  set:{...TUBE_BASE, botClose:'seal'}},
-  {id:'hang',  type:'tube', name:'С европодвесом',          set:{...TUBE_BASE, hang:true, topLid:'front', notch:false}},
-  {id:'win',   type:'tube', name:'С окошком',               set:{...TUBE_BASE, window:true}},
-  {id:'sleeve',type:'tube', name:'Футляр без клапанов',     set:{...TUBE_BASE, topClose:'open', botClose:'open', notch:false}},
-  {id:'tray',  type:'tray', name:'Лоток',                   set:{}},
-  {id:'lidbase',type:'lidbase', name:'Крышка-дно',          set:{}},
-  {id:'mailer',type:'mailer', name:'Самосборная для доставки', set:{}},
-  {id:'drawer',type:'drawer', name:'Ящик с обечайкой', set:{dbl:true}},
-  {id:'pouch', type:'pouch',  name:'Дой-пак с плоским дном', set:{finish:'gloss'}},
+  {id:'rte',   type:'tube', name:'Reverse tuck end', set:{...TUBE_BASE}},
+  {id:'ste',   type:'tube', name:'Straight tuck end', set:{...TUBE_BASE, botLid:'back'}},
+  {id:'seal',  type:'tube', name:'Glued end (cereal box)',     set:{...TUBE_BASE, topClose:'seal', botClose:'seal', notch:false}},
+  {id:'mix',   type:'tube', name:'Tuck top, glued bottom',  set:{...TUBE_BASE, botClose:'seal'}},
+  {id:'hang',  type:'tube', name:'With euro hang tab',          set:{...TUBE_BASE, hang:true, topLid:'front', notch:false}},
+  {id:'win',   type:'tube', name:'With window',               set:{...TUBE_BASE, window:true}},
+  {id:'sleeve',type:'tube', name:'Open sleeve',     set:{...TUBE_BASE, topClose:'open', botClose:'open', notch:false}},
+  {id:'tray',  type:'tray', name:'Tray',                   set:{}},
+  {id:'lidbase',type:'lidbase', name:'Lid and base',          set:{}},
+  {id:'mailer',type:'mailer', name:'Mailer box', set:{}},
+  {id:'drawer',type:'drawer', name:'Drawer box with sleeve', set:{dbl:true}},
+  {id:'pouch', type:'pouch',  name:'Flat-bottom pouch', set:{finish:'gloss'}},
 ];
 const TPL_DESC = {
-  rte:'Классика для косметики, чая, лекарств. Верхний и нижний клапаны с разных сторон.',
-  ste:'Оба клапана на задней стороне — удобнее для упаковки на линии.',
-  seal:'Клапаны склеиваются, как у коробки хлопьев. Прочно, для тяжёлого.',
-  mix:'Открывается сверху, дно склеено — держит вес.',
-  hang:'Высокая задняя панель с отверстием для крючка на витрине.',
-  win:'Вырез на лицевой стороне, чтобы было видно товар.',
-  sleeve:'Обечайка без клапанов — надевается на другую коробку или продукт.',
-  tray:'Открытый лоток с уголками на склейку. Для конфет, печенья, выкладки.',
-  lidbase:'Две детали: дно и крышка. Подарочная упаковка.',
-  mailer:'Самосборная с откидной крышкой, без клея. Для доставки и подписок.',
-  drawer:'Лоток выдвигается из обечайки, как спичечный коробок.',
-  pouch:'Пакет с плоским дном и zip-замком. 3D-мокап для дизайна.'
+  rte:'The classic for cosmetics, tea and pharma. Top and bottom flaps tuck from opposite sides.',
+  ste:'Both flaps on the back panel — easier on a packing line.',
+  seal:'Flaps are glued like a cereal box. Strong, for heavier goods.',
+  mix:'Opens at the top, glued bottom carries the weight.',
+  hang:'Tall back panel with a hole for a retail peg hook.',
+  win:'A cut-out on the front so the product shows.',
+  sleeve:'A sleeve without flaps — slides over another box or product.',
+  tray:'Open tray with glue corners. For sweets, cookies, display.',
+  lidbase:'Two parts: base and lid. Gift packaging.',
+  mailer:'Self-locking with a hinged lid, no glue. For shipping and subscriptions.',
+  drawer:'A tray slides out of a sleeve, like a matchbox.',
+  pouch:'Flat-bottom bag with a zip lock. A 3D mockup for design.'
 };
-const TYPE_NAMES = {tube:'Коробка с клапанами', tray:'Лоток', lidbase:'Крышка-дно', mailer:'Самосборная для доставки', drawer:'Ящик с обечайкой', pouch:'Дой-пак'};
+const TYPE_NAMES = {tube:'Folding carton', tray:'Tray', lidbase:'Lid and base', mailer:'Mailer box', drawer:'Drawer box', pouch:'Stand-up pouch'};
 const SIZE_CHIPS = {
-  tube:[['Чай','70,70,110'],['Крем','50,50,130'],['Флакон','60,40,160'],['Мыло','90,30,60'],['Свеча','85,85,95']],
-  tray:[['Конфеты','160,110,40'],['Печенье','200,140,50'],['Подарок','250,200,60']],
-  lidbase:[['Подарок','150,150,50'],['Свеча','100,100,80'],['Обувь','300,180,110'],['Пряники','220,160,40']],
+  tube:[['Tea','70,70,110'],['Cream','50,50,130'],['Bottle','60,40,160'],['Soap','90,30,60'],['Candle','85,85,95']],
+  tray:[['Sweets','160,110,40'],['Cookies','200,140,50'],['Gift','250,200,60']],
+  lidbase:[['Gift','150,150,50'],['Candle','100,100,80'],['Shoes','300,180,110'],['Gingerbread','220,160,40']],
   mailer:[['S','220,160,70'],['M','300,220,100'],['L','400,300,120']],
-  drawer:[['Конфеты','200,100,50'],['Чай','150,100,40'],['Украшения','100,100,35']],
-  pouch:[['250 г','130,70,200'],['500 г','160,90,250'],['1 кг','190,110,300']],
+  drawer:[['Sweets','200,100,50'],['Tea','150,100,40'],['Jewellery','100,100,35']],
+  pouch:[['250 g','130,70,200'],['500 g','160,90,250'],['1 kg','190,110,300']],
 };
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
   winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0,
-  bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
+  bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'FOREST TEA', sub:'blend No.4 · 100 g',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
   mat:'carton05', white:'', bgMode:'solid', bg2:'#c9a227', gradAng:90, pattern:'dots', patScale:10, cornerR:0, vents:0, ventD:8, tear:false, tearY:70, tearW:6, grain:'any', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
   sheetFmt:'sra3', sheetW:320, sheetH:450, grip:10, impGap:4, qty:500,
@@ -666,13 +666,13 @@ const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck
 const S = {...DEFAULTS};
 const IMGS = {};
 const ELIMG = {};
-const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|IBM Plex Sans','Plex Sans обычный'],['400|IBM Plex Mono','Plex Mono'],['400|Montserrat','Montserrat'],['700|Montserrat','Montserrat жирный'],
-  ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
+const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|IBM Plex Sans','Plex Sans regular'],['400|IBM Plex Mono','Plex Mono'],['400|Montserrat','Montserrat'],['700|Montserrat','Montserrat bold'],
+  ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair bold'],['500|Oswald','Oswald'],['500|Caveat','Caveat, handwritten']];
 const uid = () => Math.random().toString(36).slice(2,9);
-const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
+const FACE_NAMES = {drawer:'Drawer base', pull:'Drawer end', front:'Front', back:'Back', side1:'Right side', side2:'Left side', top:'Top', bottom:'Bottom', layout:'Whole dieline (PNG on the template)'};
 const NUM = ['gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
-const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
+const DIM_LABELS = {pouch:['Width','Gusset depth','Height']};
 const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern'];
 const CHK = ['notch','window','hang','showText','showLines','dbl','tear'];
 const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
@@ -911,8 +911,8 @@ function constructionExtras(P, B){
       for (const dy of [-gap/2, gap/2]) perfs.push([[x0, y+dy],[x1, y+dy]]); } }
   return perfs;
 }
-const MATS = { carton03:['Картон 0,3 мм (≈250 г/м²)',.3], carton05:['Картон 0,5 мм (≈350 г/м²)',.5], kraft:['Крафт-картон 0,45 мм',.45],
-  micro_e:['Микрогофра E, 1,5 мм',1.5], corr_b:['Гофрокартон B, 3 мм',3], custom:['Своя толщина',null] };
+const MATS = { carton03:['Paperboard 0.3 mm',.3], carton05:['Paperboard 0.5 mm',.5], kraft:['Kraft board 0.45 mm',.45],
+  micro_e:['E-flute 1.5 mm',1.5], corr_b:['B-flute 3 mm',3], custom:['Custom thickness',null] };
 const thickOf = P => P.mat==='custom' ? clamp(+P.thick||0,0,8) : (MATS[P.mat]?.[1] ?? 0);
 // entered size -> crease-to-crease size of the dieline, so the box comes out right with real board thickness
 function prodDims(P){
@@ -1017,7 +1017,7 @@ const QRC = {}; let qrP = null;
 function qrMatrix(t){
   if (QRC[t]) return QRC[t];
   if (!window.qrcode){ qrP ??= new Promise(r => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
-    sc.onload = () => { gen++; refresh(); r(); }; sc.onerror = () => { toast('Не получилось загрузить генератор QR. Проверьте интернет.'); r(); }; document.head.appendChild(sc); }); return null; }
+    sc.onload = () => { gen++; refresh(); r(); }; sc.onerror = () => { toast('Could not load the QR generator. Check your connection.'); r(); }; document.head.appendChild(sc); }); return null; }
   qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8']; const q = qrcode(0,'M'); q.addData(t || ' '); q.make();
   const n = q.getModuleCount(), m = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) m.push(q.isDark(r,c)); return QRC[t] = {n, m};
 }
@@ -1029,13 +1029,13 @@ function drawQR(ctx, el, s){
   return [W,W];
 }
 const ICONS = {
-  up:['Этой стороной вверх','M7 20V5M4 8l3-3 3 3M17 20V5M14 8l3-3 3 3M3 22h18'],
-  fragile:['Хрупкое','M7.5 2.5h9l-.6 6a3.9 3.9 0 0 1-7.8 0zM12 12.5V20M8 20.5h8M11 3l1.3 2.2-1.4 1.6 1.6 1.7'],
-  dry:['Беречь от влаги','M3 12a9 9 0 0 1 18 0zM12 12v6.5a2 2 0 0 0 4 0M6 15.5v2M8.5 18v2M18.5 15.5v2'],
-  recycle:['Переработка','M13 4.5l5 8.6M18 13.1l.1-3.3M18 13.1l-2.9-1.5M17 18.5H7M7 18.5l2.8-1.7M7 18.5l2.8 1.8M6 14l5-8.7M11 5.3l-3 .2M11 5.3l.9 3'],
-  pap:['Картон PAP 21','M13 3.5l4 6.9M17 10.4l.1-2.8M17 10.4l-2.5-1.3M15.5 14.5h-7M8.5 14.5l2.3-1.4M8.5 14.5l2.3 1.4M7 10.4l4-6.9M11 3.5l-2.6.2M11 3.5l.8 2.6'],
-  food:['Для пищевых продуктов','M6 3h6l-.5 5.5a2.5 2.5 0 0 1-5 0zM9 11v8M6.5 19.5h5M17 3v17M15 3v4.5a2 2 0 0 0 4 0V3'],
-  leaf:['Эко','M5 19c0-8.5 6-14 15-14 0 9-6 15-14.5 14.5M5 19l7.5-7.5'],
+  up:['This side up','M7 20V5M4 8l3-3 3 3M17 20V5M14 8l3-3 3 3M3 22h18'],
+  fragile:['Fragile','M7.5 2.5h9l-.6 6a3.9 3.9 0 0 1-7.8 0zM12 12.5V20M8 20.5h8M11 3l1.3 2.2-1.4 1.6 1.6 1.7'],
+  dry:['Keep dry','M3 12a9 9 0 0 1 18 0zM12 12v6.5a2 2 0 0 0 4 0M6 15.5v2M8.5 18v2M18.5 15.5v2'],
+  recycle:['Recyclable','M13 4.5l5 8.6M18 13.1l.1-3.3M18 13.1l-2.9-1.5M17 18.5H7M7 18.5l2.8-1.7M7 18.5l2.8 1.8M6 14l5-8.7M11 5.3l-3 .2M11 5.3l.9 3'],
+  pap:['Paperboard PAP 21','M13 3.5l4 6.9M17 10.4l.1-2.8M17 10.4l-2.5-1.3M15.5 14.5h-7M8.5 14.5l2.3-1.4M8.5 14.5l2.3 1.4M7 10.4l4-6.9M11 3.5l-2.6.2M11 3.5l.8 2.6'],
+  food:['Food safe','M6 3h6l-.5 5.5a2.5 2.5 0 0 1-5 0zM9 11v8M6.5 19.5h5M17 3v17M15 3v4.5a2 2 0 0 0 4 0V3'],
+  leaf:['Eco','M5 19c0-8.5 6-14 15-14 0 9-6 15-14.5 14.5M5 19l7.5-7.5'],
   eac:['EAC',''],
 };
 function drawIcon(ctx, el, s){
@@ -1161,7 +1161,7 @@ function svgDoc(G, artHref, mirror, guides, vtext=''){
       return `<text x="${f2((X(x0)+X(x1))/2)}" y="${f2(Y(y0)-fs*.7)}" paint-order="stroke" stroke="#ffffff" stroke-width="${f2(fs*.25)}">${+(x1-x0).toFixed(1)} × ${+(y1-y0).toFixed(1)}</text>`; }).join(''));
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(w)}mm" height="${f2(h)}mm" viewBox="0 0 ${f2(w)} ${f2(h)}">
-<title>Развёртка ${G.P.L}×${G.P.W}×${G.P.H} мм${mirror?' — оборот':''}</title>
+<title>Dieline ${G.P.L}×${G.P.W}×${G.P.H} mm${mirror?' — inside':''}</title>
 ${artHref ? L('Artwork','',`<image x="0" y="0" width="${f2(w)}" height="${f2(h)}" preserveAspectRatio="none" href="${artHref}" xlink:href="${artHref}"/>`) : ''}
 ${vtext ? L('Text (outlines)','',vtext) : ''}
 ${L('Bleed','fill="none" stroke="#7fbf3f" stroke-width="0.2"',`<rect x="0.1" y="0.1" width="${f2(w-.2)}" height="${f2(h-.2)}"/>`)}
@@ -1185,16 +1185,16 @@ getDL();
 async function saveFile(name, blob){
   const dl = await getDL();
   if (dl){
-    try { await dl.save({filename:name, data:blob}); toast('Сохранено: '+name); }
-    catch(e){ if (e?.code !== 'declined') toast('Не удалось сохранить файл: '+(e?.message||e?.code||'ошибка')); }
+    try { await dl.save({filename:name, data:blob}); toast('Saved: '+name); }
+    catch(e){ if (e?.code !== 'declined') toast('Could not save the file: '+(e?.message||e?.code||'error')); }
     return;
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.append(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-  toast('Скачивается: '+name);
+  toast('Downloading: '+name);
 }
 let tt; function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('on'),2600); }
-const fname = ext => `korobka-${S.type}-${S.L}x${S.W}x${S.H}${ext}`;
+const fname = ext => `box-${S.type}-${S.L}x${S.W}x${S.H}${ext}`;
 
 /* ---------- 3D ---------- */
 const host = $('view3d');
@@ -1307,7 +1307,7 @@ function applyFold(t, fitCam){
   wrapper.updateMatrixWorld(true); box3.setFromObject(wrapper);
   ground.position.y = box3.min.y - .3;
   if (fitCam) fitCamera();
-  $('tOut').textContent = t >= .999 ? 'собрана' : t <= .001 ? 'плоская' : Math.round(t*100)+' %';
+  $('tOut').textContent = t >= .999 ? 'folded' : t <= .001 ? 'flat' : Math.round(t*100)+' %';
 }
 function fitCamera(){
   const aspect = camera.aspect, tanH = Math.tan(camera.fov*DEG/2);
@@ -1330,10 +1330,10 @@ function loop(now){
 
 /* ---------- scene: background & lighting ---------- */
 const BGS = {
-  transparent:{n:'Прозрачный', c:null},
-  studio:{n:'Студия', c:['#f1f3f0','#c9d0c9']}, white:{n:'Белый', c:['#ffffff','#e7e9e5']},
-  dark:{n:'Тёмный', c:['#454b48','#141716'], dk:true}, warm:{n:'Тёплый', c:['#f7efe2','#d8c6aa']},
-  blue:{n:'Голубой', c:['#eef3fa','#bccbe0']}, pink:{n:'Розовый', c:['#fcf0f2','#e6c4cb']}, custom:{n:'Свой', c:null},
+  transparent:{n:'Transparent', c:null},
+  studio:{n:'Studio', c:['#f1f3f0','#c9d0c9']}, white:{n:'White', c:['#ffffff','#e7e9e5']},
+  dark:{n:'Dark', c:['#454b48','#141716'], dk:true}, warm:{n:'Warm', c:['#f7efe2','#d8c6aa']},
+  blue:{n:'Blue', c:['#eef3fa','#bccbe0']}, pink:{n:'Pink', c:['#fcf0f2','#e6c4cb']}, custom:{n:'Custom', c:null},
 };
 const LIGHTS = { // hemisphere sky/ground/intensity, key colour/intensity/elevation, fill, rim, env reflections, shadow softness
   studio:{sky:0xffffff, gnd:0x8f988f, h:1.5,  k:0xffffff, ki:2.0, el:48, f:.55, fc:0xffffff, r:0,   env:.55},
@@ -1377,19 +1377,19 @@ function mockupBlob(){
 
 /* ---------- production & imposition ---------- */
 const SHEETS = { sra3:['SRA3 · 320×450',320,450], a3p:['A3+ · 330×488',330,488], sra2:['SRA2 · 450×640',450,640],
-  b2:['B2 · 500×700',500,700], f70:['70×100',700,1000], f72:['72×102',720,1020], custom:['Свой размер',0,0] };
+  b2:['B2 · 500×700',500,700], f70:['70×100',700,1000], f72:['72×102',720,1020], custom:['Custom size',0,0] };
 $('sheetFmt').innerHTML = Object.entries(SHEETS).map(([k,v]) => `<option value="${k}">${v[0]}</option>`).join('');
 function renderProd(){
   const m = G.Pm, t = thickOf(S);
-  $('prodNote').textContent = S.type==='pouch' ? '' : S.dimMode==='mfg' ? 'Размеры берутся как есть, по линиям сгиба — без поправки на толщину.'
-    : `Толщина ${String(t).replace('.',',')} мм. По линиям сгиба: ${+m.L.toFixed(1)}×${+m.W.toFixed(1)}×${+m.H.toFixed(1)} мм.`;
+  $('prodNote').textContent = S.type==='pouch' ? '' : S.dimMode==='mfg' ? 'Dimensions are used as crease-to-crease, without thickness compensation.'
+    : `Thickness ${t} mm. Crease to crease: ${+m.L.toFixed(1)}×${+m.W.toFixed(1)}×${+m.H.toFixed(1)} mm.`;
   const w = [];
-  if (S.sides!=='44' && hasInside()) w.push(['bad','Внутри есть печать, а красочность 4+0 — переключите на 4+4 или уберите печать внутри.']);
-  if (S.sides==='10') w.push(['','1+0: печать одной краской. Цветные фото и градиенты получатся одним цветом.']);
-  if (S.method==='flexo') w.push(['','Флексография: мелкий текст держите от 6 pt, тонкие линии от 0,25 мм. Для фото лучше офсет или цифра.']);
-  if (S.method==='digital' && S.qty > 2000) w.push(['','Тираж больше 2000 шт — офсет обычно выходит дешевле цифры.']);
-  if (S.method==='offset' && S.qty < 300) w.push(['','Тираж меньше 300 шт — цифровая печать обычно дешевле офсета.']);
-  if (thickOf(S) >= 1.5 && S.type==='tube') w.push(['','Гофрокартон для коробки с клапанами — проверьте у производителя: обычно его делают из картона 0,3–0,6 мм.']);
+  if (S.sides!=='44' && hasInside()) w.push(['bad','There is print inside but colours are set to 4+0 — switch to 4+4 or remove the inside print.']);
+  if (S.sides==='10') w.push(['','1+0 prints one ink. Colour photos and gradients will come out in a single colour.']);
+  if (S.method==='flexo') w.push(['','Flexo: keep small text at 6 pt or larger and lines at 0.25 mm or thicker. Offset or digital is better for photos.']);
+  if (S.method==='digital' && S.qty > 2000) w.push(['','Over 2,000 pcs, offset is usually cheaper than digital.']);
+  if (S.method==='offset' && S.qty < 300) w.push(['','Under 300 pcs, digital is usually cheaper than offset.']);
+  if (thickOf(S) >= 1.5 && S.type==='tube') w.push(['','Corrugated for a tuck-end carton — check with your manufacturer: these are usually made from 0.3–0.6 mm board.']);
   $('printWarn').innerHTML = w.map(([c,t]) => `<p class="warn ${c}">${t}</p>`).join('');
 }
 const polyArea = p => Math.abs(p.reduce((a,[x,y],i)=>{ const [u,v] = p[(i+1)%p.length]; return a + x*v - u*y; }, 0))/2;
@@ -1407,24 +1407,24 @@ function renderImp(){
   let uses = '';
   for (let i = 0; i < I.nx; i++) for (let j = 0; j < I.ny; j++){ const x = I.m + i*(I.iw+I.g), y = I.m + j*(I.ih+I.g);
     uses += I.rot ? `<g transform="translate(${f2(x+h)} ${f2(y)}) rotate(90)">${i||j ? '<use href="#impItem"/>' : item}</g>` : `<g transform="translate(${f2(x)} ${f2(y)})">${i||j ? '<use href="#impItem"/>' : item}</g>`; }
-  $('impPrev').innerHTML = `<svg viewBox="-4 -4 ${I.SW+8} ${I.SH+8}" role="img" aria-label="Раскладка: ${I.n} шт на листе"><rect width="${I.SW}" height="${I.SH}" fill="#fff" stroke="var(--line)" stroke-width="${f2(I.SW/200)}"/><rect x="${I.m}" y="${I.m}" width="${I.SW-2*I.m}" height="${I.SH-2*I.m}" fill="none" stroke="#c9c7d0" stroke-dasharray="6 4" stroke-width="${f2(I.SW/400)}"/>${I.n ? uses : `<text x="${I.SW/2}" y="${I.SH/2}" text-anchor="middle" font-size="${I.SW/14}" fill="var(--cut)">не помещается</text>`}</svg>`;
+  $('impPrev').innerHTML = `<svg viewBox="-4 -4 ${I.SW+8} ${I.SH+8}" role="img" aria-label="Layout: ${I.n} pcs per sheet"><rect width="${I.SW}" height="${I.SH}" fill="#fff" stroke="var(--line)" stroke-width="${f2(I.SW/200)}"/><rect x="${I.m}" y="${I.m}" width="${I.SW-2*I.m}" height="${I.SH-2*I.m}" fill="none" stroke="#c9c7d0" stroke-dasharray="6 4" stroke-width="${f2(I.SW/400)}"/>${I.n ? uses : `<text x="${I.SW/2}" y="${I.SH/2}" text-anchor="middle" font-size="${I.SW/14}" fill="var(--cut)">does not fit</text>`}</svg>`;
   const sheets = I.n ? Math.ceil(S.qty/I.n*1.05) : 0, use = I.n ? I.n*area/(I.SW*I.SH)*100 : 0;
-  $('impStat').innerHTML = `<span>На листе</span><b>${I.n} шт${I.rot?' (повёрнуты)':''}</b><span>Листов на тираж ${S.qty} шт</span><b>${sheets || '—'}</b>
-    <span>Использование картона</span><b>${use.toFixed(0)}%</b><span>Отходы</span><b>${I.n ? (100-use).toFixed(0)+'%' : '—'}</b>`;
+  $('impStat').innerHTML = `<span>Per sheet</span><b>${I.n} pcs${I.rot?' (rotated)':''}</b><span>Sheets for ${S.qty} pcs</span><b>${sheets || '—'}</b>
+    <span>Board usage</span><b>${use.toFixed(0)}%</b><span>Waste</span><b>${I.n ? (100-use).toFixed(0)+'%' : '—'}</b>`;
 }
 
 /* ---------- renders ---------- */
-const ANGLES = { current:['Текущий ракурс',null], three:['3/4 спереди',[.62,.42,1]], front:['Спереди',[0,.22,1]], side:['Сбоку',[1,.22,0]],
-  back:['Сзади',[-.62,.42,-1]], top:['Сверху',[.05,1,.3]] };
+const ANGLES = { current:['Current view',null], three:['3/4 front',[.62,.42,1]], front:['Front',[0,.22,1]], side:['Side',[1,.22,0]],
+  back:['Back',[-.62,.42,-1]], top:['Top',[.05,1,.3]] };
 let rSel = store.get('skladka-angles', ['current','three','front']);
 $('rAngles').innerHTML = Object.entries(ANGLES).map(([k,v]) => `<label><input type="checkbox" value="${k}" ${rSel.includes(k)?'checked':''}> ${v[0]}</label>`).join('');
 $('rAngles').addEventListener('change', () => { rSel = [...$('rAngles').querySelectorAll('input:checked')].map(i => i.value); store.set('skladka-angles', rSel); });
 async function renderShots(){
-  if (!rSel.length){ toast('Отметьте хотя бы один ракурс.'); return; }
+  if (!rSel.length){ toast('Tick at least one angle.'); return; }
   const [W,H] = $('rSize').value.split('x').map(Number), keepPos = camera.position.clone(), tgt = controls.target.clone(), keepAspect = camera.aspect;
   const keepSize = renderer.getSize(new THREE.Vector2()), pr = renderer.getPixelRatio(), dist = keepPos.distanceTo(tgt) * Math.max(1, (H/W) / (keepSize.y/keepSize.x) * .8);
   const shots = [];
-  toast('Рендерю…'); await new Promise(r => setTimeout(r, 30));
+  toast('Rendering…'); await new Promise(r => setTimeout(r, 30));
   try {
     renderer.setPixelRatio(1); renderer.setSize(W, H, false); camera.aspect = W/H; camera.updateProjectionMatrix();
     for (const k of rSel){
@@ -1437,7 +1437,7 @@ async function renderShots(){
     camera.position.copy(keepPos); camera.lookAt(tgt); controls.update(); renderer.render(scene, camera);
   }
   if (shots.length === 1) return saveFile(fname(`-render-${shots[0][0]}-${W}x${H}.png`), shots[0][1]);
-  if (!window.JSZip){ toast('Библиотека архива не загрузилась. Обновите страницу.'); return; }
+  if (!window.JSZip){ toast('The ZIP library did not load. Reload the page.'); return; }
   const zip = new JSZip(); for (const [k,b] of shots) zip.file(fname(`-render-${k}-${W}x${H}.png`), b);
   saveFile(fname(`-renders-${W}x${H}.zip`), await zip.generateAsync({type:'blob'}));
 }
@@ -1452,7 +1452,7 @@ function doRefresh(){
   if (geomDirty){
     BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
     G = build(S); rebuild3D(); applyFold(T, !keepCam); keepCam = false; geomDirty = false;
-    $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
+    $('sheet').textContent = `${S.L}×${S.W}×${S.H} mm · sheet ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm`;
     renderProd(); renderImp();
     gen++; renderSlots(); renderEls();
   }
@@ -1484,14 +1484,14 @@ function render2D(){
   sig2d = sig;
   const grid = `<g class="gridl" stroke="#7d5cff" stroke-opacity=".5" stroke-width="0.3">${Array.from({length:Math.floor(G.b.w/10)+1},(_,i)=>`<line x1="${i*10+BLEED}" y1="0" x2="${i*10+BLEED}" y2="${f2(G.b.h)}"/>`).join('')}${Array.from({length:Math.floor(G.b.h/10)+1},(_,i)=>`<line x1="0" y1="${i*10+BLEED}" x2="${f2(G.b.w)}" y2="${i*10+BLEED}"/>`).join('')}</g>`;
   const sz = svg => svg.replace('<svg ', `<svg style="width:${(G.b.w*BK).toFixed(1)}px;height:${(G.b.h*BK).toFixed(1)}px" `).replace('</svg>', grid+'</svg>');
-  $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Снаружи · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм</p>${sz(svgDoc(G, out, false, true))}</div>` +
-    (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Оборот, внутренняя сторона · зеркально, как печатается</p>${sz(svgDoc(G, inn, true, true))}</div>` : '');
+  $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Outside · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm</p>${sz(svgDoc(G, out, false, true))}</div>` +
+    (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Reverse, inside of the box · mirrored, as printed</p>${sz(svgDoc(G, inn, true, true))}</div>` : '');
   fitBoard();
 }
 // drag the selected logo/text on the flat sheet
 let dragging = false, dragWrap = null;
 function placeAt(e){
-  const el = curEl(); if (el?.locked){ toast('Элемент заблокирован — снимите замок в списке.'); return; } const hit = document.elementFromPoint(e.clientX, e.clientY); const wrap = hit?.closest('[data-side]') || (dragWrap ??= null);
+  const el = curEl(); if (el?.locked){ toast('This element is locked — unlock it in the list.'); return; } const hit = document.elementFromPoint(e.clientX, e.clientY); const wrap = hit?.closest('[data-side]') || (dragWrap ??= null);
   const svg = wrap?.querySelector('svg'); if (!el || !svg) return; dragWrap = wrap;
   const side = wrap.dataset.side, pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
   const p = pt.matrixTransform(svg.getScreenCTM().inverse());
@@ -1521,14 +1521,14 @@ $('view2d').addEventListener('pointercancel', () => { dragging = false; pan = nu
 function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
   for (const id of ['L','W','H']) $(id).value = +(S[id]/UF()).toFixed(S.unit==='mm'?1:2);
-  $('dimTitle').textContent = `Размеры, ${UNAME[S.unit]} (${{inner:'внутренние',outer:'наружные',mfg:'по линиям сгиба'}[S.dimMode]})`;
+  $('dimTitle').textContent = `Dimensions, ${UNAME[S.unit]} (${{inner:'inside',outer:'outside',mfg:'crease to crease'}[S.dimMode]})`;
   $('bgOpts').hidden = S.bgMode==='solid'; $('gradOpts').hidden = S.bgMode!=='grad'; $('patOpts').hidden = S.bgMode!=='pattern';
-  $('gradAngO').textContent = S.gradAng+'°'; $('patScaleO').textContent = S.patScale+' мм';
-  $('thickWrap').hidden = S.mat!=='custom'; $('tearOpts').hidden = !S.tear; $('cornerRO').textContent = S.cornerR+' мм';
+  $('gradAngO').textContent = S.gradAng+'°'; $('patScaleO').textContent = S.patScale+' mm';
+  $('thickWrap').hidden = S.mat!=='custom'; $('tearOpts').hidden = !S.tear; $('cornerRO').textContent = S.cornerR+' mm';
   $('conCommon').hidden = S.type==='pouch'; $('sheetCustom').hidden = S.sheetFmt!=='custom';
   $('lidOpenO').textContent = S.lidOpen+'%';
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a); if (el.type==='checkbox') el.checked=!!S[k]; else el.value=S[k]; }
-  const dl = DIM_LABELS[S.type] || ['Длина','Ширина','Высота']; ['lL','lW','lH'].forEach((id,i)=>$(id).textContent=dl[i]);
+  const dl = DIM_LABELS[S.type] || ['Length','Width','Height']; ['lL','lW','lH'].forEach((id,i)=>$(id).textContent=dl[i]);
   for (const id of SEL) $(id).value = S[id];
   for (const id of CHK) $(id).checked = !!S[id];
   document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== S.type);
@@ -1552,12 +1552,12 @@ function renderTpls(){
   $('tpls').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) selectTpl(b.dataset.id); });
 }
 const VIEW_ONLY = ['pull','lidOpen','sheetW','sheetH','grip','impGap','qty'];
-const UF = () => ({mm:1, cm:10, in:25.4}[S.unit] || 1), UNAME = {mm:'мм', cm:'см', in:'дюймы'};
+const UF = () => ({mm:1, cm:10, in:25.4}[S.unit] || 1), UNAME = {mm:'mm', cm:'cm', in:'in'};
 let keepCam = false;
 function bindInputs(){
   for (const id of NUM){ const el=$(id); if (!el || ['lInt','lAng','shadow'].includes(id)) continue;
     el.addEventListener('input',()=>{ let v=parseFloat(el.value); if (!isFinite(v)) return; if (['L','W','H'].includes(id)) v*=UF(); S[id]=clamp(v,+el.min,+el.max);
-      if (['gradAng','patScale'].includes(id)){ $(id+'O').textContent = S[id] + (id==='gradAng'?'°':' мм'); persist(); refresh(); return; }
+      if (['gradAng','patScale'].includes(id)){ $(id+'O').textContent = S[id] + (id==='gradAng'?'°':' mm'); persist(); refresh(); return; }
       if (['sheetW','sheetH','grip','impGap','qty'].includes(id)){ S.sheetFmt = ['sheetW','sheetH'].includes(id) ? 'custom' : S.sheetFmt; persist(); renderImp(); return; }
       if (VIEW_ONLY.includes(id)){ keepCam = true; if ($(id+'O')) $(id+'O').textContent = S[id]+'%'; }
       else if (!['L','W','H'].includes(id)) custom();
@@ -1594,8 +1594,8 @@ function renderSlots(){
     const label = FACE_NAMES[k];
     const el = document.createElement('label'); el.className='slot'+(k==='layout'?' wide':'')+(IMGS[k]?' has':'');
     if (IMGS[k]) el.style.backgroundImage=`url("${IMGS[k].src}")`;
-    el.innerHTML = `<span class="lbl">${label}</span><input type="file" accept="image/*" id="img-${k}" aria-label="Картинка: ${label}">`;
-    if (IMGS[k]){ const x=document.createElement('button'); x.className='x'; x.type='button'; x.textContent='×'; x.setAttribute('aria-label','Убрать картинку: '+label);
+    el.innerHTML = `<span class="lbl">${label}</span><input type="file" accept="image/*" id="img-${k}" aria-label="Image: ${label}">`;
+    if (IMGS[k]){ const x=document.createElement('button'); x.className='x'; x.type='button'; x.textContent='×'; x.setAttribute('aria-label','Remove image: '+label);
       x.addEventListener('click',e=>{ e.preventDefault(); delete IMGS[k]; renderSlots(); refresh(); }); el.append(x); }
     el.querySelector('input').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return;
       const r=new FileReader(); r.onload=()=>loadImg(k,r.result); r.readAsDataURL(f); });
@@ -1604,7 +1604,7 @@ function renderSlots(){
 }
 function loadImg(k, src){
   return new Promise(res=>{ const img=new Image(); img.onload=()=>{ IMGS[k]={img,src}; if (G) renderSlots(); refresh(); res(); };
-    img.onerror=()=>{ toast('Не получилось открыть картинку. Подойдут PNG, JPG или WebP.'); res(); }; img.src=src; });
+    img.onerror=()=>{ toast('Could not open the image. Use PNG, JPG or WebP.'); res(); }; img.src=src; });
 }
 
 /* ---------- logos & text ---------- */
@@ -1617,13 +1617,13 @@ function renderEls(){
   const box = $('els'); box.innerHTML = '';
   S.els.forEach(el => {
     const b = document.createElement('button'); b.className='btn'; b.setAttribute('aria-pressed', el.id===selId);
-    const name = {image:'Логотип', shape:'Фигура', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR · '+String(el.text||'').slice(0,24), icon:'Значок · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || (String(el.text).split('\n')[0] || 'Надпись');
-    const where = (el.side==='in'?'внутри · ':'')+(FACE_NAMES[el.face]||el.face)+(G.faces.some(f=>f.key===el.face)?'':' — нет в этом шаблоне');
+    const name = {image:'Logo', shape:'Shape', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR · '+String(el.text||'').slice(0,24), icon:'Symbol · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || (String(el.text).split('\n')[0] || 'Text');
+    const where = (el.side==='in'?'inside · ':'')+(FACE_NAMES[el.face]||el.face)+(G.faces.some(f=>f.key===el.face)?'':' — not in this template');
     b.append(name); const em=document.createElement('em'); em.textContent=where; b.append(em);
     b.addEventListener('click',()=>{ selId = el.id===selId ? null : el.id; renderEls(); syncEl(); refresh(); });
     const row = document.createElement('div'); row.className = 'elrow' + (el.hidden ? ' off' : ''); row.append(b);
     const i = S.els.indexOf(el);
-    for (const [act, txt, lbl, on] of [['up','↑','Выше (поверх)',false],['down','↓','Ниже',false],['hide',el.hidden?'◌':'●',el.hidden?'Показать':'Скрыть',!!el.hidden],['lock',el.locked?'🔒':'🔓',el.locked?'Разблокировать':'Заблокировать перемещение',!!el.locked]]){
+    for (const [act, txt, lbl, on] of [['up','↑','Bring forward',false],['down','↓','Send backward',false],['hide',el.hidden?'◌':'●',el.hidden?'Show':'Hide',!!el.hidden],['lock',el.locked?'🔒':'🔓',el.locked?'Unlock':'Lock position',!!el.locked]]){
       const m = document.createElement('button'); m.className = 'btn mini'; m.textContent = txt; m.title = lbl; m.setAttribute('aria-label', lbl); if (act==='hide'||act==='lock') m.setAttribute('aria-pressed', on);
       if ((act==='up' && i===S.els.length-1) || (act==='down' && i===0)) m.disabled = true;
       m.addEventListener('click', () => { if (act==='up'||act==='down'){ const j = act==='up' ? i+1 : i-1; [S.els[i], S.els[j]] = [S.els[j], S.els[i]]; }
@@ -1640,9 +1640,9 @@ function syncEl(){
   const k = el.kind, show = (id, on) => $(id).hidden = !on;
   $('elTextOpts').hidden = k==='image';
   $('elText').closest('label').hidden = !['text','barcode','qr'].includes(k);
-  $('elTextLbl').textContent = k==='barcode' ? 'Код (12–13 цифр, контрольная посчитается сама)' : k==='qr' ? 'Ссылка или текст' : 'Текст';
+  $('elTextLbl').textContent = k==='barcode' ? 'Code (12–13 digits, check digit is computed)' : k==='qr' ? 'Link or text' : 'Text';
   show('elFontWrap', k==='text'); show('elAlignWrap', k==='text'); show('elShapeWrap', k==='shape'); show('elHWrap', k==='shape'); show('elIconWrap', k==='icon');
-  $('elSizeLbl').textContent = k==='text' ? 'Кегль, мм' : 'Ширина, мм';
+  $('elSizeLbl').textContent = k==='text' ? 'Font size, mm' : 'Width, mm';
   if (document.activeElement !== $('elText')) $('elText').value = el.text || '';
   if (k==='text'){ $('elFont').value = el.font; $('elAlign').value = el.align || 'center'; }
   if (el.color) $('elColor').value = el.color;
@@ -1654,21 +1654,21 @@ function syncEl(){
   $('elRot').value = el.rot; $('elRotO').textContent = el.rot+'°';
   if (document.activeElement !== $('elSpot')) $('elSpot').value = el.spot || '';
   $('elFin').value = el.fin || '';
-  $('elFinNote').textContent = { varnish:'Лак ляжет поверх печати отдельным слоем VARNISH.', foil_gold:'Фольга заменяет печать: в PDF элемент уходит в слой FOIL, CMYK под ним не печатается.',
-    foil_silver:'Фольга заменяет печать: в PDF элемент уходит в слой FOIL, CMYK под ним не печатается.', emboss:'Блинтовое тиснение без краски — штамп в слое EMBOSS.',
-    deboss:'Вдавленное тиснение без краски — штамп в слое EMBOSS.' }[el.fin] || (el.spot ? 'Элемент печатается отдельной краской Pantone — плашкой в PDF.' : '');
+  $('elFinNote').textContent = { varnish:'Varnish goes over the print on a separate VARNISH layer.', foil_gold:'Foil replaces print: in the PDF the element goes to the FOIL layer, no CMYK underneath.',
+    foil_silver:'Foil replaces print: in the PDF the element goes to the FOIL layer, no CMYK underneath.', emboss:'Blind emboss, no ink — the die is on the EMBOSS layer.',
+    deboss:'Blind deboss, no ink — the die is on the EMBOSS layer.' }[el.fin] || (el.spot ? 'Printed as a separate Pantone spot ink in the PDF.' : '');
   updWarn();
 }
 function updWarn(){
   const el = curEl(), box = $('elWarn'); if (!el || !box) return;
   const msgs = []; let bad = false;
-  if (WARN[el.id]){ msgs.push(`Заходит в зону ${SAFE} мм от реза или сгиба — край может срезаться или уйти на сгиб.`); bad = true; }
+  if (WARN[el.id]){ msgs.push(`Within ${SAFE} mm of a cut or crease — the edge may be trimmed or land on a fold.`); bad = true; }
   if (el.kind==='image' && ELIMG[el.id]){ const dpi = Math.round(ELIMG[el.id].img.naturalWidth/(el.size/25.4));
-    if (ELIMG[el.id].src.startsWith('data:image/svg')) msgs.push('Векторный логотип — качество не теряется.');
-    else if (dpi < 150){ msgs.push(`Разрешение ${dpi} dpi — будет мыльно. Для печати нужно 300 dpi: загрузите картинку крупнее или уменьшите логотип.`); bad = true; }
-    else if (dpi < 300) msgs.push(`Разрешение ${dpi} dpi — допустимо, но лучше 300 dpi.`);
-    else msgs.push(`Разрешение ${dpi} dpi — хорошо для печати.`); }
-  if (!msgs.length) msgs.push('В зоне безопасности.');
+    if (ELIMG[el.id].src.startsWith('data:image/svg')) msgs.push('Vector logo — no quality loss.');
+    else if (dpi < 150){ msgs.push(`Resolution ${dpi} dpi — it will print blurry. Print needs 300 dpi: upload a larger image or make the logo smaller.`); bad = true; }
+    else if (dpi < 300) msgs.push(`Resolution ${dpi} dpi — acceptable, 300 dpi is better.`);
+    else msgs.push(`Resolution ${dpi} dpi — good for print.`); }
+  if (!msgs.length) msgs.push('Inside the safe zone.');
   box.textContent = msgs.join(' '); box.classList.toggle('bad', bad);
 }
 function addEl(el){ S.els.push(el); selId = el.id; renderEls(); syncEl(); refresh(); }
@@ -1677,12 +1677,12 @@ $('addLogo').addEventListener('change', e => {
   r.onload = () => { const img = new Image();
     img.onload = () => { const id = uid(); ELIMG[id] = {img, src:r.result}; const face = defaultFace();
       addEl({id, kind:'image', side:'out', face, x:.5, y:.3, size:Math.round(faceWidthMM(face)*.4), rot:0}); };
-    img.onerror = () => toast('Не получилось открыть логотип. Подойдут PNG, JPG, WebP или SVG.');
+    img.onerror = () => toast('Could not open the logo. Use PNG, JPG, WebP or SVG.');
     img.src = r.result; };
   r.readAsDataURL(f); e.target.value = '';
 });
 $('addText').addEventListener('click', () => {
-  addEl({id:uid(), kind:'text', side:'out', face:defaultFace(), x:.5, y:.75, size:7, rot:0, text:'Ваш текст', font:'600|IBM Plex Sans', color:S.ink});
+  addEl({id:uid(), kind:'text', side:'out', face:defaultFace(), x:.5, y:.75, size:7, rot:0, text:'Your text', font:'600|IBM Plex Sans', color:S.ink});
 });
 const onEl = (id, fn) => $(id).addEventListener('input', () => { const el = curEl(); if (!el) return; fn(el, $(id).value); syncEl(); renderEls(); refresh(); });
 onEl('elSide', (el,v)=>{ el.side=v; });
@@ -1707,7 +1707,7 @@ $('addShape').addEventListener('click', () => addEl({id:uid(), kind:'shape', sha
 $('addEan').addEventListener('click', () => addEl({id:uid(), kind:'barcode', text:'460000000000', side:'out', face:G.faces.some(f=>f.key==='back') ? 'back' : defaultFace(), x:.5, y:.82, size:37, rot:0, color:'#000000'}));
 $('addQr').addEventListener('click', () => addEl({id:uid(), kind:'qr', text:'https://', side:'out', face:G.faces.some(f=>f.key==='back') ? 'back' : defaultFace(), x:.75, y:.8, size:18, rot:0, color:'#000000'}));
 $('addInfo').addEventListener('click', () => addEl({id:uid(), kind:'text', side:'out', face:G.faces.some(f=>f.key==='back') ? 'back' : defaultFace(), x:.5, y:.45, size:2.4, rot:0, align:'left',
-  text:'Состав: …\nМасса нетто: … г\nПищевая ценность на 100 г: …\nХранить при температуре от … до … °C\nСрок годности: … мес. Дата изготовления: см. на упаковке\nИзготовитель: …, адрес: …', font:'400|IBM Plex Sans', color:'#1b211f'}));
+  text:'Ingredients: …\nNet weight: … g\nNutrition per 100 g: …\nStore at … to … °C\nBest before: … months. Production date: see pack\nManufacturer: …, address: …', font:'400|IBM Plex Sans', color:'#1b211f'}));
 onEl('elSpot', (el,v)=>{ el.spot=v.trim(); });
 $('elDup').addEventListener('click', () => { const el = curEl(); if (!el) return; const id = uid();
   if (ELIMG[el.id]) ELIMG[id] = ELIMG[el.id];
@@ -1739,14 +1739,14 @@ async function saveProject(){
   if (!S.pid) return;
   if (pending){ cancelAnimationFrame(pending); doRefresh(); }   // make sure the 3D model matches the settings
   const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
-  try { await idb.put({id:S.pid, name:S.pname || 'Без названия', updated:Date.now(), settings:{...S}, imgs, elimgs, thumb:snapThumb()});
-    $('savedState').textContent = 'Сохранено'; }
-  catch { $('savedState').textContent = 'Не сохраняется: браузер запретил хранилище. Используйте «Экспорт → Файл проекта .json».'; }
+  try { await idb.put({id:S.pid, name:S.pname || 'Untitled', updated:Date.now(), settings:{...S}, imgs, elimgs, thumb:snapThumb()});
+    $('savedState').textContent = 'Saved'; }
+  catch { $('savedState').textContent = 'Not saving: the browser blocked storage. Use “Export → Project file .json”.'; }
 }
-function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Сохраняю…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
+function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Saving…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
 function newProject(name){ S.pid = uid()+Date.now().toString(36); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
 async function openProject(id){
-  const rec = await idb.get(id).catch(()=>null); if (!rec){ toast('Проект не найден'); return; }
+  const rec = await idb.get(id).catch(()=>null); if (!rec){ toast('Project not found'); return; }
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
   Object.assign(S, DEFAULTS, rec.settings, {pid:rec.id, pname:rec.name}); lastThumb = rec.thumb || '';
   await Promise.all(Object.entries(rec.elimgs||{}).map(([i,src])=>loadElImg(i,src)));
@@ -1754,8 +1754,8 @@ async function openProject(id){
   S.els = (S.els||[]).filter(e => e.kind!=='image' || ELIMG[e.id]);
   $('pname').value = S.pname; syncUI(); syncEl(); refresh(true); openEditor();
 }
-const fmtDate = t => new Date(t).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-const NEWCARD = '<button class="card newc" id="newCard" type="button"><i>+</i>Новый проект</button>';
+const fmtDate = t => new Date(t).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const NEWCARD = '<button class="card newc" id="newCard" type="button"><i>+</i>New project</button>';
 async function renderProjects(){
   if (!$('projGrid').children.length) $('projGrid').innerHTML = NEWCARD;
   let list = []; try { list = (await idb.all()) || []; } catch {}
@@ -1764,15 +1764,15 @@ async function renderProjects(){
   $('homeContinue').dataset.id = list[0]?.id || '';
   $('projGrid').innerHTML = NEWCARD + list.map(r => { const st = r.settings || {};
     const pic = r.thumb ? `<img src="${r.thumb}" alt="">` : thumbSvg(build({...DEFAULTS, ...st}));
-    return `<div class="card proj"><button class="open" data-pid="${r.id}"><div class="pic">${pic}</div><div class="txt"><b>${esc(r.name)}</b><span>${TYPE_NAMES[st.type]||''}</span><span class="mm">${st.L}×${st.W}×${st.H} мм · ${fmtDate(r.updated)}</span></div></button><button class="del" data-del="${r.id}" aria-label="Удалить проект ${esc(r.name)}">Удалить</button></div>`; }).join('');
+    return `<div class="card proj"><button class="open" data-pid="${r.id}"><div class="pic">${pic}</div><div class="txt"><b>${esc(r.name)}</b><span>${TYPE_NAMES[st.type]||''}</span><span class="mm">${st.L}×${st.W}×${st.H} mm · ${fmtDate(r.updated)}</span></div></button><button class="del" data-del="${r.id}" aria-label="Delete project ${esc(r.name)}">Delete</button></div>`; }).join('');
 }
 $('projGrid').addEventListener('click', async e => {
   const d = e.target.closest('[data-del]');
-  if (d){ if (!d.classList.contains('arm')){ d.classList.add('arm'); d.textContent = 'Точно удалить?'; setTimeout(()=>{ if (d.isConnected){ d.classList.remove('arm'); d.textContent='Удалить'; } },3000); return; }
+  if (d){ if (!d.classList.contains('arm')){ d.classList.add('arm'); d.textContent = 'Really delete?'; setTimeout(()=>{ if (d.isConnected){ d.classList.remove('arm'); d.textContent='Delete'; } },3000); return; }
     await idb.del(d.dataset.del).catch(()=>{}); if (S.pid === d.dataset.del) S.pid = null; renderProjects(); return; }
   const o = e.target.closest('[data-pid]'); if (o) openProject(o.dataset.pid);
 });
-const setDocTitle = () => { document.title = location.hash === '#editor' && S.pname ? S.pname + ' — Складка' : 'Складка'; };
+const setDocTitle = () => { document.title = location.hash === '#editor' && S.pname ? S.pname + ' — Skladka' : 'Skladka'; };
 $('pname').addEventListener('input', () => { S.pname = $('pname').value; setDocTitle(); persist(); autosave(); });
 
 /* ---------- home page ---------- */
@@ -1806,13 +1806,13 @@ const navItem = (svg, name, title, attrs) => `<button class="nav" type="button" 
 function renderHome(){
   $('homeTpls').innerHTML = TPL.map(t => { const d = TYPE_DIMS[t.type];
     const P = {...DEFAULTS, ...d, type:t.type, ...t.set};
-    return navItem(thumbSvg(build(P)), t.name, esc((TPL_DESC[t.id]||'')+` · ${d.L}×${d.W}×${d.H} мм`), `data-tpl="${t.id}"`); }).join('');
+    return navItem(thumbSvg(build(P)), t.name, esc((TPL_DESC[t.id]||'')+` · ${d.L}×${d.W}×${d.H} mm`), `data-tpl="${t.id}"`); }).join('');
   $('homeMineSec').hidden = !mine.length;
-  $('homeMine').innerHTML = mine.map((m,i) => navItem(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), `${TYPE_NAMES[m.s.type]||''} · ${m.s.L}×${m.s.W}×${m.s.H} мм`, `data-mine="${i}"`)).join('');
+  $('homeMine').innerHTML = mine.map((m,i) => navItem(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), `${TYPE_NAMES[m.s.type]||''} · ${m.s.L}×${m.s.W}×${m.s.H} mm`, `data-mine="${i}"`)).join('');
   renderProjects();
 }
 $('nbType').innerHTML = Object.entries(TYPE_NAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
-const nbSync = () => { const t = $('nbType').value, d = TYPE_DIMS[t], dl = DIM_LABELS[t] || ['Длина','Ширина','Высота'];
+const nbSync = () => { const t = $('nbType').value, d = TYPE_DIMS[t], dl = DIM_LABELS[t] || ['Length','Width','Height'];
   $('nbL').value = d.L; $('nbW').value = d.W; $('nbH').value = d.H; ['nbLL','nbLW','nbLH'].forEach((id,i)=>$(id).textContent = dl[i]); };
 $('nbType').addEventListener('input', nbSync); nbSync();
 $('newBtn').addEventListener('click', () => { nbSync(); $('newDlg').showModal(); });
@@ -1826,7 +1826,7 @@ $('nbGo').addEventListener('click', () => {
   Object.assign(S, DEFAULTS, TYPE_DIMS[t], {type:t, tpl:null, L:v('nbL'), W:v('nbW'), H:v('nbH'),
     title:'', sub:'', showText:false, bg:'#ffffff', ink:'#1b211f', els:[]});
   if (t==='tube') Object.assign(S, TUBE_BASE);
-  selId = null; newProject('Новый проект · ' + TYPE_NAMES[t]); syncUI(); syncEl(); refresh(true); openEditor();
+  selId = null; newProject('New project · ' + TYPE_NAMES[t]); syncUI(); syncEl(); refresh(true); openEditor();
 });
 $('homeTpls').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (!b) return;
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = [];
@@ -1882,23 +1882,23 @@ $('view3d').addEventListener('dblclick', () => { if (document.querySelector('mai
 let mine = store.get('skladka-mine', []);
 function renderMine(){
   const box = $('mine');
-  if (!mine.length){ box.innerHTML = '<p class="note">Пока пусто. Настройте коробку и сохраните её здесь под своим названием.</p>'; return; }
-  box.innerHTML = mine.map((m,i)=>`<div class="it"><button class="btn ld" data-i="${i}" title="${m.name.replace(/"/g,'&quot;')}"></button><button class="btn del" data-i="${i}" aria-label="Удалить шаблон">×</button></div>`).join('');
+  if (!mine.length){ box.innerHTML = '<p class="note">Nothing here yet. Set up a box and save it here under your own name.</p>'; return; }
+  box.innerHTML = mine.map((m,i)=>`<div class="it"><button class="btn ld" data-i="${i}" title="${m.name.replace(/"/g,'&quot;')}"></button><button class="btn del" data-i="${i}" aria-label="Delete template">×</button></div>`).join('');
   box.querySelectorAll('.ld').forEach((b,i)=>{ const m=mine[i]; b.textContent = `${m.name} · ${m.s.L}×${m.s.W}×${m.s.H}`; });
 }
 $('mine').addEventListener('click',e=>{
   const b = e.target.closest('button'); if (!b) return; const i = +b.dataset.i;
-  if (b.classList.contains('ld')){ Object.assign(S, mine[i].s); syncUI(); refresh(true); toast('Шаблон загружен: '+mine[i].name); }
+  if (b.classList.contains('ld')){ Object.assign(S, mine[i].s); syncUI(); refresh(true); toast('Template loaded: '+mine[i].name); }
   else if (b.classList.contains('del')){
-    if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='Удалить?'; setTimeout(()=>{ if (b.isConnected){ b.classList.remove('arm'); b.textContent='×'; } },3000); return; }
+    if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='Delete?'; setTimeout(()=>{ if (b.isConnected){ b.classList.remove('arm'); b.textContent='×'; } },3000); return; }
     mine.splice(i,1); store.set('skladka-mine',mine); renderMine();
   }
 });
 $('mySave').addEventListener('click',()=>{
-  const name = $('myName').value.trim(); if (!name){ toast('Введите название шаблона'); $('myName').focus(); return; }
+  const name = $('myName').value.trim(); if (!name){ toast('Enter a template name'); $('myName').focus(); return; }
   const s = {}; for (const k of [...STRUCT,'bg','ink','title','sub','inside','finish']) s[k]=S[k];
   const at = mine.findIndex(m=>m.name===name); if (at>=0) mine[at]={name,s}; else mine.push({name,s});
-  store.set('skladka-mine',mine); renderMine(); $('myName').value=''; toast('Шаблон сохранён: '+name);
+  store.set('skladka-mine',mine); renderMine(); $('myName').value=''; toast('Template saved: '+name);
 });
 
 /* ---------- save menu ---------- */
@@ -1910,7 +1910,7 @@ document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest(
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden){ setMenu(false); mbtn.focus(); } });
 
 /* ---------- exports ---------- */
-$('exSvg').addEventListener('click',()=>saveFile(fname('-shablon.svg'), new Blob([svgDoc(G,null,false,true)],{type:'image/svg+xml'})));
+$('exSvg').addEventListener('click',()=>saveFile(fname('-template.svg'), new Blob([svgDoc(G,null,false,true)],{type:'image/svg+xml'})));
 /* ---------- print: text to outlines ---------- */
 const OT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js', FS_VER = '5.3.0';
 const VEC_FAMS = ['IBM Plex Sans','IBM Plex Mono','Montserrat','Playfair Display','Oswald','Caveat'];
@@ -1971,9 +1971,9 @@ async function artSvg(side){
   const href = exportCanvas(G, side, vt ? {text:'skip'} : {}).toDataURL('image/png');
   return {svg: svgDoc(G, href, side==='in', false, vt ? svgText(vt) : ''), vec: !!vt};   // SVG: foil / Pantone stay as they look
 }
-$('exSvgArt').addEventListener('click', async () => { toast('Готовлю развёртку…'); const {svg, vec} = await artSvg('out');
-  if (!vec) toast('Шрифты не загрузились — текст оставлен картинкой.');
-  saveFile(fname('-razvertka.svg'), new Blob([svg],{type:'image/svg+xml'})); });
+$('exSvgArt').addEventListener('click', async () => { toast('Preparing the dieline…'); const {svg, vec} = await artSvg('out');
+  if (!vec) toast('Fonts did not load — text stays as an image.');
+  saveFile(fname('-dieline.svg'), new Blob([svg],{type:'image/svg+xml'})); });
 
 /* ---------- print PDF: 1:1 mm, CMYK 300 dpi, text in outlines, CUT / CREASE layers in spot colours ---------- */
 const enc = new TextEncoder(), deflate = async u8 => new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
@@ -2009,11 +2009,11 @@ async function cmykStrips(pdf, side, s, vec){
   return out;
 }
 async function makePdf(){
-  if (!window.CompressionStream){ toast('Этот браузер не умеет собирать PDF. Откройте в Chrome, Safari 16.4+ или Firefox.'); return null; }
+  if (!window.CompressionStream){ toast('This browser cannot build the PDF. Use Chrome, Safari 16.4+ or Firefox.'); return null; }
   const {w,h,minX,maxX,maxY} = G.b, M = 14, K = 72/25.4, PW = w+2*M, PH = h+2*M;
   const s = Math.min(300/25.4, 14000/w), dpi = Math.round(s*25.4), inside = hasInside(), pdf = PdfW();
   const vt = {out: await vectorText('out'), in: inside ? await vectorText('in') : []}, vec = !!vt.out && !!vt.in;
-  let info = null; try { info = await fontSet('IBM Plex Sans', 400, 'Яя'); } catch {}
+  let info = null; try { info = await fontSet('IBM Plex Sans', 400, 'Aa'); } catch {}
   const img = {out: await cmykStrips(pdf, 'out', s, vec), in: inside ? await cmykStrips(pdf, 'in', s, vec) : null};
   // 1-bit stencil masks (600 dpi) for foil, varnish, emboss, white and Pantone logos
   const masks = {out:[], in:[]}, spots = new Map();
@@ -2071,8 +2071,8 @@ async function makePdf(){
       r += `${pn(x+sx*o)} ${pn(y)} m ${pn(x+sx*(o+L))} ${pn(y)} l ${pn(x)} ${pn(y+sy*o)} m ${pn(x)} ${pn(y+sy*(o+L))} l\n`; }
     return `q 0.2 w 0 0 0 1 K /GSop gs\n${r}S Q`; };
   const typeName = TYPE_NAMES[S.type] || S.type, nameStr = S.pname ? `«${S.pname}» · ` : '';
-  const head = `${nameStr}${typeName} ${S.L}×${S.W}×${S.H} мм (внутр.) · лист ${w.toFixed(1)}×${h.toFixed(1)} мм с вылетами ${BLEED} мм · обрез по меткам · безопасная зона ${SAFE} мм · CMYK ${dpi} dpi · текст в кривых`;
-  const foot = 'Слои: Artwork — печать · WHITE / VARNISH / FOIL / EMBOSS — отделка плашками (overprint) · CUT — рез (CutContour, 100% M) · CREASE — биговка (Crease, 100% C, пунктир) · Info — не печатать';
+  const head = `${nameStr}${typeName} ${S.L}×${S.W}×${S.H} mm (inside) · sheet ${w.toFixed(1)}×${h.toFixed(1)} mm incl. ${BLEED} mm bleed · trim at crop marks · safe zone ${SAFE} mm · CMYK ${dpi} dpi · text outlined`;
+  const foot = 'Layers: Artwork — print · WHITE / VARNISH / FOIL / EMBOSS — finishing spots (overprint) · CUT — cut (CutContour, 100% M) · CREASE — crease (Crease, 100% C, dashed) · Info — do not print';
   const pages = [], pagesId = pdf.id();
   const page = async (title, body) => {
     const cs = `${pn(K)} 0 0 ${pn(-K)} ${pn(M*K)} ${pn((PH-M)*K)} cm\n${body}\n${marks()}\n/OC /Inf BDC\n${infoLine(title+' · '+head, -6)}\n${infoLine(foot, h+9)}\nEMC`;
@@ -2084,19 +2084,19 @@ async function makePdf(){
 /Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R ${finLayers.map(n=>`/O${n} ${ocFin[n]} 0 R`).join(' ')} >> >> >>`);
     pages.push(pg); };
   const art = side => `/OC /Art BDC\n${img[side].map(i => `q ${pn(w)} 0 0 ${pn(-i.hh)} 0 ${pn(i.y+i.hh)} cm /Im${i.id} Do Q`).join('\n')}\n${vec ? textOps(vt[side]) : ''}\nEMC\n${finOps(side)}`;
-  await page('СТР. 1 — ЛИЦЕВАЯ СТОРОНА (снаружи)', art('out') + '\n' + die(false));
-  if (inside) await page('СТР. 2 — ОБОРОТ (внутри коробки), зеркально', art('in') + '\n' + die(true));
-  await page(`СТР. ${inside?3:2} — ШТАМП: только рез и биговка`, die(false));
+  await page('PAGE 1 — OUTSIDE (print side)', art('out') + '\n' + die(false));
+  if (inside) await page('PAGE 2 — REVERSE (inside of the box), mirrored', art('in') + '\n' + die(true));
+  await page(`PAGE ${inside?3:2} — DIE: cut and crease only`, die(false));
   pdf.obj(pagesId, `<< /Type /Pages /Kids [${pages.map(p=>p+' 0 R').join(' ')}] /Count ${pages.length} >>`);
   const cat = pdf.id(), inf = pdf.id(), ocs = `${ocArt} 0 R ${finLayers.map(n=>ocFin[n]+' 0 R').join(' ')} ${ocCut} 0 R ${ocCrs} 0 R ${ocInf} 0 R`;
   pdf.obj(cat, `<< /Type /Catalog /Pages ${pagesId} 0 R /OCProperties << /OCGs [${ocs}] /D << /Order [${ocs}] /ON [${ocs}] >> >> >>`);
-  pdf.obj(inf, `<< /Title ${pdfStr((S.pname||'Коробка')+' — развёртка')} /Creator (Skladka) /Producer (Skladka) >>`);
-  if (!vec) toast('Шрифты не загрузились — текст в PDF картинкой 300 dpi, не в кривых.');
+  pdf.obj(inf, `<< /Title ${pdfStr((S.pname||'Box')+' — dieline')} /Creator (Skladka) /Producer (Skladka) >>`);
+  if (!vec) toast('Fonts did not load — PDF text is a 300 dpi image, not outlines.');
   return pdf.finish(cat, inf);
 }
 $('impPdf').addEventListener('click', async () => {
-  const I = impCalc(); if (!I.n){ toast('Развёртка не помещается на этот лист.'); return; }
-  if (!window.CompressionStream){ toast('Этот браузер не умеет собирать PDF.'); return; }
+  const I = impCalc(); if (!I.n){ toast('The dieline does not fit this sheet.'); return; }
+  if (!window.CompressionStream){ toast('This browser cannot build the PDF.'); return; }
   const K = 72/25.4, pdf = PdfW(), {minX,maxY,h} = G.b; let cut = '', crs = '';
   const ln = (l, tf) => l.map(([a,b]) => { const [x1,y1] = tf(a[0]-minX, maxY-a[1]), [x2,y2] = tf(b[0]-minX, maxY-b[1]); return `${pn(x1)} ${pn(y1)} m ${pn(x2)} ${pn(y2)} l`; }).join('\n');
   for (let i = 0; i < I.nx; i++) for (let j = 0; j < I.ny; j++){ const x0 = I.m + i*(I.iw+I.g), y0 = I.m + j*(I.ih+I.g);
@@ -2107,37 +2107,37 @@ $('impPdf').addEventListener('click', async () => {
   pdf.stream(c, '/Filter /FlateDecode', await deflate(enc.encode(cs)));
   pdf.obj(pg, `<< /Type /Page /Parent ${pages} 0 R /MediaBox [0 0 ${pn(I.SW*K)} ${pn(I.SH*K)}] /Contents ${c} 0 R /Resources << /ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >> >> >>`);
   pdf.obj(pages, `<< /Type /Pages /Kids [${pg} 0 R] /Count 1 >>`); pdf.obj(cat, `<< /Type /Catalog /Pages ${pages} 0 R >>`);
-  pdf.obj(inf, `<< /Title ${pdfStr(`Раскладка штампа ${I.n} шт, лист ${I.SW}×${I.SH} мм`)} /Creator (Skladka) >>`);
-  saveFile(fname(`-raskladka-${I.n}sht-${I.SW}x${I.SH}.pdf`), pdf.finish(cat, inf));
+  pdf.obj(inf, `<< /Title ${pdfStr(`Die layout ${I.n} pcs, sheet ${I.SW}×${I.SH} mm`)} /Creator (Skladka) >>`);
+  saveFile(fname(`-imposition-${I.n}pcs-${I.SW}x${I.SH}.pdf`), pdf.finish(cat, inf));
 });
-$('exPdf').addEventListener('click', async () => { toast('Собираю PDF для типографии…'); const b = await makePdf(); if (b) saveFile(fname('-tipografiya.pdf'), b); });
+$('exPdf').addEventListener('click', async () => { toast('Building the print PDF…'); const b = await makePdf(); if (b) saveFile(fname('-print.pdf'), b); });
 $('exZip').addEventListener('click', async () => {
-  if (!window.JSZip){ toast('Библиотека архива не загрузилась. Обновите страницу.'); return; }
-  toast('Собираю архив…'); await new Promise(r => setTimeout(r, 30));
+  if (!window.JSZip){ toast('The ZIP library did not load. Reload the page.'); return; }
+  toast('Building the archive…'); await new Promise(r => setTimeout(r, 30));
   const pdf = await makePdf(); if (!pdf) return;
   const zip = new JSZip(), base = fname('');
-  zip.file(base+'-tipografiya.pdf', pdf);
-  zip.file(base+'-razvertka.svg', (await artSvg('out')).svg);
-  if (hasInside()) zip.file(base+'-oborot.svg', (await artSvg('in')).svg);
-  zip.file(base+'-shablon.svg', svgDoc(G, null, false, true));
+  zip.file(base+'-print.pdf', pdf);
+  zip.file(base+'-dieline.svg', (await artSvg('out')).svg);
+  if (hasInside()) zip.file(base+'-inside.svg', (await artSvg('in')).svg);
+  zip.file(base+'-template.svg', svgDoc(G, null, false, true));
   zip.file(base+'-mockup.png', await mockupBlob());
   const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
   zip.file(base+'.json', JSON.stringify({app:'skladka', v:3, settings:S, imgs, elimgs, mine}));
-  zip.file('README.txt', `Складка — ${base}
+  zip.file('README.txt', `Skladka — ${base}
 
-${base}-tipografiya.pdf — файл для типографии:
-  • масштаб 1:1, единицы — мм; размер страницы = лист + поля под метки
-  • цвет CMYK, изображения 300 dpi, весь текст переведён в кривые (шрифты не нужны)
-  • вылеты ${BLEED} мм (BleedBox), обрез по меткам (TrimBox), безопасная зона ${SAFE} мм
-  • слой CUT — контур реза, плашка CutContour (100% M), overprint
-  • слой CREASE — биговка, плашка Crease (100% C, пунктир), overprint
-  • слой Artwork — печать, слой Info — служебный текст на полях
-  • стр.1 — лицевая сторона${hasInside()?', стр.2 — оборот (зеркально)':''}, последняя — штамп (только CUT и CREASE)
-  Перевод в CMYK простой, без ICC-профиля: попросите типографию проверить цвет по их профилю и прислать цветопробу.
-${base}-razvertka.svg — развёртка: Artwork, текст в кривых, слои CUT / CREASE.
-${base}-shablon.svg — пустой шаблон для вёрстки в Illustrator / Figma.
-${base}-mockup.png — 3D-мокап.
-${base}.json — проект, открывается кнопкой «Открыть проект».
+${base}-print.pdf — print-ready file:
+  • scale 1:1, units mm; page size = sheet + margins for crop marks
+  • CMYK, images at 300 dpi, all text converted to outlines (no fonts needed)
+  • ${BLEED} mm bleed (BleedBox), trim at crop marks (TrimBox), ${SAFE} mm safe zone
+  • CUT layer — cut contour, spot colour CutContour (100% M), overprint
+  • CREASE layer — creases, spot colour Crease (100% C, dashed), overprint
+  • Artwork layer — print; Info layer — notes in the margins, do not print
+  • page 1 — outside${hasInside()?', page 2 — inside (mirrored)':''}, last page — die (CUT and CREASE only)
+  CMYK conversion is basic, without an ICC profile: ask your printer to check colour against their profile and send a proof.
+${base}-dieline.svg — dieline: Artwork with outlined text, CUT / CREASE layers.
+${base}-template.svg — blank template for Illustrator / Figma.
+${base}-mockup.png — 3D mockup.
+${base}.json — the project; open it with “Open .json”.
 `);
   saveFile(base+'.zip', await zip.generateAsync({type:'blob'}));
 });
@@ -2155,8 +2155,8 @@ const importProject = e=>{ const f=e.target.files[0]; if(!f) return; const r=new
       if (Array.isArray(d.mine)) for (const m of d.mine) if (m?.name && !mine.some(x=>x.name===m.name)) mine.push(m);
       store.set('skladka-mine',mine); renderMine();
       await Promise.all(Object.entries(d.imgs||{}).map(([k,src])=>loadImg(k,src)));
-      newProject(d.settings?.pname || f.name.replace(/\.json$/i,'')); syncUI(); syncEl(); refresh(true); openEditor(); toast('Проект открыт и добавлен в «Мои проекты»'); }
-    catch{ toast('Это не файл проекта «Складки». Выберите .json, сохранённый здесь.'); } e.target.value=''; };
+      newProject(d.settings?.pname || f.name.replace(/\.json$/i,'')); syncUI(); syncEl(); refresh(true); openEditor(); toast('Project opened and added to “My projects”'); }
+    catch{ toast('This is not a Skladka project file. Choose a .json saved from here.'); } e.target.value=''; };
   r.readAsText(f); };
 $('openProj').addEventListener('change', importProject);
 $('openProjHome').addEventListener('change', importProject);
@@ -2165,7 +2165,7 @@ bindInputs(); syncUI(); renderMine(); setPane(store.get('skladka-pane','size'));
 camera.position.set(.55,.38,1);
 BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
-$('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
+$('sheet').textContent = `${S.L}×${S.W}×${S.H} mm · sheet ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm`;
 renderProd(); renderImp();
 document.fonts?.ready.then(()=>refresh());
 $('pname').value = S.pname || '';
