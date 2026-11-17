@@ -89,9 +89,18 @@ main{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;backgr
 .dims{margin-left:auto;font:12px var(--mono);color:var(--muted);padding-right:6px;font-variant-numeric:tabular-nums}
 #view3d{position:relative;min-height:0;background:radial-gradient(ellipse at 50% 40%,var(--stage) 0%,var(--stage2) 100%)}
 #view3d canvas{display:block;width:100%;height:100%;touch-action:none}
-#view2d{min-height:0;overflow:auto;padding:16px;background:var(--stage2)}
-#view2d svg{display:block;margin:auto;max-width:100%;height:auto;max-height:calc(100% - 30px);background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
-.legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+main{position:relative}
+#view2d{position:relative;overflow:hidden;min-height:0;cursor:grab;touch-action:none;background-color:var(--stage2);
+  background-image:radial-gradient(color-mix(in srgb,var(--muted) 35%,transparent) 1px,transparent 1.2px);background-size:22px 22px}
+.board-inner{position:absolute;left:0;top:0;transform-origin:0 0;display:flex;gap:90px;align-items:flex-start;padding:40px;will-change:transform}
+.sheetwrap{display:grid;gap:12px}
+.sheetwrap .cap{font-size:14px;font-weight:500;color:var(--muted);margin:0}
+.board-inner svg{display:block;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.14)}
+.board-ov{position:absolute;z-index:2}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);top:12px;left:12px;background:var(--panel);padding:10px 12px;border-radius:8px;border:1px solid var(--line)}
+.board-hint{left:12px;bottom:12px;margin:0;font-size:12px;color:var(--muted);background:var(--panel);padding:6px 10px;border-radius:8px;border:1px solid var(--line)}
+main.board-mode #view3d{position:absolute;top:56px;right:12px;width:min(300px,42%);height:220px;z-index:3;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.14)}
+main.board-mode #view3d::after{content:"3D · двойной клик — открыть";position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--muted);pointer-events:none}
 .legend i{display:inline-block;width:22px;border-top:2px solid #ec008c;vertical-align:middle;margin-right:6px}
 .legend i.c{border-top:2px dashed #00aeef}
 .legend i.s{border-top:2px dashed #22a04b}
@@ -117,7 +126,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .els .btn em{font-style:normal;color:var(--muted);font-size:11.5px;margin-left:auto;flex:none}
 .edit{display:grid;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px}
 .cap{font-size:12px;color:var(--muted);text-align:center;margin:16px 0 8px}
-#view2d svg{touch-action:none}
 #view2d.placing svg{cursor:crosshair}
 /* home */
 #home{min-height:100%;padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -138,13 +146,14 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .card.blank{cursor:default;border-style:dashed;border-width:1.5px}
 .card.blank .txt{gap:10px}
 .card.blank .pic{font-size:44px;color:var(--accent);font-weight:300}
-.zoom{display:flex;align-items:center;gap:4px;margin-left:8px}
+.zoom{display:flex;align-items:center;gap:4px;right:12px;bottom:12px;background:var(--panel);padding:4px;border-radius:8px;border:1px solid var(--line)}
 .zoom button{width:30px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;cursor:pointer;font:600 15px var(--sans)}
 .zoom button.wide{width:auto;padding:0 10px;font-size:12.5px;font-weight:500}
 .zoom output{font:12px var(--mono);width:46px;text-align:center;color:var(--muted)}
-#view2d.zoomed svg{width:calc(var(--z,1)*100%);max-width:none;max-height:none}
-#view2d.panning svg{cursor:grabbing}
+#view2d.panning{cursor:grabbing}
 @media (max-width:860px){
+  .board-hint{display:none}
+  main.board-mode #view3d{width:150px;height:120px}
   html,body{height:auto}
   .app{grid-template-columns:minmax(0,1fr);height:auto}
   main{height:68vh;min-height:380px;order:1}
@@ -343,7 +352,8 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
     <section>
       <h2>Экспорт</h2>
       <div class="btns">
-        <button class="btn pri" id="exPdf">PDF для типографии<small>1:1 в мм: макет с контуром, печать снаружи, печать внутри, штамп отдельно; метки реза</small></button>
+        <button class="btn pri" id="exZip">Скачать всё одним архивом<small>ZIP: PDF для типографии, SVG-развёртка, SVG-шаблон, мокап PNG, проект</small></button>
+        <button class="btn" id="exPdf">PDF для типографии<small>1:1 в мм: макет с контуром, печать снаружи, печать внутри, штамп отдельно; метки реза</small></button>
         <button class="btn" id="exSvgArt">Развёртка SVG<small>дизайн + контур слоями</small></button>
         <button class="btn" id="exSvg">Шаблон SVG<small>только линии — рисовать поверх в Illustrator / Figma</small></button>
         <button class="btn" id="exPng">Мокап PNG<small>текущий ракурс, прозрачный фон</small></button>
@@ -356,14 +366,21 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="t3d" aria-selected="true">3D</button>
       <button class="tab" role="tab" id="t2d" aria-selected="false">Развёртка</button>
-      <span class="zoom" id="zoomBar" hidden>
-        <button id="zOut" aria-label="Уменьшить">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Увеличить">+</button>
-        <button id="zFit" class="wide">Вписать</button>
-      </span>
       <span class="dims" id="sheet"></span>
     </div>
     <div id="view3d"></div>
-    <div id="view2d" hidden></div>
+    <div id="view2d" hidden>
+      <div class="board-inner" id="boardInner"></div>
+      <div class="legend board-ov">
+        <span><i></i>рез (CutContour)</span><span><i class="c"></i>биговка (сгиб)</span>
+        <span><i class="s"></i>зона безопасности 3 мм</span><span><i class="b"></i>вылеты 3 мм</span>
+      </div>
+      <div class="zoom board-ov" id="zoomBar">
+        <button id="zOut" aria-label="Уменьшить">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Увеличить">+</button>
+        <button id="zFit" class="wide">Вписать</button><button id="z11" class="wide" title="Натуральный размер на экране">1:1</button>
+      </div>
+      <p class="board-hint board-ov">Колесо или перетаскивание — двигать · Ctrl/⌘ + колесо или щипок — масштаб</p>
+    </div>
     <div class="fold">
       <button class="play" id="play" aria-label="Собрать или разобрать коробку">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 1.5v11l9-5.5z"/></svg>
@@ -376,6 +393,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -767,7 +785,7 @@ function svgDoc(G, artHref, mirror, guides){
   const L = (id, attrs, body) => `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${id}" ${attrs}>${body}</g>`;
   let g = '';
   if (guides){
-    const fs = Math.max(w,h)/75, seen = new Set();
+    const fs = Math.max(w,h)/48, seen = new Set();
     g += L('Safe zone','fill="none" stroke="#22a04b" stroke-width="0.2" stroke-dasharray="1.5 1"', G.faces.map(f=>{ const [x0,y0,x1,y1]=f.r;
       if (x1-x0<=2*SAFE || y1-y0<=2*SAFE) return ''; const xa=Math.min(X(x0),X(x1));
       return `<rect x="${f2(xa+SAFE)}" y="${f2(Y(y1)+SAFE)}" width="${f2(x1-x0-2*SAFE)}" height="${f2(y1-y0-2*SAFE)}"/>`; }).join(''));
@@ -957,7 +975,7 @@ function doRefresh(){
   outMat.roughness = S.finish==='gloss' ? .28 : S.finish==='metal' ? .32 : .82; outMat.metalness = S.finish==='metal' ? .75 : 0;
   pouchMat.map = outMat.map; pouchMat.roughness = S.finish==='matte' ? .7 : S.finish==='metal' ? .3 : .22;
   pouchMat.metalness = S.finish==='metal' ? .8 : 0; pouchMat.clearcoat = S.finish==='matte' ? 0 : .8; pouchMat.needsUpdate = true;
-  document.querySelector('.fold').hidden = !!G.pouch || !$('view2d').hidden;
+  document.querySelector('.fold').hidden = !!G.pouch;
   $('insideBgWrap').hidden = S.inside!=='color';
   if (!$('view2d').hidden) render2D();
 }
@@ -974,14 +992,16 @@ function render2D(){
     return;
   }
   sig2d = sig;
-  v.innerHTML = `<div data-side="out">${svgDoc(G, out, false, true)}</div>` +
-    (inside ? `<p class="cap">Оборот — внутренняя сторона (зеркально, как печатается на обороте листа)</p><div data-side="in">${svgDoc(G, inn, true, true)}</div>` : '') +
-    `<div class="legend"><span><i></i>рез</span><span><i class="c"></i>биговка (сгиб)</span><span><i class="s"></i>зона безопасности ${SAFE} мм</span><span><i class="b"></i>вылеты ${BLEED} мм</span></div>`;
+  const sz = svg => svg.replace('<svg ', `<svg style="width:${(G.b.w*BK).toFixed(1)}px;height:${(G.b.h*BK).toFixed(1)}px" `);
+  $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Снаружи · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм</p>${sz(svgDoc(G, out, false, true))}</div>` +
+    (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Оборот, внутренняя сторона · зеркально, как печатается</p>${sz(svgDoc(G, inn, true, true))}</div>` : '');
+  fitBoard();
 }
 // drag the selected logo/text on the flat sheet
-let dragging = false;
+let dragging = false, dragWrap = null;
 function placeAt(e){
-  const el = curEl(); const wrap = e.target.closest('[data-side]'); const svg = wrap?.querySelector('svg'); if (!el || !svg) return;
+  const el = curEl(); const hit = document.elementFromPoint(e.clientX, e.clientY); const wrap = hit?.closest('[data-side]') || (dragWrap ??= null);
+  const svg = wrap?.querySelector('svg'); if (!el || !svg) return; dragWrap = wrap;
   const side = wrap.dataset.side, pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
   const p = pt.matrixTransform(svg.getScreenCTM().inverse());
   const x = side==='in' ? G.b.maxX - p.x : G.b.minX + p.x, y = G.b.maxY - p.y;
@@ -994,13 +1014,14 @@ function placeAt(e){
   syncEl(); refresh();
 }
 $('view2d').addEventListener('pointerdown', e => {
-  if (!e.target.closest('svg')) return;
-  if (!curEl()){ const v = $('view2d'); pan = {x:e.clientX, y:e.clientY, l:v.scrollLeft, t:v.scrollTop};
-    v.classList.add('panning'); e.target.closest('svg').setPointerCapture(e.pointerId); return; }
-  dragging = true; e.target.closest('svg').setPointerCapture(e.pointerId); placeAt(e);
+  if (e.target.closest('.board-ov')) return;
+  const v = $('view2d');
+  if (e.button === 0 && curEl() && e.target.closest('svg')){ dragging = true; v.setPointerCapture(e.pointerId); placeAt(e); return; }
+  pan = {x:e.clientX, y:e.clientY, bx, by}; v.classList.add('panning'); v.setPointerCapture(e.pointerId);
 });
-$('view2d').addEventListener('pointermove', e => { if (dragging) placeAt(e);
-  else if (pan){ const v = $('view2d'); v.scrollLeft = pan.l-(e.clientX-pan.x); v.scrollTop = pan.t-(e.clientY-pan.y); } });
+$('view2d').addEventListener('pointermove', e => {
+  if (dragging) placeAt(e);
+  else if (pan){ bx = pan.bx + e.clientX - pan.x; by = pan.by + e.clientY - pan.y; applyBoard(); } });
 $('view2d').addEventListener('pointerup', () => { if (dragging) renderEls(); dragging = false; pan = null; $('view2d').classList.remove('panning'); });
 $('view2d').addEventListener('pointercancel', () => { dragging = false; pan = null; $('view2d').classList.remove('panning'); });
 
@@ -1051,8 +1072,9 @@ function bindInputs(){
     anim = {from:T, to, t0:performance.now(), dur}; });
   const tabs = [$('t3d'),$('t2d')];
   tabs.forEach(tb=>tb.addEventListener('click',()=>{ const is2 = tb.id==='t2d';
-    tabs.forEach(x=>x.setAttribute('aria-selected', x===tb)); $('view2d').hidden=!is2; $('view3d').hidden=is2;
-    $('zoomBar').hidden=!is2; document.querySelector('.fold').hidden=is2 || !!G.pouch; if (is2) render2D(); else resize(); }));
+    tabs.forEach(x=>x.setAttribute('aria-selected', x===tb)); $('view2d').hidden=!is2;
+    document.querySelector('main').classList.toggle('board-mode', is2); document.querySelector('.fold').hidden = !!G.pouch;
+    if (is2){ sig2d=''; render2D(); } }));
 }
 function renderSlots(){
   const box = $('slots'); box.innerHTML='';
@@ -1184,20 +1206,23 @@ $('homeContinue').addEventListener('click', openEditor);
 $('goHome').addEventListener('click', () => { location.hash = ''; });
 window.addEventListener('hashchange', showView);
 
-/* ---------- 2D zoom & pan ---------- */
-let z2 = 1, pan = null;
-function setZoom(z, rx, ry){
-  const v = $('view2d'); rx ??= v.clientWidth/2; ry ??= v.clientHeight/2;
-  const fx = (v.scrollLeft+rx)/v.scrollWidth, fy = (v.scrollTop+ry)/v.scrollHeight;
-  z2 = clamp(z, 1, 8); v.style.setProperty('--z', z2); v.classList.toggle('zoomed', z2 > 1.001);
-  v.scrollLeft = fx*v.scrollWidth - rx; v.scrollTop = fy*v.scrollHeight - ry;
-  $('zVal').textContent = Math.round(z2*100)+'%';
-}
-$('zIn').addEventListener('click', () => setZoom(z2*1.4));
-$('zOut').addEventListener('click', () => setZoom(z2/1.4));
-$('zFit').addEventListener('click', () => setZoom(1));
-$('view2d').addEventListener('wheel', e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault();
-  const r = $('view2d').getBoundingClientRect(); setZoom(z2*Math.exp(-e.deltaY*.01), e.clientX-r.left, e.clientY-r.top); }, {passive:false});
+/* ---------- board: zoom & pan ---------- */
+const BK = 2;                 // px per mm at 100 %
+let bz = 1, bx = 0, by = 0, pan = null;
+function applyBoard(){ $('boardInner').style.transform = `translate(${bx}px,${by}px) scale(${bz})`; $('zVal').textContent = Math.round(bz*100)+'%'; }
+function zoomAt(z, px, py){ const v = $('view2d'); px ??= v.clientWidth/2; py ??= v.clientHeight/2;
+  z = clamp(z, .1, 12); bx = px-(px-bx)*z/bz; by = py-(py-by)*z/bz; bz = z; applyBoard(); }
+function fitBoard(){ const v = $('view2d'), inr = $('boardInner'), w = inr.offsetWidth, h = inr.offsetHeight; if (!w || !v.clientWidth) return;
+  const aw = v.clientWidth > 900 ? v.clientWidth-330 : v.clientWidth;   // keep clear of the mini 3D window
+  bz = Math.min(aw/w, v.clientHeight/h)*.96; bx = (aw-w*bz)/2; by = (v.clientHeight-h*bz)/2; applyBoard(); }
+$('zIn').addEventListener('click', () => zoomAt(bz*1.4));
+$('zOut').addEventListener('click', () => zoomAt(bz/1.4));
+$('zFit').addEventListener('click', fitBoard);
+$('z11').addEventListener('click', () => zoomAt((96/25.4)/BK));   // 1 mm on the sheet ≈ 1 mm on screen
+$('view2d').addEventListener('wheel', e => { e.preventDefault(); const r = $('view2d').getBoundingClientRect();
+  if (e.ctrlKey || e.metaKey) zoomAt(bz*Math.exp(-e.deltaY*.01), e.clientX-r.left, e.clientY-r.top);
+  else { bx -= e.deltaX; by -= e.deltaY; applyBoard(); } }, {passive:false});
+$('view3d').addEventListener('dblclick', () => { if (document.querySelector('main').classList.contains('board-mode')) $('t3d').click(); });
 
 /* ---------- my templates ---------- */
 let mine = store.get('skladka-mine', []);
@@ -1226,8 +1251,8 @@ $('mySave').addEventListener('click',()=>{
 $('exSvg').addEventListener('click',()=>saveFile(fname('-shablon.svg'), new Blob([svgDoc(G,null,false,true)],{type:'image/svg+xml'})));
 $('exSvgArt').addEventListener('click',()=>{ const url = exportCanvas(G).toDataURL('image/png');
   saveFile(fname('-razvertka.svg'), new Blob([svgDoc(G,url)],{type:'image/svg+xml'})); });
-$('exPdf').addEventListener('click',()=>{
-  const {jsPDF} = window.jspdf || {}; if (!jsPDF){ toast('Библиотека PDF не загрузилась. Обновите страницу.'); return; }
+function makePdf(){
+  const {jsPDF} = window.jspdf || {}; if (!jsPDF){ toast('Библиотека PDF не загрузилась. Обновите страницу.'); return null; }
   const {w,h,minX,maxX,maxY} = G.b, M = 14, PW = w+2*M, PH = h+2*M, orient = PW>PH?'landscape':'portrait';
   const sExp = Math.min(300/25.4, 8000/Math.max(w,h), Math.sqrt(16e6/(w*h)));   // stays under the 16 Mpx canvas limit of Safari
   const dpi = Math.round(sExp*25.4);
@@ -1254,7 +1279,24 @@ $('exPdf').addEventListener('click',()=>{
   if (hasInside()){ doc.addPage([PW,PH],orient); doc.addImage(art('in'),'JPEG',M,M,w,h); marks(); info('PRINT - inside / reverse side (mirrored)'); }
   // 4 die: dieline only, for the die-cutter
   doc.addPage([PW,PH],orient); die(false); marks(); info('DIELINE - cut & crease only');
-  saveFile(fname('-tipografiya.pdf'), doc.output('blob'));
+  return doc.output('blob');
+}
+$('exPdf').addEventListener('click',()=>{ const b = makePdf(); if (b) saveFile(fname('-tipografiya.pdf'), b); });
+$('exZip').addEventListener('click', async () => {
+  if (!window.JSZip){ toast('Библиотека архива не загрузилась. Обновите страницу.'); return; }
+  toast('Собираю архив…'); await new Promise(r => setTimeout(r, 30));
+  const pdf = makePdf(); if (!pdf) return;
+  const zip = new JSZip(), base = fname('');
+  zip.file(base+'-tipografiya.pdf', pdf);
+  zip.file(base+'-razvertka.svg', svgDoc(G, exportCanvas(G).toDataURL('image/png')));
+  if (hasInside()) zip.file(base+'-oborot.svg', svgDoc(G, exportCanvas(G,'in').toDataURL('image/png'), true));
+  zip.file(base+'-shablon.svg', svgDoc(G, null, false, true));
+  renderer.render(scene, camera);
+  zip.file(base+'-mockup.png', await new Promise(r => renderer.domElement.toBlob(r, 'image/png')));
+  const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
+  zip.file(base+'.json', JSON.stringify({app:'skladka', v:3, settings:S, imgs, elimgs, mine}));
+  zip.file('README.txt', `Складка — ${base}\n\n${base}-tipografiya.pdf — отдать в типографию: стр.1 макет с контуром (на согласование), стр.2 печать снаружи, ${hasInside()?'стр.3 печать внутри (оборот), ':''}последняя — штамп (только рез и биговка).\nКонтур реза: 100% Magenta (CutContour), биговка: 100% Cyan пунктиром. Вылеты ${BLEED} мм, зона безопасности ${SAFE} мм.\n${base}-razvertka.svg — развёртка с дизайном, слои Artwork / Crease / CutContour.\n${base}-shablon.svg — пустой шаблон для вёрстки в Illustrator / Figma.\n${base}-mockup.png — 3D-мокап, прозрачный фон.\n${base}.json — проект, открывается кнопкой «Открыть проект».\n`);
+  saveFile(base+'.zip', await zip.generateAsync({type:'blob'}));
 });
 $('exPng').addEventListener('click',()=>{ renderer.render(scene,camera); renderer.domElement.toBlob(b=>saveFile(fname('-mockup.png'),b),'image/png'); });
 $('saveProj').addEventListener('click',()=>{ const imgs={}, elimgs={}; for (const k in IMGS) imgs[k]=IMGS[k].src;
