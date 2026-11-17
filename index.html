@@ -123,6 +123,7 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
 .legend i.c{border-top:2px dashed #00aeef}
 .legend i.s{border-top:2px dashed #22a04b}
 .legend i.b{border-top:2px solid #7fbf3f}
+.legend i.p{border-top:2px dashed #ff8a00}
 .warn{font-size:12px;line-height:1.4;margin:0;padding:6px 8px;border-radius:6px;background:var(--accent-soft);color:var(--fg)}
 .warn.bad{background:color-mix(in srgb,var(--cut) 16%,transparent)}
 .fold[hidden]{display:none!important}
@@ -326,7 +327,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <div class="row2">
           <label class="f">Верх<select id="topClose"><option value="tuck">Клапан с язычком</option><option value="seal">Склейка</option><option value="open">Открыт</option></select></label>
           <label class="f">Клапан верха на<select id="topLid"><option value="back">задней стороне</option><option value="front">лицевой стороне</option></select></label>
-          <label class="f">Низ<select id="botClose"><option value="tuck">Клапан с язычком</option><option value="seal">Склейка</option><option value="open">Открыт</option></select></label>
+          <label class="f">Низ<select id="botClose"><option value="tuck">Клапан с язычком</option><option value="seal">Склейка</option><option value="snap">Защёлка 1-2-3 (без клея)</option><option value="open">Открыт</option></select></label>
           <label class="f">Клапан низа на<select id="botLid"><option value="front">лицевой стороне</option><option value="back">задней стороне</option></select></label>
         </div>
         <div class="row">
@@ -375,6 +376,19 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         </div>
         <label class="f">Уголки для склейки, мм<input id="tab2" type="number" min="5" max="60" step="1"></label>
         <p class="note">Крышка и дно печатаются на одном листе. Зазор добавляется к длине и ширине крышки с каждой стороны.</p>
+      </div>
+      <div class="sub" style="padding-left:0" id="conCommon">
+        <h3>Для всех типов</h3>
+        <label class="rng"><span>Скругление углов</span><input id="cornerR" type="range" min="0" max="15" step="0.5"><output id="cornerRO"></output></label>
+        <div class="row2">
+          <label class="f">Вент. отверстия на боках<input id="vents" type="number" min="0" max="6" step="1"></label>
+          <label class="f">Диаметр, мм<input id="ventD" type="number" min="4" max="30" step="1"></label>
+        </div>
+        <label class="chk"><input id="tear" type="checkbox"> Отрывная лента (перфорация)</label>
+        <div class="row2" id="tearOpts">
+          <label class="f">Высота, % стенки<input id="tearY" type="number" min="15" max="85" step="1"></label>
+          <label class="f">Ширина ленты, мм<input id="tearW" type="number" min="3" max="20" step="1"></label>
+        </div>
       </div>
       <div data-for="mailer" class="sub" style="padding-left:0">
         <p class="note">Двойные боковые стенки, «ушки» и замки в дно, без клея. Обычно делается из микрогофрокартона. Высоту лучше держать меньше ширины.</p>
@@ -461,6 +475,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <label class="f">Ширина листа, мм<input id="sheetW" type="number" min="100" max="2000" step="1"></label>
         <label class="f">Высота листа, мм<input id="sheetH" type="number" min="100" max="2000" step="1"></label>
       </div>
+      <label class="f">Направление волокна<select id="grain"><option value="any">Не важно — как выгоднее</option><option value="along">Вдоль длинной стороны листа</option><option value="across">Поперёк длинной стороны листа</option></select></label>
       <div class="row2">
         <label class="f">Поля (захват), мм<input id="grip" type="number" min="0" max="50" step="1"></label>
         <label class="f">Между развёртками, мм<input id="impGap" type="number" min="0" max="30" step="1"></label>
@@ -512,7 +527,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       <div class="board-inner" id="boardInner"></div>
       <div class="legend board-ov">
         <span><i></i>рез (CutContour)</span><span><i class="c"></i>биговка (сгиб)</span>
-        <span><i class="s"></i>зона безопасности 3 мм</span><span><i class="b"></i>вылеты 3 мм</span>
+        <span><i class="s"></i>зона безопасности 3 мм</span><span><i class="b"></i>вылеты 3 мм</span><span><i class="p"></i>перфорация</span>
       </div>
       <div class="zoom board-ov" id="zoomBar">
         <button id="zOut" aria-label="Уменьшить">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Увеличить">+</button>
@@ -594,7 +609,7 @@ const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck
   winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0,
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
-  mat:'carton05', white:'', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
+  mat:'carton05', white:'', cornerR:0, vents:0, ventD:8, tear:false, tearY:70, tearW:6, grain:'any', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
   sheetFmt:'sra3', sheetW:320, sheetH:450, grip:10, impGap:4, qty:500,
   scBg:'studio', scBgColor:'#dfe6e2', light:'studio', lInt:100, lAng:-35, shadow:20 };
 const S = {...DEFAULTS};
@@ -604,12 +619,12 @@ const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|Montserrat','Montserrat']
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
 const uid = () => Math.random().toString(36).slice(2,9);
 const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
-const NUM = ['thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
+const NUM = ['cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
 const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
-const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white'];
-const CHK = ['notch','window','hang','showText','showLines','dbl'];
-const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
+const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain'];
+const CHK = ['notch','window','hang','showText','showLines','dbl','tear'];
+const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
 
 const store = {
   get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -688,6 +703,15 @@ function buildTube(P, B){
   const end = (top, kind, lidOn) => {
     if (kind==='open') return;
     const e = top?'T':'B', y0 = top?H:0, dir = top?1:-1, s = top?-1:1;
+    if (kind==='snap'){   // 1-2-3 snap-lock bottom: four interlocking flaps, no glue
+      const ds = L*.48, dm = W*.62, db = W*.5, Y = k => y0 + dir*k;
+      const side = x => [[x,y0],[x+W,y0],[x+W,Y(ds*.35)],[x+W*.7,Y(ds)],[x+W*.3,Y(ds)],[x,Y(ds*.35)]];
+      B.add('sn1'+e,'side1',[L,y0],'x',s*90*DEG,[.45,.6],side(L));
+      B.add('sn3'+e,'side2',[2*L+W,y0],'x',s*91*DEG,[.5,.65],side(2*L+W));
+      B.add('sn2'+e,'front',[0,y0],'x',s*92*DEG,[.62,.8],[[0,y0],[L,y0],[L-3,Y(dm*.55)],[L*.62,Y(dm*.55)],[L*.6,Y(dm)],[L*.4,Y(dm)],[L*.38,Y(dm*.55)],[3,Y(dm*.55)]]);
+      B.add('sn4'+e,'back',[L+W,y0],'x',s*93*DEG,[.75,.95],[[L+W,y0],[2*L+W,y0],[2*L+W-3,Y(db)],[L+W+L*.62,Y(db)],[L+W+L*.6,Y(db*.55)],[L+W+L*.4,Y(db*.55)],[L+W+L*.38,Y(db)],[L+W+3,Y(db)]]);
+      return;
+    }
     B.add('dust1'+e,'side1',[L,y0],'x',s*92*DEG,[.45,.6],dustPoly(L,y0,W,D,dir));
     B.add('dust2'+e,'side2',[2*L+W,y0],'x',s*92*DEG,[.47,.62],dustPoly(2*L+W,y0,W,D,dir));
     if (kind==='tuck'){
@@ -802,6 +826,40 @@ function buildMailer(P,B){
   B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
   return {};
 }
+const inPoly = (x, y, p) => { let c = false; for (let i = 0, j = p.length-1; i < p.length; j = i++){ const [xi,yi] = p[i], [xj,yj] = p[j];
+  if ((yi>y) !== (yj>y) && x < (xj-xi)*(y-yi)/(yj-yi)+xi) c = !c; } return c; };
+const circle = (cx, cy, r, n=28) => Array.from({length:n}, (_,i) => [cx+r*Math.cos(-i/n*2*PI), cy+r*Math.sin(-i/n*2*PI)]);
+function constructionExtras(P, B){
+  // rounded outer corners: only vertices that belong to one panel (free cut corners), convex ones
+  const R0 = clamp(+P.cornerR||0, 0, 15);
+  if (R0 > 0){
+    const key = v => v[0].toFixed(2)+','+v[1].toFixed(2), use = new Map();
+    for (const n of B.N) for (const v of n.poly) use.set(key(v), (use.get(key(v))||0)+1);
+    for (const n of B.N){ const p = n.poly, area = p.reduce((a,[x,y],i)=>{ const [u,v] = p[(i+1)%p.length]; return a + x*v - u*y; }, 0), out = [];
+      p.forEach((v,i) => { const a = p[(i-1+p.length)%p.length], b = p[(i+1)%p.length];
+        const e1 = [a[0]-v[0], a[1]-v[1]], e2 = [b[0]-v[0], b[1]-v[1]], l1 = Math.hypot(...e1), l2 = Math.hypot(...e2), cr = e1[0]*e2[1]-e1[1]*e2[0];
+        const convex = Math.sign(-cr) === Math.sign(area), ang = Math.acos(clamp((e1[0]*e2[0]+e1[1]*e2[1])/(l1*l2||1),-1,1));
+        if (use.get(key(v)) !== 1 || !convex || ang > 2.6 || l1 < 1 || l2 < 1){ out.push(v); return; }
+        const r = Math.min(R0, l1*.45, l2*.45), t = r/Math.tan(ang/2), u1 = [e1[0]/l1, e1[1]/l1], u2 = [e2[0]/l2, e2[1]/l2];
+        const p1 = [v[0]+u1[0]*t, v[1]+u1[1]*t], p2 = [v[0]+u2[0]*t, v[1]+u2[1]*t];
+        for (let k = 0; k <= 6; k++){ const q = k/6, w = (1-q)*(1-q), x2 = 2*q*(1-q), z = q*q;     // quadratic bezier through the corner
+          out.push([w*p1[0]+x2*v[0]+z*p2[0], w*p1[1]+x2*v[1]+z*p2[1]]); } });
+      n.poly = out; }
+  }
+  // ventilation holes on the side panels
+  const nv = clamp(+P.vents||0, 0, 6), vd = clamp(+P.ventD||8, 4, 30);
+  if (nv) for (const f of B.faces.filter(f => f.key==='side1' || f.key==='side2')){
+    const [x0,y0,x1,y1] = f.r, horiz = (x1-x0) > (y1-y0), len = horiz ? x1-x0 : y1-y0, cx = (x0+x1)/2, cy = (y0+y1)/2;
+    for (let i = 0; i < nv; i++){ const o = (i-(nv-1)/2) * Math.min(vd*2, len*.8/nv), hx = horiz ? cx+o : cx, hy = horiz ? cy : cy+o;
+      const n = B.N.find(n => inPoly(hx, hy, n.poly)); if (n) n.holes.push(circle(hx, hy, vd/2)); }
+  }
+  // tear strip: two perforation lines around the walls
+  const perfs = [];
+  if (P.tear){ const yy = clamp(+P.tearY||70, 15, 85)/100, gap = clamp(+P.tearW||6, 3, 20);
+    for (const f of B.faces.filter(f => ['front','side1','back','side2'].includes(f.key))){ const [x0,y0,x1,y1] = f.r, y = y0 + (y1-y0)*yy;
+      for (const dy of [-gap/2, gap/2]) perfs.push([[x0, y+dy],[x1, y+dy]]); } }
+  return perfs;
+}
 const MATS = { carton03:['Картон 0,3 мм (≈250 г/м²)',.3], carton05:['Картон 0,5 мм (≈350 г/м²)',.5], kraft:['Крафт-картон 0,45 мм',.45],
   micro_e:['Микрогофра E, 1,5 мм',1.5], corr_b:['Гофрокартон B, 3 мм',3], custom:['Своя толщина',null] };
 const thickOf = P => P.mat==='custom' ? clamp(+P.thick||0,0,8) : (MATS[P.mat]?.[1] ?? 0);
@@ -817,6 +875,7 @@ function build(P){
   const Pin = {...P}; Object.assign(P, prodDims(P));
   const B = maker();
   const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, drawer:buildDrawer, pouch:buildPouch}[P.type] || buildTube)(P,B) || {};
+  const perfs = P.type==='pouch' ? [] : constructionExtras(P, B);
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   for (const n of B.N) for (const [x,y] of n.poly){ minX=Math.min(minX,x); minY=Math.min(minY,y); maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); }
   minX-=BLEED; minY-=BLEED; maxX+=BLEED; maxY+=BLEED;
@@ -834,7 +893,7 @@ function build(P){
     : Math.abs(a[1]-y0)<.01 && Math.abs(b[1]-y0)<.01 && ov(a[0],b[0],x0,x1) > 1);
   for (const f of B.faces){ const [x0,y0,x1,y1] = f.r;
     f.clip = [x0-(onCrease(x0,y0,x0,y1)?0:BLEED), y0-(onCrease(x0,y0,x1,y0)?0:BLEED), x1+(onCrease(x1,y0,x1,y1)?0:BLEED), y1+(onCrease(x0,y1,x1,y1)?0:BLEED)]; }
-  return { ...extra, N:B.N, faces:B.faces, cuts, creases, P:Pin, Pm:P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY} };
+  return { ...extra, N:B.N, faces:B.faces, cuts, creases, perfs, P:Pin, Pm:P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY} };
 }
 
 /* ---------- artwork ---------- */
@@ -979,6 +1038,7 @@ ${L('Bleed','fill="none" stroke="#7fbf3f" stroke-width="0.2"',`<rect x="0.1" y="
 ${g}
 ${L('CREASE','fill="none" stroke="#00aeef" stroke-width="0.25" stroke-dasharray="3 1.5"', lines(G.creases))}
 ${L('CUT','fill="none" stroke="#ec008c" stroke-width="0.25"', lines(G.cuts))}
+${G.perfs?.length ? L('PERF','fill="none" stroke="#ff8a00" stroke-width="0.45" stroke-dasharray="2 1.2"', lines(G.perfs)) : ''}
 </svg>`;
 }
 function thumbSvg(G){
@@ -1206,7 +1266,7 @@ const polyArea = p => Math.abs(p.reduce((a,[x,y],i)=>{ const [u,v] = p[(i+1)%p.l
 function impCalc(){
   const SW = +S.sheetW, SH = +S.sheetH, m = +S.grip, g = +S.impGap, {w,h} = G.b, AW = SW-2*m, AH = SH-2*m;
   const fit = (iw,ih) => ({nx: Math.max(0,Math.floor((AW+g)/(iw+g))), ny: Math.max(0,Math.floor((AH+g)/(ih+g)))});
-  const a = fit(w,h), b = fit(h,w), rot = b.nx*b.ny > a.nx*a.ny, f = rot ? b : a;
+  const a = fit(w,h), b = fit(h,w), rot = S.grain==='along' ? false : S.grain==='across' ? true : b.nx*b.ny > a.nx*a.ny, f = rot ? b : a;
   return {SW, SH, m, g, rot, ...f, n: f.nx*f.ny, iw: rot ? h : w, ih: rot ? w : h};
 }
 function renderImp(){
@@ -1299,7 +1359,8 @@ function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
   for (const id of ['L','W','H']) $(id).value = +(S[id]/UF()).toFixed(S.unit==='mm'?1:2);
   $('dimTitle').textContent = `Размеры, ${UNAME[S.unit]} (${{inner:'внутренние',outer:'наружные',mfg:'по линиям сгиба'}[S.dimMode]})`;
-  $('thickWrap').hidden = S.mat!=='custom'; $('sheetCustom').hidden = S.sheetFmt!=='custom';
+  $('thickWrap').hidden = S.mat!=='custom'; $('tearOpts').hidden = !S.tear; $('cornerRO').textContent = S.cornerR+' мм';
+  $('conCommon').hidden = S.type==='pouch'; $('sheetCustom').hidden = S.sheetFmt!=='custom';
   $('lidOpenO').textContent = S.lidOpen+'%';
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a); if (el.type==='checkbox') el.checked=!!S[k]; else el.value=S[k]; }
   const dl = DIM_LABELS[S.type] || ['Длина','Ширина','Высота']; ['lL','lW','lH'].forEach((id,i)=>$(id).textContent=dl[i]);
@@ -1340,9 +1401,9 @@ function bindInputs(){
     if (el.type==='checkbox') el.addEventListener('change',()=>{ S[k]=el.checked; custom(); syncUI(); refresh(true); });
     else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
-  for (const id of ['notch','window','hang','dbl']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
+  for (const id of ['notch','window','hang','dbl','tear']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
   for (const id of ['bg','ink','title','sub','inside','finish']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
-  for (const id of ['mat','dimMode','bleed','safe','method','sides','sheetFmt','white']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
+  for (const id of ['mat','dimMode','bleed','safe','method','sides','sheetFmt','white','grain']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
     if (id==='sheetFmt' && SHEETS[S.sheetFmt]?.[1]) [S.sheetW,S.sheetH] = SHEETS[S.sheetFmt].slice(1);
     syncUI(); refresh(true); });
   $('unit').addEventListener('input',()=>{ S.unit=$('unit').value; syncUI(); persist(); });
@@ -1775,7 +1836,7 @@ async function makePdf(){
     const lat = t.normalize('NFD').replace(/[^\x20-\x7e]/g,'').replace(/[()\\]/g,'');
     return `BT /F1 1 Tf 2.2 0 0 -2.2 ${-M+4} ${y} Tm 0 0 0 1 rg (${lat}) Tj ET`; };
   const die = mirror => { const X = x => mirror ? maxX-x : x-minX, Y = y => maxY-y, ln = l => l.map(([a,b]) => `${pn(X(a[0]))} ${pn(Y(a[1]))} m ${pn(X(b[0]))} ${pn(Y(b[1]))} l`).join('\n');
-    return `/OC /Crs BDC q /GSop gs /CsCrease CS 1 SCN 0.25 w [3 1.5] 0 d\n${ln(G.creases)}\nS Q EMC\n/OC /Cut BDC q /GSop gs /CsCut CS 1 SCN 0.25 w []0 d\n${ln(G.cuts)}\nS Q EMC`; };
+    return `/OC /Crs BDC q /GSop gs /CsCrease CS 1 SCN 0.25 w [3 1.5] 0 d\n${ln(G.creases)}\nS Q EMC\n/OC /Cut BDC q /GSop gs /CsCut CS 1 SCN 0.25 w []0 d\n${ln(G.cuts)}\nS Q${G.perfs.length ? ` /CsPerf CS 1 SCN 0.25 w [1 1] 0 d\n${ln(G.perfs)}\nS` : ''} EMC`; };
   const marks = () => { const t = [BLEED, BLEED, w-BLEED, h-BLEED], o = BLEED+2, L = 6; let r = '';
     for (const x of [t[0],t[2]]) for (const y of [t[1],t[3]]){ const sx = x===t[0]?-1:1, sy = y===t[1]?-1:1;
       r += `${pn(x+sx*o)} ${pn(y)} m ${pn(x+sx*(o+L))} ${pn(y)} l ${pn(x)} ${pn(y+sy*o)} m ${pn(x)} ${pn(y+sy*(o+L))} l\n`; }
@@ -1790,7 +1851,7 @@ async function makePdf(){
     const pg = pdf.id(), mm = v => pn(v*K);
     pdf.obj(pg, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(PW)} ${mm(PH)}] /BleedBox [${mm(M)} ${mm(M)} ${mm(M+w)} ${mm(M+h)}] /TrimBox [${mm(M+BLEED)} ${mm(M+BLEED)} ${mm(M+w-BLEED)} ${mm(M+h-BLEED)}] /Contents ${c} 0 R
 /Resources << /XObject << ${[...img.out, ...(img.in||[]), ...masks.out, ...masks.in].map(i=>`/Im${i.id} ${i.id} 0 R`).join(' ')} >> /Font << /F1 ${F1} 0 R >>
-/ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} /CsWHITE ${sep('White','0 0 0 0.08')} ${Object.values(FIN).map(f=>`/Cs${f[1]} ${sep(f[1],f[2])}`).join(' ')} ${[...spots].map(([n,c])=>`/${spotKey(n)} ${sep(pdfName(n),c.map(pn).join(' '))}`).join(' ')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
+/ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} /CsWHITE ${sep('White','0 0 0 0.08')} /CsPerf ${sep('Perforation','0.6 0 1 0')} ${Object.values(FIN).map(f=>`/Cs${f[1]} ${sep(f[1],f[2])}`).join(' ')} ${[...spots].map(([n,c])=>`/${spotKey(n)} ${sep(pdfName(n),c.map(pn).join(' '))}`).join(' ')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
 /Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R ${finLayers.map(n=>`/O${n} ${ocFin[n]} 0 R`).join(' ')} >> >> >>`);
     pages.push(pg); };
   const art = side => `/OC /Art BDC\n${img[side].map(i => `q ${pn(w)} 0 0 ${pn(-i.hh)} 0 ${pn(i.y+i.hh)} cm /Im${i.id} Do Q`).join('\n')}\n${vec ? textOps(vt[side]) : ''}\nEMC\n${finOps(side)}`;
