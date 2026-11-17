@@ -116,6 +116,21 @@ main.board-mode #view3d::after{content:"3D · двойной клик — отк
   padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1}
 .savewrap{position:relative}
+.sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.sw button{height:40px;border-radius:8px;border:1px solid var(--line);cursor:pointer;font:11px var(--sans);color:#1b211f;display:grid;align-items:end;justify-items:start;padding:3px 5px;max-width:100%}
+.sw button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:1px}
+.sw button.dk{color:#e8ece9}
+.sw .tr{background:repeating-conic-gradient(#d9dcd8 0 25%,#ffffff 0 50%) 0 0/12px 12px}
+.pname{width:min(320px,50vw);font:600 15px var(--sans)!important;border-color:transparent!important;background:transparent!important}
+.pname:hover,.pname:focus{border-color:var(--line)!important;background:var(--field)!important}
+.saved{font-size:12px;color:var(--muted)}
+.card.proj{position:relative;display:block}
+.card.proj .open{display:grid;grid-template-rows:auto 1fr;width:100%;height:100%;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0}
+.card.proj .pic{padding:0}
+.card.proj .pic img{width:100%;height:100%;object-fit:cover;display:block}
+.card.proj .del{position:absolute;top:8px;right:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;font:500 12px var(--sans);padding:4px 8px;cursor:pointer;opacity:.85}
+.card.proj .del.arm{background:var(--cut);border-color:var(--cut);color:#fff;opacity:1}
+.card.proj:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .savemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;width:min(340px,calc(100vw - 32px));display:grid;gap:4px;padding:8px;
   background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
 .savemenu .btn{border-color:transparent;background:transparent}
@@ -176,7 +191,12 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
         <h1>Складка</h1>
         <p>Выберите шаблон или начните с пустого проекта. Размеры, логотипы и надписи меняются в редакторе; развёртку для типографии и 3D-мокап можно скачать в любой момент.</p>
       </div>
-      <button class="btn" id="homeContinue" hidden>Продолжить последний проект →</button>
+      <button class="btn pri" id="homeContinue" hidden>Продолжить последний проект →</button>
+    </div>
+    <div class="home-sec" id="projSec" hidden>
+      <h2>Мои проекты</h2>
+      <div class="home-grid" id="projGrid"></div>
+      <p class="note" id="projNote">Проекты сохраняются автоматически в этом браузере вместе с логотипами. Чтобы перенести на другой компьютер — «Сохранить → Проект .json».</p>
     </div>
     <div class="home-sec">
       <h2>Начать</h2>
@@ -210,7 +230,9 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 <div class="app" hidden>
   <header>
     <button class="btn" id="goHome">← Все шаблоны</button>
-    <div class="brand"><b>Складка</b><span>развёртки и 3D-мокапы коробок</span></div>
+    <div class="brand"><b>Складка</b></div>
+    <input id="pname" type="text" class="pname" aria-label="Название проекта" placeholder="Название проекта">
+    <span class="saved" id="savedState" aria-live="polite"></span>
     <div class="sp"></div>
     <div class="savewrap">
       <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Сохранить ▾</button>
@@ -219,7 +241,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
         <button class="btn" role="menuitem" id="exPdf"><b>PDF для типографии</b><small>1:1 в мм, вылеты, метки реза, штамп отдельной страницей</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Развёртка SVG</b><small>дизайн + контур слоями</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Шаблон SVG</b><small>только линии — верстать в Illustrator / Figma</small></button>
-        <button class="btn" role="menuitem" id="exPng"><b>Мокап PNG</b><small>текущий ракурс 3D, прозрачный фон</small></button>
+        <button class="btn" role="menuitem" id="exPng"><b>Мокап PNG</b><small>текущий ракурс 3D с выбранным фоном и светом</small></button>
         <button class="btn" role="menuitem" id="saveProj"><b>Проект .json</b><small>чтобы потом открыть и продолжить здесь</small></button>
         <p class="note">Контур реза — 100% Magenta, биговка — 100% Cyan пунктиром, вылеты 3 мм, зона безопасности 3 мм. Картинки в RGB — типография переведёт в CMYK.</p>
       </div>
@@ -359,6 +381,19 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       <p class="note" id="elHint">Логотип — PNG с прозрачным фоном или SVG. Внутри можно напечатать, например, «Спасибо за заказ!» на крышке.</p>
     </section>
     <section>
+      <h2>3D-сцена</h2>
+      <div class="f">Фон</div>
+      <div class="sw" id="bgSw" role="group" aria-label="Фон 3D"></div>
+      <label class="f" id="scBgColorWrap">Свой цвет фона<input id="scBgColor" type="color"></label>
+      <label class="f">Освещение<select id="light">
+        <option value="studio">Студия</option><option value="day">Мягкий дневной</option><option value="drama">Драматичный</option>
+        <option value="warm">Тёплый вечер</option><option value="rim">Контровой (силуэт)</option></select></label>
+      <label class="rng"><span>Яркость</span><input id="lInt" type="range" min="30" max="200" step="5"><output id="lIntO"></output></label>
+      <label class="rng"><span>Направление</span><input id="lAng" type="range" min="-180" max="180" step="5"><output id="lAngO"></output></label>
+      <label class="rng"><span>Тень</span><input id="shadow" type="range" min="0" max="60" step="2"><output id="shadowO"></output></label>
+      <p class="note">Фон и свет сохраняются в мокап PNG. «Прозрачный» — для вставки на сайт или в презентацию.</p>
+    </section>
+    <section>
       <h2>Материал</h2>
       <div class="row2">
         <label class="f">Внутри<select id="inside"><option value="white">Белый картон</option><option value="kraft">Крафт</option><option value="color">Печать цветом</option></select></label>
@@ -405,6 +440,7 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
@@ -461,7 +497,8 @@ const SIZE_CHIPS = {
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
   winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false,
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
-  inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[] };
+  inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
+  scBg:'studio', scBgColor:'#dfe6e2', light:'studio', lInt:100, lAng:-35, shadow:20 };
 const S = {...DEFAULTS};
 const IMGS = {};
 const ELIMG = {};
@@ -469,10 +506,10 @@ const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|Montserrat','Montserrat']
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair жирный'],['500|Oswald','Oswald'],['500|Caveat','Caveat, рукописный']];
 const uid = () => Math.random().toString(36).slice(2,9);
 const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', front:'Лицевая', back:'Задняя', side1:'Правый бок', side2:'Левый бок', top:'Верх', bottom:'Дно', layout:'Вся развёртка (PNG по шаблону)'};
-const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull'];
+const NUM = ['L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lInt','lAng','shadow'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
 const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
-const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish'];
+const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor'];
 const CHK = ['notch','window','hang','showText','showLines','dbl'];
 const STRUCT = ['type','tpl','L','W','H',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
 
@@ -482,7 +519,7 @@ const store = {
 };
 Object.assign(S, store.get('skladka-settings-2', {}));
 S.els = (S.els||[]).filter(e => e.kind==='text');   // logos live in project files, not in browser storage
-const persist = () => store.set('skladka-settings-2', {...S, els:S.els.filter(e=>e.kind==='text')});
+const persist = () => { store.set('skladka-settings-2', {...S, els:S.els.filter(e=>e.kind==='text')}); if (typeof autosave === 'function') autosave(); };
 
 /* ---------- geometry helpers ---------- */
 const QI = new THREE.Quaternion();
@@ -844,7 +881,10 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30,1,1,40000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = .08;
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8f988f, 1.5));
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8f988f, 1.5); scene.add(hemi);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
+const rim = new THREE.DirectionalLight(0xffffff, 0); scene.add(rim);
+let sceneSize = 300;
 const key = new THREE.DirectionalLight(0xffffff, 2.0); key.castShadow = true; key.shadow.mapSize.set(2048,2048); key.shadow.bias = -0.0004;
 scene.add(key, key.target);
 const fill = new THREE.DirectionalLight(0xffffff, .55); scene.add(fill);
@@ -902,7 +942,7 @@ function rebuild3D(){
     box3.setFromObject(wrapper); box3.getCenter(c1); c0.copy(c1); box3.getSize(foldedSize);
     const size = foldedSize.length();
     Object.assign(key.shadow.camera, {left:-size,right:size,top:size,bottom:-size,near:1,far:size*6}); key.shadow.camera.updateProjectionMatrix();
-    key.position.set(-size*.8,size*1.6,size*1.4); fill.position.set(size*1.2,size*.4,-size); ground.scale.set(size*8,size*8,1);
+    ground.scale.set(size*8,size*8,1); sceneSize = size; applyScene();
     return;
   }
   const by = {}, {minX,minY,maxX,maxY,w,h} = G.b;
@@ -929,8 +969,7 @@ function rebuild3D(){
   const size = Math.max(w,h,foldedSize.length());
   Object.assign(key.shadow.camera, {left:-size,right:size,top:size,bottom:-size,near:1,far:size*6});
   key.shadow.camera.updateProjectionMatrix();
-  key.position.set(-size*.8,size*1.6,size*1.4); fill.position.set(size*1.2,size*.4,-size);
-  ground.scale.set(size*8,size*8,1);
+  ground.scale.set(size*8,size*8,1); sceneSize = size; applyScene();
 }
 function setPose(t){
   for (const g of groups){ const n = g.userData.n, [a,b] = n.stage; g.rotation[n.axis] = n.angle*ease(clamp((t-a)/(b-a),0,1)); }
@@ -948,7 +987,7 @@ function applyFold(t, fitCam){
 function fitCamera(){
   const aspect = camera.aspect, tanH = Math.tan(camera.fov*DEG/2);
   const fit = v => { const d = v.length(); return Math.max(d, d/aspect)/(2*tanH); };
-  const dist = G.pouch ? fit(foldedSize)*1.2 : Math.max(fit(foldedSize)*1.35, fit(flatSize)*.9);
+  const dist = G.pouch ? fit(foldedSize)*1.2 : Math.max(fit(foldedSize)*1.3, fit(flatSize)*.62);
   const dir = camera.position.clone().sub(controls.target);
   if (dir.lengthSq() < 1e-6) dir.set(.55,.38,1);
   controls.target.set(0,0,0); camera.position.copy(dir.normalize().multiplyScalar(dist));
@@ -962,6 +1001,53 @@ let anim = null;
 function loop(now){
   if (anim){ const p = clamp((now-anim.t0)/anim.dur,0,1); const t = lerp(anim.from, anim.to, p); applyFold(t,false); $('t').value = Math.round(t*1000); if (p>=1) anim=null; }
   controls.update(); renderer.render(scene,camera); requestAnimationFrame(loop);
+}
+
+/* ---------- scene: background & lighting ---------- */
+const BGS = {
+  transparent:{n:'Прозрачный', c:null},
+  studio:{n:'Студия', c:['#f1f3f0','#c9d0c9']}, white:{n:'Белый', c:['#ffffff','#e7e9e5']},
+  dark:{n:'Тёмный', c:['#454b48','#141716'], dk:true}, warm:{n:'Тёплый', c:['#f7efe2','#d8c6aa']},
+  blue:{n:'Голубой', c:['#eef3fa','#bccbe0']}, pink:{n:'Розовый', c:['#fcf0f2','#e6c4cb']}, custom:{n:'Свой', c:null},
+};
+const LIGHTS = { // hemisphere sky/ground/intensity, key colour/intensity/elevation, fill, rim, env reflections, shadow softness
+  studio:{sky:0xffffff, gnd:0x8f988f, h:1.5,  k:0xffffff, ki:2.0, el:48, f:.55, fc:0xffffff, r:0,   env:.55},
+  day:   {sky:0xeef4ff, gnd:0xb3aa92, h:2.1,  k:0xfff6e8, ki:1.2, el:62, f:.8,  fc:0xe9f0ff, r:0,   env:.8},
+  drama: {sky:0xffffff, gnd:0x303634, h:.45,  k:0xffffff, ki:3.4, el:28, f:.12, fc:0xb9c8ff, r:1.4, env:.25},
+  warm:  {sky:0xffe6c4, gnd:0x6b5845, h:1.1,  k:0xffc98a, ki:2.6, el:22, f:.6,  fc:0x9fc0ff, r:.5,  env:.45},
+  rim:   {sky:0xffffff, gnd:0x55605b, h:.8,   k:0xffffff, ki:1.3, el:40, f:.25, fc:0xffffff, r:2.8, env:.4},
+};
+function bgColors(){ const b = BGS[S.scBg] || BGS.studio; if (S.scBg === 'custom') return [S.scBgColor, S.scBgColor]; return b.c; }
+function applyScene(){
+  const L = LIGHTS[S.light] || LIGHTS.studio, m = S.lInt/100, a = S.lAng*DEG, e = L.el*DEG, d = sceneSize*2;
+  hemi.color.setHex(L.sky); hemi.groundColor.setHex(L.gnd); hemi.intensity = L.h*m;
+  key.color.setHex(L.k); key.intensity = L.ki*m; key.position.set(Math.sin(a)*Math.cos(e)*d, Math.sin(e)*d, Math.cos(a)*Math.cos(e)*d);
+  fill.color.setHex(L.fc); fill.intensity = L.f*m; fill.position.set(-Math.sin(a)*d, d*.25, -Math.cos(a)*d*.6);
+  rim.intensity = L.r*m; rim.position.set(-Math.sin(a)*d*.6, d*.7, -Math.cos(a)*d);
+  const em = S.finish==='metal' ? 2.2 : S.finish==='gloss' ? 1.3 : 1;
+  for (const mt of [outMat, inMat, pouchMat]){ mt.envMapIntensity = L.env*m*(mt===inMat?1:em); }
+  ground.material.opacity = S.shadow/100;
+  const c = bgColors();
+  $('view3d').style.background = c ? `radial-gradient(ellipse at 50% 40%, ${c[0]} 0%, ${c[1]} 100%)`
+    : 'repeating-conic-gradient(color-mix(in srgb,var(--line) 70%,transparent) 0 25%,transparent 0 50%) 0 0/20px 20px, var(--stage2)';
+  $('scBgColorWrap').hidden = S.scBg !== 'custom';
+  $('lIntO').textContent = S.lInt+'%'; $('lAngO').textContent = S.lAng+'°'; $('shadowO').textContent = S.shadow+'%';
+  document.querySelectorAll('#bgSw button').forEach(b => b.setAttribute('aria-pressed', b.dataset.bg === S.scBg));
+}
+$('bgSw').innerHTML = Object.entries(BGS).map(([k,b]) => {
+  const st = b.c ? `background:radial-gradient(circle at 50% 35%,${b.c[0]},${b.c[1]})` : (k==='custom' ? 'background:conic-gradient(#f2b8c6,#f6e3a1,#b9e4c9,#b8d3f2,#f2b8c6)' : '');
+  return `<button type="button" data-bg="${k}" class="${k==='transparent'?'tr':''} ${b.dk?'dk':''}" style="${st}" aria-pressed="false">${b.n}</button>`; }).join('');
+$('bgSw').addEventListener('click', e => { const b = e.target.closest('[data-bg]'); if (!b) return; S.scBg = b.dataset.bg; applyScene(); persist(); });
+for (const id of ['light','scBgColor']) $(id).addEventListener('input', () => { S[id] = $(id).value; applyScene(); persist(); });
+for (const id of ['lInt','lAng','shadow']) $(id).addEventListener('input', () => { S[id] = +$(id).value; applyScene(); persist(); });
+// mockup PNG with the chosen background painted behind the model
+function mockupBlob(){
+  renderer.render(scene, camera); const src = renderer.domElement, c = bgColors();
+  if (!c) return new Promise(r => src.toBlob(r, 'image/png'));
+  const cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height; const x = cv.getContext('2d');
+  const g = x.createRadialGradient(cv.width/2, cv.height*.4, 0, cv.width/2, cv.height*.4, Math.hypot(cv.width, cv.height)*.6);
+  g.addColorStop(0, c[0]); g.addColorStop(1, c[1]); x.fillStyle = g; x.fillRect(0,0,cv.width,cv.height); x.drawImage(src,0,0);
+  return new Promise(r => cv.toBlob(r, 'image/png'));
 }
 
 /* ---------- refresh ---------- */
@@ -979,6 +1065,7 @@ function doRefresh(){
   drawArt(texCanvas, G, sTex, S.showLines, 'out', null, wn); updTex(outMat, texCanvas, false);
   drawArt(texInCanvas, G, hasInside() ? sTex : Math.min(sTex, 1), S.showLines, 'in', null, wn); updTex(inMat, texInCanvas, true);
   WARN = wn; updWarn();
+  applyScene();
   outMat.roughness = S.finish==='gloss' ? .28 : S.finish==='metal' ? .32 : .82; outMat.metalness = S.finish==='metal' ? .75 : 0;
   pouchMat.map = outMat.map; pouchMat.roughness = S.finish==='matte' ? .7 : S.finish==='metal' ? .3 : .22;
   pouchMat.metalness = S.finish==='metal' ? .8 : 0; pouchMat.clearcoat = S.finish==='matte' ? 0 : .8; pouchMat.needsUpdate = true;
@@ -1060,7 +1147,7 @@ function renderTpls(){
   $('tpls').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) selectTpl(b.dataset.id); });
 }
 function bindInputs(){
-  for (const id of NUM){ const el=$(id); if (!el) continue;
+  for (const id of NUM){ const el=$(id); if (!el || ['lInt','lAng','shadow'].includes(id)) continue;
     el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[id]=clamp(v,+el.min,+el.max);
       if (!['L','W','H'].includes(id)) custom(); refresh(true); });
     el.addEventListener('change',()=>{ el.value=S[id]; }); }
@@ -1175,6 +1262,63 @@ $('elDup').addEventListener('click', () => { const el = curEl(); if (!el) return
 $('elDel').addEventListener('click', () => { const i = S.els.findIndex(e=>e.id===selId); if (i<0) return;
   delete ELIMG[S.els[i].id]; S.els.splice(i,1); selId = null; renderEls(); syncEl(); refresh(); });
 
+/* ---------- my projects (IndexedDB: survives reloads, keeps logos) ---------- */
+const idb = (() => { let p;
+  const open = () => p ??= new Promise((res,rej) => { try { const r = indexedDB.open('skladka',1);
+    r.onupgradeneeded = () => r.result.createObjectStore('projects',{keyPath:'id'}); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch(e){ rej(e); } });
+  const tx = async (mode, fn) => { const db = await open(); return new Promise((res,rej) => {
+    const t = db.transaction('projects',mode), req = fn(t.objectStore('projects')); t.oncomplete = () => res(req?.result); t.onerror = () => rej(t.error); }); };
+  return { all:()=>tx('readonly',st=>st.getAll()), get:id=>tx('readonly',st=>st.get(id)), put:r=>tx('readwrite',st=>st.put(r)), del:id=>tx('readwrite',st=>st.delete(id)) };
+})();
+let lastThumb = '', saveT = 0;
+function snapThumb(){
+  if (document.querySelector('.app').hidden || $('view3d').hidden) return lastThumb;
+  try { const keep = camera.position.clone(), tp = T;   // close-up of the assembled box for the card
+    applyFold(1,false); const d = foldedSize.length(), tanH = Math.tan(camera.fov*DEG/2);
+    camera.position.copy(keep.clone().sub(controls.target).normalize().multiplyScalar(Math.max(d, d/camera.aspect)/(2*tanH)*1.05).add(controls.target));
+    renderer.render(scene,camera); camera.position.copy(keep); applyFold(tp,false); const src = renderer.domElement, c = document.createElement('canvas'); c.width = 360; c.height = 240;
+    const x = c.getContext('2d'); x.fillStyle = getComputedStyle(document.body).getPropertyValue('--stage') || '#dfe3de'; x.fillRect(0,0,360,240);
+    const k = Math.max(360/src.width, 240/src.height); x.drawImage(src,(360-src.width*k)/2,(240-src.height*k)/2,src.width*k,src.height*k);
+    lastThumb = c.toDataURL('image/jpeg',.75); renderer.render(scene,camera); } catch {}
+  return lastThumb;
+}
+async function saveProject(){
+  if (!S.pid) return;
+  if (pending){ cancelAnimationFrame(pending); doRefresh(); }   // make sure the 3D model matches the settings
+  const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
+  try { await idb.put({id:S.pid, name:S.pname || 'Без названия', updated:Date.now(), settings:{...S}, imgs, elimgs, thumb:snapThumb()});
+    $('savedState').textContent = 'Сохранено'; }
+  catch { $('savedState').textContent = 'Не сохраняется: браузер запретил хранилище. Используйте «Сохранить → Проект .json».'; }
+}
+function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Сохраняю…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
+function newProject(name){ S.pid = uid()+Date.now().toString(36); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
+async function openProject(id){
+  const rec = await idb.get(id).catch(()=>null); if (!rec){ toast('Проект не найден'); return; }
+  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
+  Object.assign(S, DEFAULTS, rec.settings, {pid:rec.id, pname:rec.name}); lastThumb = rec.thumb || '';
+  await Promise.all(Object.entries(rec.elimgs||{}).map(([i,src])=>loadElImg(i,src)));
+  await Promise.all(Object.entries(rec.imgs||{}).map(([k,src])=>loadImg(k,src)));
+  S.els = (S.els||[]).filter(e => e.kind==='text' || ELIMG[e.id]);
+  $('pname').value = S.pname; syncUI(); syncEl(); refresh(true); openEditor();
+}
+const fmtDate = t => new Date(t).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+async function renderProjects(){
+  let list = []; try { list = (await idb.all()) || []; } catch {}
+  list.sort((a,b)=>b.updated-a.updated);
+  $('projSec').hidden = !list.length; $('homeContinue').hidden = !list.length;
+  $('homeContinue').dataset.id = list[0]?.id || '';
+  $('projGrid').innerHTML = list.map(r => { const st = r.settings || {};
+    const pic = r.thumb ? `<img src="${r.thumb}" alt="">` : thumbSvg(build({...DEFAULTS, ...st}));
+    return `<div class="card proj"><button class="open" data-pid="${r.id}"><div class="pic">${pic}</div><div class="txt"><b>${esc(r.name)}</b><span>${TYPE_NAMES[st.type]||''}</span><span class="mm">${st.L}×${st.W}×${st.H} мм · ${fmtDate(r.updated)}</span></div></button><button class="del" data-del="${r.id}" aria-label="Удалить проект ${esc(r.name)}">Удалить</button></div>`; }).join('');
+}
+$('projGrid').addEventListener('click', async e => {
+  const d = e.target.closest('[data-del]');
+  if (d){ if (!d.classList.contains('arm')){ d.classList.add('arm'); d.textContent = 'Точно удалить?'; setTimeout(()=>{ if (d.isConnected){ d.classList.remove('arm'); d.textContent='Удалить'; } },3000); return; }
+    await idb.del(d.dataset.del).catch(()=>{}); if (S.pid === d.dataset.del) S.pid = null; renderProjects(); return; }
+  const o = e.target.closest('[data-pid]'); if (o) openProject(o.dataset.pid);
+});
+$('pname').addEventListener('input', () => { S.pname = $('pname').value; persist(); autosave(); });
+
 /* ---------- home page ---------- */
 function showView(){
   const ed = location.hash === '#editor';
@@ -1193,7 +1337,7 @@ function renderHome(){
     return cardHTML(thumbSvg(build(P)), t.name, TPL_DESC[t.id]||'', `${d.L}×${d.W}×${d.H} мм`, `data-tpl="${t.id}"`); }).join('');
   $('homeMineSec').hidden = !mine.length;
   $('homeMine').innerHTML = mine.map((m,i) => cardHTML(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), TYPE_NAMES[m.s.type]||'', `${m.s.L}×${m.s.W}×${m.s.H} мм`, `data-mine="${i}"`)).join('');
-  $('homeContinue').hidden = !store.get('skladka-settings-2', null);
+  renderProjects();
 }
 $('nbType').innerHTML = Object.entries(TYPE_NAMES).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
 const nbSync = () => { const t = $('nbType').value, d = TYPE_DIMS[t], dl = DIM_LABELS[t] || ['Длина','Ширина','Высота'];
@@ -1205,12 +1349,16 @@ $('nbGo').addEventListener('click', () => {
   Object.assign(S, DEFAULTS, TYPE_DIMS[t], {type:t, tpl:null, L:v('nbL'), W:v('nbW'), H:v('nbH'),
     title:'', sub:'', showText:false, bg:'#ffffff', ink:'#1b211f', els:[]});
   if (t==='tube') Object.assign(S, TUBE_BASE);
-  selId = null; syncUI(); syncEl(); refresh(true); openEditor();
+  selId = null; newProject('Новый проект · ' + TYPE_NAMES[t]); syncUI(); syncEl(); refresh(true); openEditor();
 });
-$('homeTpls').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (!b) return; selectTpl(b.dataset.tpl); openEditor(); });
-$('homeMine').addEventListener('click', e => { const b = e.target.closest('[data-mine]'); if (!b) return; Object.assign(S, mine[+b.dataset.mine].s); syncUI(); refresh(true); openEditor(); });
-$('homeContinue').addEventListener('click', openEditor);
-$('goHome').addEventListener('click', () => { location.hash = ''; });
+$('homeTpls').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (!b) return;
+  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = [];
+  selectTpl(b.dataset.tpl); newProject(TPL.find(t=>t.id===b.dataset.tpl).name); syncEl(); renderEls(); openEditor(); });
+$('homeMine').addEventListener('click', e => { const b = e.target.closest('[data-mine]'); if (!b) return; const m = mine[+b.dataset.mine];
+  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = [];
+  Object.assign(S, m.s); newProject(m.name); syncUI(); syncEl(); renderEls(); refresh(true); openEditor(); });
+$('homeContinue').addEventListener('click', () => { const id = $('homeContinue').dataset.id; if (id) openProject(id); });
+$('goHome').addEventListener('click', async () => { clearTimeout(saveT); await saveProject(); location.hash = ''; });
 window.addEventListener('hashchange', showView);
 
 /* ---------- board: zoom & pan ---------- */
@@ -1306,14 +1454,13 @@ $('exZip').addEventListener('click', async () => {
   zip.file(base+'-razvertka.svg', svgDoc(G, exportCanvas(G).toDataURL('image/png')));
   if (hasInside()) zip.file(base+'-oborot.svg', svgDoc(G, exportCanvas(G,'in').toDataURL('image/png'), true));
   zip.file(base+'-shablon.svg', svgDoc(G, null, false, true));
-  renderer.render(scene, camera);
-  zip.file(base+'-mockup.png', await new Promise(r => renderer.domElement.toBlob(r, 'image/png')));
+  zip.file(base+'-mockup.png', await mockupBlob());
   const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
   zip.file(base+'.json', JSON.stringify({app:'skladka', v:3, settings:S, imgs, elimgs, mine}));
   zip.file('README.txt', `Складка — ${base}\n\n${base}-tipografiya.pdf — отдать в типографию: стр.1 макет с контуром (на согласование), стр.2 печать снаружи, ${hasInside()?'стр.3 печать внутри (оборот), ':''}последняя — штамп (только рез и биговка).\nКонтур реза: 100% Magenta (CutContour), биговка: 100% Cyan пунктиром. Вылеты ${BLEED} мм, зона безопасности ${SAFE} мм.\n${base}-razvertka.svg — развёртка с дизайном, слои Artwork / Crease / CutContour.\n${base}-shablon.svg — пустой шаблон для вёрстки в Illustrator / Figma.\n${base}-mockup.png — 3D-мокап, прозрачный фон.\n${base}.json — проект, открывается кнопкой «Открыть проект».\n`);
   saveFile(base+'.zip', await zip.generateAsync({type:'blob'}));
 });
-$('exPng').addEventListener('click',()=>{ renderer.render(scene,camera); renderer.domElement.toBlob(b=>saveFile(fname('-mockup.png'),b),'image/png'); });
+$('exPng').addEventListener('click', async () => saveFile(fname('-mockup.png'), await mockupBlob()));
 $('saveProj').addEventListener('click',()=>{ const imgs={}, elimgs={}; for (const k in IMGS) imgs[k]=IMGS[k].src;
   for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id]=ELIMG[e.id].src;
   saveFile(fname('.json'), new Blob([JSON.stringify({app:'skladka',v:3,settings:S,imgs,elimgs,mine})],{type:'application/json'})); });
@@ -1327,7 +1474,7 @@ $('openProj').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) r
       if (Array.isArray(d.mine)) for (const m of d.mine) if (m?.name && !mine.some(x=>x.name===m.name)) mine.push(m);
       store.set('skladka-mine',mine); renderMine();
       await Promise.all(Object.entries(d.imgs||{}).map(([k,src])=>loadImg(k,src)));
-      syncUI(); syncEl(); refresh(true); toast('Проект открыт'); }
+      newProject(d.settings?.pname || f.name.replace(/\.json$/i,'')); syncUI(); syncEl(); refresh(true); openEditor(); toast('Проект открыт и добавлен в «Мои проекты»'); }
     catch{ toast('Это не файл проекта «Складки». Выберите .json, сохранённый здесь.'); } e.target.value=''; };
   r.readAsText(f); });
 
@@ -1336,6 +1483,8 @@ camera.position.set(.55,.38,1);
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
 $('sheet').textContent = `${S.L}×${S.W}×${S.H} мм · лист ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} мм`;
 document.fonts?.ready.then(()=>refresh());
+$('pname').value = S.pname || '';
+if (S.pid && location.hash === '#editor') openProject(S.pid);
 showView();
 requestAnimationFrame(loop);
 </script>
