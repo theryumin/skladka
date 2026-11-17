@@ -242,12 +242,12 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
       <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Экспорт ▾</button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
         <button class="btn" role="menuitem" id="exZip"><b>Всё одним архивом</b><small>ZIP — PDF, SVG, PNG и проект сразу</small></button>
-        <button class="btn" role="menuitem" id="exPdf"><b>PDF для типографии</b><small>1:1 в мм, вылеты, метки реза, штамп отдельной страницей</small></button>
+        <button class="btn" role="menuitem" id="exPdf"><b>PDF для типографии</b><small>1:1 в мм, CMYK 300 dpi, текст в кривых, слои CUT и CREASE</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Развёртка SVG</b><small>дизайн + контур слоями</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Шаблон SVG</b><small>только линии — верстать в Illustrator / Figma</small></button>
         <button class="btn" role="menuitem" id="exPng"><b>Мокап PNG</b><small>текущий ракурс 3D с выбранным фоном и светом</small></button>
         <button class="btn" role="menuitem" id="saveProj"><b>Файл проекта .json</b><small>копия проекта — открыть на другом компьютере</small></button>
-        <p class="note">Контур реза — 100% Magenta, биговка — 100% Cyan пунктиром, вылеты 3 мм, зона безопасности 3 мм. Картинки в RGB — типография переведёт в CMYK.</p>
+        <p class="note">Масштаб 1:1, мм. Цвет CMYK, картинки 300 dpi, шрифты в кривых. Вылеты 3 мм, безопасная зона 3 мм. Рез — слой CUT (spot CutContour), биговка — слой CREASE (spot Crease), оба с overprint.</p>
       </div>
     </div>
     <label class="btn" style="position:relative;overflow:hidden">Открыть проект<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
@@ -434,7 +434,6 @@ button.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
@@ -777,16 +776,23 @@ function drawEl(ctx, el, s){
   let mw = 0; lines.forEach((ln,i)=>{ ctx.fillText(ln,0,(i-(lines.length-1)/2)*lh); mw=Math.max(mw,ctx.measureText(ln).width); });
   return [mw, lh*lines.length];
 }
+let lastClip = null;
 function clipFace(ctx, G, f, s, side){
   const [a,b,c,d] = f.clip || f.r, {minX,maxX,maxY} = G.b;
+  lastClip = [side==='in' ? (maxX-c)*s : (a-minX)*s, (maxY-d)*s, (c-a)*s, (d-b)*s];
   ctx.beginPath(); ctx.rect(side==='in' ? (maxX-c)*s : (a-minX)*s, (maxY-d)*s, (c-a)*s, (d-b)*s); ctx.clip();
 }
-function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null){
-  const {minX,maxX,maxY,w,h} = G.b; canvas.width = Math.max(1,Math.round(w*s)); canvas.height = Math.max(1,Math.round(h*s));
+// o.oy/o.hpx: render one horizontal strip; o.text:'skip' leaves text out; o.rec:[] records text runs instead of drawing them
+function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
+  const {minX,maxX,maxY,w,h} = G.b, FW = Math.max(1,Math.round(w*s)), FH = Math.max(1,Math.round(h*s));
+  canvas.width = o.rec ? 1 : FW; canvas.height = o.rec ? 1 : (o.hpx || FH);
   const ctx = canvas.getContext('2d'), X = side==='in' ? x=>(maxX-x)*s : x=>(x-minX)*s, Y = y=>(maxY-y)*s;
   ctx.fillStyle = side==='in' ? insideColor() : S.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
+  if (o.oy) ctx.translate(0,-o.oy);
+  if (o.text==='skip') ctx.fillText = () => {};
+  if (o.rec) ctx.fillText = (t,x,y) => o.rec.push({t:String(t), x, y, m:ctx.getTransform(), font:ctx.font, fill:ctx.fillStyle, align:ctx.textAlign, base:ctx.textBaseline, clip:lastClip});
   if (side==='out'){
-    if (IMGS.layout) ctx.drawImage(IMGS.layout.img,0,0,canvas.width,canvas.height);
+    if (IMGS.layout) ctx.drawImage(IMGS.layout.img,0,0,FW,FH);
     for (const f of G.faces){
       if (!IMGS[f.key] && (!S.showText || IMGS.layout)) continue;
       const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
@@ -824,7 +830,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null){
 
 /* ---------- SVG / PDF ---------- */
 const f2 = v => (+v.toFixed(3)).toString();
-function svgDoc(G, artHref, mirror, guides){
+function svgDoc(G, artHref, mirror, guides, vtext=''){
   const {minX,maxX,maxY,w,h} = G.b, X = mirror ? x=>maxX-x : x=>x-minX, Y = y=>maxY-y;
   const lines = l => l.map(([a,b])=>`<line x1="${f2(X(a[0]))}" y1="${f2(Y(a[1]))}" x2="${f2(X(b[0]))}" y2="${f2(Y(b[1]))}"/>`).join('');
   const L = (id, attrs, body) => `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${id}" ${attrs}>${body}</g>`;
@@ -841,10 +847,11 @@ function svgDoc(G, artHref, mirror, guides){
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(w)}mm" height="${f2(h)}mm" viewBox="0 0 ${f2(w)} ${f2(h)}">
 <title>Развёртка ${G.P.L}×${G.P.W}×${G.P.H} мм${mirror?' — оборот':''}</title>
 ${artHref ? L('Artwork','',`<image x="0" y="0" width="${f2(w)}" height="${f2(h)}" preserveAspectRatio="none" href="${artHref}" xlink:href="${artHref}"/>`) : ''}
+${vtext ? L('Text (outlines)','',vtext) : ''}
 ${L('Bleed','fill="none" stroke="#7fbf3f" stroke-width="0.2"',`<rect x="0.1" y="0.1" width="${f2(w-.2)}" height="${f2(h-.2)}"/>`)}
 ${g}
-${L('Crease','fill="none" stroke="#00aeef" stroke-width="0.25" stroke-dasharray="3 1.5"', lines(G.creases))}
-${L('CutContour','fill="none" stroke="#ec008c" stroke-width="0.25"', lines(G.cuts))}
+${L('CREASE','fill="none" stroke="#00aeef" stroke-width="0.25" stroke-dasharray="3 1.5"', lines(G.creases))}
+${L('CUT','fill="none" stroke="#ec008c" stroke-width="0.25"', lines(G.cuts))}
 </svg>`;
 }
 function thumbSvg(G){
@@ -852,7 +859,7 @@ function thumbSvg(G){
   const lines = l => l.map(([a,b])=>`M${X(a[0])} ${Y(a[1])}L${X(b[0])} ${Y(b[1])}`).join('');
   return `<svg viewBox="0 0 ${f2(w)} ${f2(h)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${lines(G.creases)}" fill="none" stroke="var(--crease)" stroke-width="${sw}" stroke-dasharray="${sw*3} ${sw*2}"/><path d="${lines(G.cuts)}" fill="none" stroke="var(--fg)" stroke-width="${sw}"/></svg>`;
 }
-function exportCanvas(G, side='out'){ return drawArt(document.createElement('canvas'), G, Math.min(300/25.4, 8000/Math.max(G.b.w,G.b.h)), false, side); }
+function exportCanvas(G, side='out', o={}){ return drawArt(document.createElement('canvas'), G, Math.min(300/25.4, 8000/Math.max(G.b.w,G.b.h)), false, side, null, null, o); }
 
 /* ---------- save ---------- */
 let dlP = null;
@@ -1420,52 +1427,188 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidd
 
 /* ---------- exports ---------- */
 $('exSvg').addEventListener('click',()=>saveFile(fname('-shablon.svg'), new Blob([svgDoc(G,null,false,true)],{type:'image/svg+xml'})));
-$('exSvgArt').addEventListener('click',()=>{ const url = exportCanvas(G).toDataURL('image/png');
-  saveFile(fname('-razvertka.svg'), new Blob([svgDoc(G,url)],{type:'image/svg+xml'})); });
-function makePdf(){
-  const {jsPDF} = window.jspdf || {}; if (!jsPDF){ toast('Библиотека PDF не загрузилась. Обновите страницу.'); return null; }
-  const {w,h,minX,maxX,maxY} = G.b, M = 14, PW = w+2*M, PH = h+2*M, orient = PW>PH?'landscape':'portrait';
-  const sExp = Math.min(300/25.4, 8000/Math.max(w,h), Math.sqrt(16e6/(w*h)));   // stays under the 16 Mpx canvas limit of Safari
-  const dpi = Math.round(sExp*25.4);
-  const doc = new jsPDF({orientation:orient, unit:'mm', format:[PW,PH]});
-  const art = side => drawArt(document.createElement('canvas'), G, sExp, false, side).toDataURL('image/jpeg',.95);
-  const die = mirror => { const X = x => M + (mirror ? maxX-x : x-minX), Y = y => M + maxY-y;
-    doc.setLineWidth(.25);
-    doc.setDrawColor(1,0,0,0); doc.setLineDashPattern([3,1.5],0); G.creases.forEach(([a,b])=>doc.line(X(a[0]),Y(a[1]),X(b[0]),Y(b[1])));
-    doc.setDrawColor(0,1,0,0); doc.setLineDashPattern([],0); G.cuts.forEach(([a,b])=>doc.line(X(a[0]),Y(a[1]),X(b[0]),Y(b[1]))); };
-  const marks = () => { // crop marks at the trim box corners, outside the bleed
-    const t = [M+BLEED, M+BLEED, M+w-BLEED, M+h-BLEED], o = BLEED+2, len = 6;
-    doc.setLineDashPattern([],0); doc.setDrawColor(0,0,0,1); doc.setLineWidth(.2);
-    for (const x of [t[0],t[2]]) for (const y of [t[1],t[3]]){ const sx = x===t[0]?-1:1, sy = y===t[1]?-1:1;
-      doc.line(x+sx*o, y, x+sx*(o+len), y); doc.line(x, y+sy*o, x, y+sy*(o+len)); } };
-  const info = title => { doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(0,0,0,1);
-    const typeName = TPL.find(t=>t.id===S.tpl)?.id || S.type;
-    doc.text(`${title}  |  ${typeName} ${S.L}x${S.W}x${S.H} mm  |  sheet ${w.toFixed(1)}x${h.toFixed(1)} mm incl. ${BLEED} mm bleed  |  safe zone ${SAFE} mm  |  image ${dpi} dpi, RGB`, M, M-6);
-    doc.text('CutContour = 100% M (solid)   Crease = 100% C (dashed)   Crop marks = trim box', M, PH-M+8); };
-  // 1 proof: artwork + dieline
-  doc.addImage(art('out'),'JPEG',M,M,w,h); die(false); marks(); info('PROOF - artwork + dieline (do not print dieline)');
-  // 2 print: outside artwork only
-  doc.addPage([PW,PH],orient); doc.addImage(art('out'),'JPEG',M,M,w,h); marks(); info('PRINT - outside');
-  // 3 print: inside (reverse side, mirrored)
-  if (hasInside()){ doc.addPage([PW,PH],orient); doc.addImage(art('in'),'JPEG',M,M,w,h); marks(); info('PRINT - inside / reverse side (mirrored)'); }
-  // 4 die: dieline only, for the die-cutter
-  doc.addPage([PW,PH],orient); die(false); marks(); info('DIELINE - cut & crease only');
-  return doc.output('blob');
+/* ---------- print: text to outlines ---------- */
+const OT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js', FS_VER = '5.3.0';
+const VEC_FAMS = ['IBM Plex Sans','Montserrat','Playfair Display','Oswald','Caveat'];
+let otP = null; const otCache = {};
+const loadOT = () => otP ??= new Promise((res, rej) => { if (window.opentype) return res(window.opentype);
+  const sc = document.createElement('script'); sc.src = OT_URL; sc.onload = () => res(window.opentype); sc.onerror = rej; document.head.appendChild(sc); });
+function otFont(fam, wt, sub){
+  const k = `${fam}|${wt}|${sub}`;
+  return otCache[k] ??= (async () => { const ot = await loadOT(), id = fam.toLowerCase().replace(/ /g,'-');
+    const r = await fetch(`https://cdn.jsdelivr.net/npm/@fontsource/${id}@${FS_VER}/files/${id}-${sub}-${wt}-normal.woff`);
+    if (!r.ok) throw new Error('font '+k); return ot.parse(await r.arrayBuffer()); })();
 }
-$('exPdf').addEventListener('click',()=>{ const b = makePdf(); if (b) saveFile(fname('-tipografiya.pdf'), b); });
+const parseFont = f => { const wt = /\bbold\b/.test(f) ? 700 : +(f.match(/(^|\s)([1-9]00)\s/)?.[2] || 400), size = parseFloat(f.match(/([\d.]+)px/)[1]);
+  let fam = (f.match(/px\s+"?([^",]+)"?/)?.[1] || '').trim(); if (!VEC_FAMS.includes(fam)) fam = 'IBM Plex Sans'; return {wt, size, fam}; };
+const parseColor = c => { if (c[0]==='#'){ const n = parseInt(c.length===4 ? c.slice(1).replace(/./g,'$&$&') : c.slice(1,7),16); return [n>>16&255, n>>8&255, n&255]; }
+  const m = c.match(/[\d.]+/g) || [0,0,0]; return [+m[0], +m[1], +m[2]]; };
+function rgb2cmyk([r,g,b]){ r/=255; g/=255; b/=255; const k = 1-Math.max(r,g,b); if (k>=1) return [0,0,0,1];
+  return [(1-r-k)/(1-k), (1-g-k)/(1-k), (1-b-k)/(1-k), k]; }
+// fonts for one family/weight: latin + whatever subsets the text needs
+async function fontSet(fam, wt, text){
+  const subs = ['latin']; if (/[Ѐ-ӿ]/.test(text)) subs.push('cyrillic'); if (/[Ā-ɏ]/.test(text)) subs.push('latin-ext');
+  if (/[Ԁ-ԯ]/.test(text)) subs.push('cyrillic-ext');
+  return Promise.all(subs.map(sub => otFont(fam, wt, sub).catch(e => sub==='latin' ? otFont(fam, 400, sub) : Promise.reject(e))));
+}
+// one run of text -> outline commands in sheet mm (y down); m = canvas transform, s = canvas px per mm
+function runPath(fonts, text, x, y, size, align, base, m, s){
+  const f0 = fonts[0], k0 = size/f0.unitsPerEm; let pen = 0, prev = null; const gl = [];
+  for (const ch of text){ let f = fonts.find(f => f.charToGlyphIndex(ch) > 0) || f0; const g = f.charToGlyph(ch), k = size/f.unitsPerEm;
+    if (prev && prev.f===f) pen += f.getKerningValue(prev.g, g)*k; gl.push({f,g,x:pen}); pen += g.advanceWidth*k; prev = {f,g}; }
+  const x0 = align==='center' ? x-pen/2 : (align==='right'||align==='end') ? x-pen : x;
+  const yb = base==='middle' ? y + (f0.ascender+f0.descender)/2*k0 : base==='top'||base==='hanging' ? y + f0.ascender*k0 : base==='bottom' ? y + f0.descender*k0 : y;
+  const T = (px,py) => [(m.a*px + m.c*py + m.e)/s, (m.b*px + m.d*py + m.f)/s], out = [];
+  for (const {f,g,x:gx} of gl) for (const c of g.getPath(x0+gx, yb, size).commands){
+    if (c.type==='M'||c.type==='L') out.push([c.type, ...T(c.x,c.y)]);
+    else if (c.type==='Q') out.push(['Q', ...T(c.x1,c.y1), ...T(c.x,c.y)]);
+    else if (c.type==='C') out.push(['C', ...T(c.x1,c.y1), ...T(c.x2,c.y2), ...T(c.x,c.y)]);
+    else out.push(['Z']); }
+  return out;
+}
+// all text on one side as outlines: [{cmds, rgb, clip}] in mm; null when the fonts can't be loaded
+async function vectorText(side){
+  const s = 300/25.4, rec = []; drawArt(document.createElement('canvas'), G, s, false, side, null, null, {rec});
+  try {
+    const out = [];
+    for (const r of rec){ if (!r.t.trim()) continue; const {wt,size,fam} = parseFont(r.font);
+      const fonts = await fontSet(fam, wt, r.t);
+      out.push({cmds: runPath(fonts, r.t, r.x, r.y, size, r.align, r.base, r.m, s), rgb: parseColor(r.fill), clip: r.clip && r.clip.map(v=>v/s)}); }
+    return out;
+  } catch(e){ console.warn('outlines', e); return null; }
+}
+function svgText(paths){
+  const d = c => c.map(([t,...v]) => t + v.map(f2).join(' ')).join('');
+  return paths.map((p,i) => (p.clip ? `<clipPath id="tc${i}"><rect x="${f2(p.clip[0])}" y="${f2(p.clip[1])}" width="${f2(p.clip[2])}" height="${f2(p.clip[3])}"/></clipPath>` : '')
+    + `<path d="${d(p.cmds)}" fill="rgb(${p.rgb.join(',')})"${p.clip?` clip-path="url(#tc${i})"`:''}/>`).join('');
+}
+async function artSvg(side){
+  const vt = await vectorText(side);
+  const href = exportCanvas(G, side, vt ? {text:'skip'} : {}).toDataURL('image/png');
+  return {svg: svgDoc(G, href, side==='in', false, vt ? svgText(vt) : ''), vec: !!vt};
+}
+$('exSvgArt').addEventListener('click', async () => { toast('Готовлю развёртку…'); const {svg, vec} = await artSvg('out');
+  if (!vec) toast('Шрифты не загрузились — текст оставлен картинкой.');
+  saveFile(fname('-razvertka.svg'), new Blob([svg],{type:'image/svg+xml'})); });
+
+/* ---------- print PDF: 1:1 mm, CMYK 300 dpi, text in outlines, CUT / CREASE layers in spot colours ---------- */
+const enc = new TextEncoder(), deflate = async u8 => new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+const pn = v => (Math.abs(v) < 1e-4 ? 0 : +v.toFixed(3)).toString();
+const pdfStr = t => '<FEFF' + Array.from(t).map(c => { const u = c.codePointAt(0); return u > 0xffff ? '003F' : u.toString(16).padStart(4,'0'); }).join('').toUpperCase() + '>';
+function PdfW(){
+  const parts = [new Uint8Array([37,80,68,70,45,49,46,54,10,37,226,227,207,211,10])], off = []; let len = parts[0].length, n = 0;
+  const push = x => { const b = typeof x==='string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+  return {
+    id: () => ++n,
+    obj(id, body){ off[id] = len; push(`${id} 0 obj\n${body}\nendobj\n`); },
+    stream(id, dict, bytes){ off[id] = len; push(`${id} 0 obj\n<< ${dict} /Length ${bytes.length} >>\nstream\n`); push(bytes); push('\nendstream\nendobj\n'); },
+    finish(root, info){ const x = len; let t = `xref\n0 ${n+1}\n0000000000 65535 f \n`;
+      for (let i = 1; i <= n; i++) t += String(off[i]).padStart(10,'0') + ' 00000 n \n';
+      push(t + `trailer\n<< /Size ${n+1} /Root ${root} 0 R /Info ${info} 0 R >>\nstartxref\n${x}\n%%EOF\n`);
+      return new Blob(parts, {type:'application/pdf'}); } };
+}
+// artwork of one side as CMYK image strips (each under the 16 Mpx canvas limit)
+async function cmykStrips(pdf, side, s, vec){
+  const {w,h} = G.b, W = Math.max(1,Math.round(w*s)), H = Math.max(1,Math.round(h*s)), step = Math.max(8, Math.floor(15e6/W)), out = [];
+  for (let oy = 0; oy < H; oy += step){
+    const hp = Math.min(step+1, H-oy);   // one row of overlap hides seams between strips
+    const cv = drawArt(document.createElement('canvas'), G, s, false, side, null, null, {oy, hpx:hp, text: vec ? 'skip' : null});
+    const d = cv.getContext('2d').getImageData(0,0,W,hp).data, c = new Uint8Array(W*hp*4);
+    for (let i = 0; i < d.length; i += 4){ const r = d[i]/255, g = d[i+1]/255, b = d[i+2]/255, mx = Math.max(r,g,b), k = 1-mx;
+      if (mx <= 0){ c[i+3] = 255; continue; }
+      c[i] = Math.round((mx-r)/mx*255); c[i+1] = Math.round((mx-g)/mx*255); c[i+2] = Math.round((mx-b)/mx*255); c[i+3] = Math.round(k*255); }
+    cv.width = cv.height = 0;
+    const id = pdf.id(); pdf.stream(id, `/Type /XObject /Subtype /Image /Width ${W} /Height ${hp} /ColorSpace /DeviceCMYK /BitsPerComponent 8 /Filter /FlateDecode`, await deflate(c));
+    out.push({id, y: oy/s, hh: hp/s});
+    await new Promise(r => setTimeout(r));
+  }
+  return out;
+}
+async function makePdf(){
+  if (!window.CompressionStream){ toast('Этот браузер не умеет собирать PDF. Откройте в Chrome, Safari 16.4+ или Firefox.'); return null; }
+  const {w,h,minX,maxX,maxY} = G.b, M = 14, K = 72/25.4, PW = w+2*M, PH = h+2*M;
+  const s = Math.min(300/25.4, 14000/w), dpi = Math.round(s*25.4), inside = hasInside(), pdf = PdfW();
+  const vt = {out: await vectorText('out'), in: inside ? await vectorText('in') : []}, vec = !!vt.out && !!vt.in;
+  let info = null; try { info = await fontSet('IBM Plex Sans', 400, 'Яя'); } catch {}
+  const img = {out: await cmykStrips(pdf, 'out', s, vec), in: inside ? await cmykStrips(pdf, 'in', s, vec) : null};
+  const ocArt = pdf.id(), ocCut = pdf.id(), ocCrs = pdf.id(), ocInf = pdf.id(), F1 = pdf.id();
+  pdf.obj(ocArt, '<< /Type /OCG /Name (Artwork) >>'); pdf.obj(ocCut, '<< /Type /OCG /Name (CUT) >>');
+  pdf.obj(ocCrs, '<< /Type /OCG /Name (CREASE) >>'); pdf.obj(ocInf, '<< /Type /OCG /Name (Info) >>');
+  pdf.obj(F1, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  const sep = (name, c) => `[/Separation /${name} /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [${c}] /N 1 >>]`;
+  const fill = rgb => rgb2cmyk(rgb).map(pn).join(' ') + ' k';
+  const path = cmds => cmds.map(([t,...v]) => { let cur = path.cur || [0,0];
+    if (t==='Q'){ const [qx,qy,x,y] = v, c1 = [cur[0]+2/3*(qx-cur[0]), cur[1]+2/3*(qy-cur[1])], c2 = [x+2/3*(qx-x), y+2/3*(qy-y)]; path.cur = [x,y];
+      return `${pn(c1[0])} ${pn(c1[1])} ${pn(c2[0])} ${pn(c2[1])} ${pn(x)} ${pn(y)} c`; }
+    if (t==='Z') return 'h'; path.cur = v.slice(-2);
+    return v.map(pn).join(' ') + (t==='M' ? ' m' : t==='L' ? ' l' : ' c'); }).join('\n');
+  const textOps = list => list.map(p => `q ${p.clip ? `${p.clip.map(pn).join(' ')} re W n ` : ''}${fill(p.rgb)}\n${path(p.cmds)}\nf Q`).join('\n');
+  const infoLine = (t, y) => { // margin note as outlines (falls back to Helvetica, Latin only)
+    if (info){ let cmds = runPath(info, t, 0, 0, 2.3, 'left', 'alphabetic', {a:1,b:0,c:0,d:1,e:0,f:0}, 1);
+      const xs = cmds.flatMap(c => c.slice(1).filter((_,i)=>i%2===0)), wd = Math.max(0, ...xs), k = Math.min(1, (PW-2*4)/(wd||1));
+      cmds = cmds.map(([t,...v]) => [t, ...v.map((n,i) => i%2===0 ? n*k - M + 4 : n*k + y)]);
+      return `q 0 0 0 1 k\n${path(cmds)}\nf Q`; }
+    const lat = t.normalize('NFD').replace(/[^\x20-\x7e]/g,'').replace(/[()\\]/g,'');
+    return `BT /F1 1 Tf 2.2 0 0 -2.2 ${-M+4} ${y} Tm 0 0 0 1 rg (${lat}) Tj ET`; };
+  const die = mirror => { const X = x => mirror ? maxX-x : x-minX, Y = y => maxY-y, ln = l => l.map(([a,b]) => `${pn(X(a[0]))} ${pn(Y(a[1]))} m ${pn(X(b[0]))} ${pn(Y(b[1]))} l`).join('\n');
+    return `/OC /Crs BDC q /GSop gs /CsCrease CS 1 SCN 0.25 w [3 1.5] 0 d\n${ln(G.creases)}\nS Q EMC\n/OC /Cut BDC q /GSop gs /CsCut CS 1 SCN 0.25 w []0 d\n${ln(G.cuts)}\nS Q EMC`; };
+  const marks = () => { const t = [BLEED, BLEED, w-BLEED, h-BLEED], o = BLEED+2, L = 6; let r = '';
+    for (const x of [t[0],t[2]]) for (const y of [t[1],t[3]]){ const sx = x===t[0]?-1:1, sy = y===t[1]?-1:1;
+      r += `${pn(x+sx*o)} ${pn(y)} m ${pn(x+sx*(o+L))} ${pn(y)} l ${pn(x)} ${pn(y+sy*o)} m ${pn(x)} ${pn(y+sy*(o+L))} l\n`; }
+    return `q 0.2 w 0 0 0 1 K /GSop gs\n${r}S Q`; };
+  const typeName = TYPE_NAMES[S.type] || S.type, nameStr = S.pname ? `«${S.pname}» · ` : '';
+  const head = `${nameStr}${typeName} ${S.L}×${S.W}×${S.H} мм (внутр.) · лист ${w.toFixed(1)}×${h.toFixed(1)} мм с вылетами ${BLEED} мм · обрез по меткам · безопасная зона ${SAFE} мм · CMYK ${dpi} dpi · текст в кривых`;
+  const foot = 'Слои: CUT — контур реза (spot CutContour = 100% M, overprint) · CREASE — биговка (spot Crease = 100% C, пунктир, overprint) · Artwork — печать · Info — служебное, не печатать';
+  const pages = [], pagesId = pdf.id();
+  const page = async (title, body) => {
+    const cs = `${pn(K)} 0 0 ${pn(-K)} ${pn(M*K)} ${pn((PH-M)*K)} cm\n${body}\n${marks()}\n/OC /Inf BDC\n${infoLine(title+' · '+head, -6)}\n${infoLine(foot, h+9)}\nEMC`;
+    const c = pdf.id(); pdf.stream(c, '/Filter /FlateDecode', await deflate(enc.encode(cs)));
+    const pg = pdf.id(), mm = v => pn(v*K);
+    pdf.obj(pg, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(PW)} ${mm(PH)}] /BleedBox [${mm(M)} ${mm(M)} ${mm(M+w)} ${mm(M+h)}] /TrimBox [${mm(M+BLEED)} ${mm(M+BLEED)} ${mm(M+w-BLEED)} ${mm(M+h-BLEED)}] /Contents ${c} 0 R
+/Resources << /XObject << ${[...img.out, ...(img.in||[])].map(i=>`/Im${i.id} ${i.id} 0 R`).join(' ')} >> /Font << /F1 ${F1} 0 R >>
+/ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
+/Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R >> >> >>`);
+    pages.push(pg); };
+  const art = side => `/OC /Art BDC\n${img[side].map(i => `q ${pn(w)} 0 0 ${pn(-i.hh)} 0 ${pn(i.y+i.hh)} cm /Im${i.id} Do Q`).join('\n')}\n${vec ? textOps(vt[side]) : ''}\nEMC`;
+  await page('СТР. 1 — ЛИЦЕВАЯ СТОРОНА (снаружи)', art('out') + '\n' + die(false));
+  if (inside) await page('СТР. 2 — ОБОРОТ (внутри коробки), зеркально', art('in') + '\n' + die(true));
+  await page(`СТР. ${inside?3:2} — ШТАМП: только рез и биговка`, die(false));
+  pdf.obj(pagesId, `<< /Type /Pages /Kids [${pages.map(p=>p+' 0 R').join(' ')}] /Count ${pages.length} >>`);
+  const cat = pdf.id(), inf = pdf.id(), ocs = `${ocArt} 0 R ${ocCut} 0 R ${ocCrs} 0 R ${ocInf} 0 R`;
+  pdf.obj(cat, `<< /Type /Catalog /Pages ${pagesId} 0 R /OCProperties << /OCGs [${ocs}] /D << /Order [${ocs}] /ON [${ocs}] >> >> >>`);
+  pdf.obj(inf, `<< /Title ${pdfStr((S.pname||'Коробка')+' — развёртка')} /Creator (Skladka) /Producer (Skladka) >>`);
+  if (!vec) toast('Шрифты не загрузились — текст в PDF картинкой 300 dpi, не в кривых.');
+  return pdf.finish(cat, inf);
+}
+$('exPdf').addEventListener('click', async () => { toast('Собираю PDF для типографии…'); const b = await makePdf(); if (b) saveFile(fname('-tipografiya.pdf'), b); });
 $('exZip').addEventListener('click', async () => {
   if (!window.JSZip){ toast('Библиотека архива не загрузилась. Обновите страницу.'); return; }
   toast('Собираю архив…'); await new Promise(r => setTimeout(r, 30));
-  const pdf = makePdf(); if (!pdf) return;
+  const pdf = await makePdf(); if (!pdf) return;
   const zip = new JSZip(), base = fname('');
   zip.file(base+'-tipografiya.pdf', pdf);
-  zip.file(base+'-razvertka.svg', svgDoc(G, exportCanvas(G).toDataURL('image/png')));
-  if (hasInside()) zip.file(base+'-oborot.svg', svgDoc(G, exportCanvas(G,'in').toDataURL('image/png'), true));
+  zip.file(base+'-razvertka.svg', (await artSvg('out')).svg);
+  if (hasInside()) zip.file(base+'-oborot.svg', (await artSvg('in')).svg);
   zip.file(base+'-shablon.svg', svgDoc(G, null, false, true));
   zip.file(base+'-mockup.png', await mockupBlob());
   const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
   zip.file(base+'.json', JSON.stringify({app:'skladka', v:3, settings:S, imgs, elimgs, mine}));
-  zip.file('README.txt', `Складка — ${base}\n\n${base}-tipografiya.pdf — отдать в типографию: стр.1 макет с контуром (на согласование), стр.2 печать снаружи, ${hasInside()?'стр.3 печать внутри (оборот), ':''}последняя — штамп (только рез и биговка).\nКонтур реза: 100% Magenta (CutContour), биговка: 100% Cyan пунктиром. Вылеты ${BLEED} мм, зона безопасности ${SAFE} мм.\n${base}-razvertka.svg — развёртка с дизайном, слои Artwork / Crease / CutContour.\n${base}-shablon.svg — пустой шаблон для вёрстки в Illustrator / Figma.\n${base}-mockup.png — 3D-мокап, прозрачный фон.\n${base}.json — проект, открывается кнопкой «Открыть проект».\n`);
+  zip.file('README.txt', `Складка — ${base}
+
+${base}-tipografiya.pdf — файл для типографии:
+  • масштаб 1:1, единицы — мм; размер страницы = лист + поля под метки
+  • цвет CMYK, изображения 300 dpi, весь текст переведён в кривые (шрифты не нужны)
+  • вылеты ${BLEED} мм (BleedBox), обрез по меткам (TrimBox), безопасная зона ${SAFE} мм
+  • слой CUT — контур реза, плашка CutContour (100% M), overprint
+  • слой CREASE — биговка, плашка Crease (100% C, пунктир), overprint
+  • слой Artwork — печать, слой Info — служебный текст на полях
+  • стр.1 — лицевая сторона${hasInside()?', стр.2 — оборот (зеркально)':''}, последняя — штамп (только CUT и CREASE)
+  Перевод в CMYK простой, без ICC-профиля: попросите типографию проверить цвет по их профилю и прислать цветопробу.
+${base}-razvertka.svg — развёртка: Artwork, текст в кривых, слои CUT / CREASE.
+${base}-shablon.svg — пустой шаблон для вёрстки в Illustrator / Figma.
+${base}-mockup.png — 3D-мокап.
+${base}.json — проект, открывается кнопкой «Открыть проект».
+`);
   saveFile(base+'.zip', await zip.generateAsync({type:'blob'}));
 });
 $('exPng').addEventListener('click', async () => saveFile(fname('-mockup.png'), await mockupBlob()));
