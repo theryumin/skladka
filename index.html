@@ -428,6 +428,11 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <label class="rng"><span>Вверх / вниз</span><input id="elY" type="range" min="0" max="100" step="0.5"><output id="elYO"></output></label>
         <label class="rng"><span>Поворот</span><input id="elRot" type="range" min="-180" max="180" step="1"><output id="elRotO"></output></label>
         <div class="row2">
+          <label class="f">Отделка<select id="elFin"><option value="">Без отделки</option><option value="varnish">Выборочный лак</option><option value="foil_gold">Фольга — золото</option><option value="foil_silver">Фольга — серебро</option><option value="emboss">Тиснение (выпуклое)</option><option value="deboss">Блинт (вдавленное)</option></select></label>
+          <label class="f">Плашка Pantone<input id="elSpot" type="text" placeholder="напр. 186 C" autocomplete="off"></label>
+        </div>
+        <p class="note" id="elFinNote"></p>
+        <div class="row2">
           <button class="btn" id="elDup" style="text-align:center">Дублировать</button>
           <button class="btn" id="elDel" style="text-align:center">Удалить</button>
         </div>
@@ -484,6 +489,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <option value="carton03">Картон 0,3 мм (≈250 г/м²)</option><option value="carton05">Картон 0,5 мм (≈350 г/м²)</option>
         <option value="kraft">Крафт-картон 0,45 мм</option><option value="micro_e">Микрогофра E, 1,5 мм</option>
         <option value="corr_b">Гофрокартон B, 3 мм</option><option value="custom">Своя толщина…</option></select></label>
+      <label class="f">Белила под печать<select id="white"><option value="">Нет</option><option value="full">Под всей печатью</option><option value="els">Только под логотипами и надписями</option></select></label>
       <label class="f" id="thickWrap">Толщина, мм<input id="thick" type="number" min="0" max="8" step="0.05"></label>
       <p class="note">Толщина учитывается в развёртке: линии сгиба сдвигаются так, чтобы коробка получилась нужного размера.</p>
       <div class="row2">
@@ -588,7 +594,7 @@ const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck
   winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0,
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'ЛЕСНОЙ ЧАЙ', sub:'сбор №4 · 100 г',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
-  mat:'carton05', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
+  mat:'carton05', white:'', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
   sheetFmt:'sra3', sheetW:320, sheetH:450, grip:10, impGap:4, qty:500,
   scBg:'studio', scBgColor:'#dfe6e2', light:'studio', lInt:100, lAng:-35, shadow:20 };
 const S = {...DEFAULTS};
@@ -601,7 +607,7 @@ const FACE_NAMES = {drawer:'Дно ящика', pull:'Торец ящика', fr
 const NUM = ['thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
 const DIM_LABELS = {pouch:['Ширина','Глубина дна','Высота']};
-const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt'];
+const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white'];
 const CHK = ['notch','window','hang','showText','showLines','dbl'];
 const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl'];
 
@@ -880,7 +886,21 @@ function drawEl(ctx, el, s){
   let mw = 0; lines.forEach((ln,i)=>{ ctx.fillText(ln,0,(i-(lines.length-1)/2)*lh); mw=Math.max(mw,ctx.measureText(ln).width); });
   return [mw, lh*lines.length];
 }
-let lastClip = null;
+let lastClip = null, curElId = null;
+const elSpecial = el => ['foil_gold','foil_silver','emboss','deboss'].includes(el.fin) || !!el.spot;
+const FOILS = {foil_gold:['#7a5a17','#f3dc78','#a8842a','#fff2ad','#8c6a1e'], foil_silver:['#6f747a','#f2f4f6','#9ea3a9','#ffffff','#80858b']};
+// on-screen look of foil and blind embossing
+function drawElFx(ctx, el, s){
+  const bb = drawEl(document.createElement('canvas').getContext('2d'), el, s); if (!bb) return null;
+  const W = Math.ceil(bb[0]+s*2), H = Math.ceil(bb[1]+s*2), c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'); x.translate(W/2,H/2); drawEl(x, el, s); x.setTransform(1,0,0,1,0,0); x.globalCompositeOperation = 'source-in';
+  if (FOILS[el.fin]){ const g = x.createLinearGradient(0,0,W,H*1.2); FOILS[el.fin].forEach((col,i,a) => g.addColorStop(i/(a.length-1), col));
+    x.fillStyle = g; x.fillRect(0,0,W,H); ctx.drawImage(c,-W/2,-H/2); return bb; }
+  const d = Math.max(.6, s*.22) * (el.fin==='emboss' ? 1 : -1), tint = col => { x.fillStyle = col; x.fillRect(0,0,W,H); };
+  ctx.save(); tint('#000'); ctx.globalAlpha = .35; ctx.drawImage(c,-W/2+d,-H/2+d); tint('#fff'); ctx.globalAlpha = .55; ctx.drawImage(c,-W/2-d,-H/2-d);
+  tint(el.side==='in' ? insideColor() : S.bg); ctx.globalAlpha = 1; ctx.drawImage(c,-W/2,-H/2); ctx.restore();
+  return bb;
+}
 function clipFace(ctx, G, f, s, side){
   const [a,b,c,d] = f.clip || f.r, {minX,maxX,maxY} = G.b;
   lastClip = [side==='in' ? (maxX-c)*s : (a-minX)*s, (maxY-d)*s, (c-a)*s, (d-b)*s];
@@ -894,7 +914,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
   ctx.fillStyle = side==='in' ? insideColor() : S.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
   if (o.oy) ctx.translate(0,-o.oy);
   if (o.text==='skip') ctx.fillText = () => {};
-  if (o.rec) ctx.fillText = (t,x,y) => o.rec.push({t:String(t), x, y, m:ctx.getTransform(), font:ctx.font, fill:ctx.fillStyle, align:ctx.textAlign, base:ctx.textBaseline, clip:lastClip});
+  if (o.rec) ctx.fillText = (t,x,y) => o.rec.push({t:String(t), x, y, el:curElId, m:ctx.getTransform(), font:ctx.font, fill:ctx.fillStyle, align:ctx.textAlign, base:ctx.textBaseline, clip:lastClip});
   if (side==='out'){
     if (IMGS.layout) ctx.drawImage(IMGS.layout.img,0,0,FW,FH);
     for (const f of G.faces){
@@ -913,10 +933,13 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
   }
   for (const el of S.els){
     if (el.side!==side) continue; const f = G.faces.find(f=>f.key===el.face); if (!f) continue;
+    if (o.print && elSpecial(el) && !o.rec && !o.els) continue;      // foil / emboss / Pantone are not part of the CMYK image
     const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
     ctx.save(); clipFace(ctx,G,f,s,side);
     ctx.translate(cx,cy); ctx.rotate(rot); ctx.translate((el.x-.5)*lw,(el.y-.5)*lh); ctx.rotate(el.rot*DEG);
-    const bb = drawEl(ctx,el,s);
+    curElId = el.id; const m0 = o.els && ctx.getTransform();
+    const bb = o.print || !(el.fin && el.fin!=='varnish') ? drawEl(ctx,el,s) : drawElFx(ctx,el,s);
+    curElId = null; if (o.els && bb) o.els.push({el, m:m0, bb});
     if (bb && warn){ const r=el.rot*DEG, c=Math.abs(Math.cos(r)), sn=Math.abs(Math.sin(r));
       const hw=bb[0]/2*c+bb[1]/2*sn, hh=bb[0]/2*sn+bb[1]/2*c, m=SAFE*s;
       warn[el.id] = Math.abs((el.x-.5)*lw)+hw > lw/2-m || Math.abs((el.y-.5)*lh)+hh > lh/2-m; }
@@ -1319,7 +1342,7 @@ function bindInputs(){
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
   for (const id of ['notch','window','hang','dbl']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; if (id==='hang' && S.hang){ S.topClose='tuck'; } custom(); syncUI(); refresh(true); });
   for (const id of ['bg','ink','title','sub','inside','finish']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; refresh(); });
-  for (const id of ['mat','dimMode','bleed','safe','method','sides','sheetFmt']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
+  for (const id of ['mat','dimMode','bleed','safe','method','sides','sheetFmt','white']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
     if (id==='sheetFmt' && SHEETS[S.sheetFmt]?.[1]) [S.sheetW,S.sheetH] = SHEETS[S.sheetFmt].slice(1);
     syncUI(); refresh(true); });
   $('unit').addEventListener('input',()=>{ S.unit=$('unit').value; syncUI(); persist(); });
@@ -1385,6 +1408,11 @@ function syncEl(){
   $('elX').value = (el.x*100).toFixed(1); $('elXO').textContent = Math.round(el.x*100)+'%';
   $('elY').value = (el.y*100).toFixed(1); $('elYO').textContent = Math.round(el.y*100)+'%';
   $('elRot').value = el.rot; $('elRotO').textContent = el.rot+'°';
+  if (document.activeElement !== $('elSpot')) $('elSpot').value = el.spot || '';
+  $('elFin').value = el.fin || '';
+  $('elFinNote').textContent = { varnish:'Лак ляжет поверх печати отдельным слоем VARNISH.', foil_gold:'Фольга заменяет печать: в PDF элемент уходит в слой FOIL, CMYK под ним не печатается.',
+    foil_silver:'Фольга заменяет печать: в PDF элемент уходит в слой FOIL, CMYK под ним не печатается.', emboss:'Блинтовое тиснение без краски — штамп в слое EMBOSS.',
+    deboss:'Вдавленное тиснение без краски — штамп в слое EMBOSS.' }[el.fin] || (el.spot ? 'Элемент печатается отдельной краской Pantone — плашкой в PDF.' : '');
   updWarn();
 }
 function updWarn(){
@@ -1422,6 +1450,8 @@ onEl('elSize', (el,v)=>{ el.size=+v; });
 onEl('elX', (el,v)=>{ el.x=v/100; });
 onEl('elY', (el,v)=>{ el.y=v/100; });
 onEl('elRot', (el,v)=>{ el.rot=+v; });
+onEl('elFin', (el,v)=>{ el.fin=v; });
+onEl('elSpot', (el,v)=>{ el.spot=v.trim(); });
 $('elDup').addEventListener('click', () => { const el = curEl(); if (!el) return; const id = uid();
   if (ELIMG[el.id]) ELIMG[id] = ELIMG[el.id];
   addEl({...el, id, x:clamp(el.x+.06,0,1), y:clamp(el.y+.06,0,1)}); });
@@ -1632,12 +1662,12 @@ function runPath(fonts, text, x, y, size, align, base, m, s){
 }
 // all text on one side as outlines: [{cmds, rgb, clip}] in mm; null when the fonts can't be loaded
 async function vectorText(side){
-  const s = 300/25.4, rec = []; drawArt(document.createElement('canvas'), G, s, false, side, null, null, {rec});
+  const s = 300/25.4, rec = []; drawArt(document.createElement('canvas'), G, s, false, side, null, null, {rec, print:true});
   try {
     const out = [];
     for (const r of rec){ if (!r.t.trim()) continue; const {wt,size,fam} = parseFont(r.font);
       const fonts = await fontSet(fam, wt, r.t);
-      out.push({cmds: runPath(fonts, r.t, r.x, r.y, size, r.align, r.base, r.m, s), rgb: parseColor(r.fill), clip: r.clip && r.clip.map(v=>v/s)}); }
+      out.push({cmds: runPath(fonts, r.t, r.x, r.y, size, r.align, r.base, r.m, s), rgb: parseColor(r.fill), clip: r.clip && r.clip.map(v=>v/s), el: S.els.find(e=>e.id===r.el) || null}); }
     return out;
   } catch(e){ console.warn('outlines', e); return null; }
 }
@@ -1649,7 +1679,7 @@ function svgText(paths){
 async function artSvg(side){
   const vt = await vectorText(side);
   const href = exportCanvas(G, side, vt ? {text:'skip'} : {}).toDataURL('image/png');
-  return {svg: svgDoc(G, href, side==='in', false, vt ? svgText(vt) : ''), vec: !!vt};
+  return {svg: svgDoc(G, href, side==='in', false, vt ? svgText(vt) : ''), vec: !!vt};   // SVG: foil / Pantone stay as they look
 }
 $('exSvgArt').addEventListener('click', async () => { toast('Готовлю развёртку…'); const {svg, vec} = await artSvg('out');
   if (!vec) toast('Шрифты не загрузились — текст оставлен картинкой.');
@@ -1676,7 +1706,7 @@ async function cmykStrips(pdf, side, s, vec){
   const {w,h} = G.b, W = Math.max(1,Math.round(w*s)), H = Math.max(1,Math.round(h*s)), step = Math.max(8, Math.floor(15e6/W)), out = [];
   for (let oy = 0; oy < H; oy += step){
     const hp = Math.min(step+1, H-oy);   // one row of overlap hides seams between strips
-    const cv = drawArt(document.createElement('canvas'), G, s, false, side, null, null, {oy, hpx:hp, text: vec ? 'skip' : null});
+    const cv = drawArt(document.createElement('canvas'), G, s, false, side, null, null, {oy, hpx:hp, text: vec ? 'skip' : null, print:true});
     const d = cv.getContext('2d').getImageData(0,0,W,hp).data, c = new Uint8Array(W*hp*4);
     for (let i = 0; i < d.length; i += 4){ const r = d[i]/255, g = d[i+1]/255, b = d[i+2]/255, mx = Math.max(r,g,b), k = 1-mx;
       if (mx <= 0){ c[i+3] = 255; continue; }
@@ -1695,6 +1725,27 @@ async function makePdf(){
   const vt = {out: await vectorText('out'), in: inside ? await vectorText('in') : []}, vec = !!vt.out && !!vt.in;
   let info = null; try { info = await fontSet('IBM Plex Sans', 400, 'Яя'); } catch {}
   const img = {out: await cmykStrips(pdf, 'out', s, vec), in: inside ? await cmykStrips(pdf, 'in', s, vec) : null};
+  // 1-bit stencil masks (600 dpi) for foil, varnish, emboss, white and Pantone logos
+  const masks = {out:[], in:[]}, spots = new Map();
+  const spotName = el => el.spot ? 'PANTONE ' + el.spot.replace(/^pantone\s*/i,'') : null;
+  for (const side of inside ? ['out','in'] : ['out']){
+    const els = []; drawArt(document.createElement('canvas'), G, s, false, side, null, null, {els, print:true, rec:[]});
+    for (const {el, m, bb} of els){
+      const need = el.fin || (el.spot && el.kind==='image') || S.white==='els'; if (!need) continue;
+      const k = 600/25.4, bw = bb[0]/s, bh = bb[1]/s, W = Math.max(1,Math.ceil(bw*k)), H = Math.max(1,Math.ceil(bh*k));
+      const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.translate(W/2,H/2); drawEl(x, el, k);
+      const a = x.getImageData(0,0,W,H).data, rb = Math.ceil(W/8), bits = new Uint8Array(rb*H).fill(255);
+      for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) if (a[(yy*W+xx)*4+3] > 127) bits[yy*rb+(xx>>3)] &= ~(128>>(xx&7));
+      const id = pdf.id(); pdf.stream(id, `/Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ImageMask true /BitsPerComponent 1 /Filter /FlateDecode`, await deflate(bits));
+      masks[side].push({id, el, place: `${[m.a,m.b,m.c,m.d,m.e,m.f].map(v=>pn(v/s)).join(' ')} cm ${pn(W/k*s)} 0 0 ${pn(-H/k*s)} ${pn(-W/k*s/2)} ${pn(H/k*s/2)} cm`});
+    }
+    for (const el of S.els) if (el.side===side && el.spot && !spots.has(spotName(el))) spots.set(spotName(el), rgb2cmyk(parseColor(el.color||'#000000')));
+  }
+  const spotKey = n => 'CsP' + [...spots.keys()].indexOf(n);
+  const pdfName = n => n.replace(/[^A-Za-z0-9_.-]/g, c => '#' + c.charCodeAt(0).toString(16).padStart(2,'0'));
+  const FIN = { varnish:['VARNISH','Varnish','0 0 0 0.12'], foil_gold:['FOIL','Foil_Gold','0 0.25 0.85 0.15'], foil_silver:['FOIL','Foil_Silver','0 0 0 0.35'],
+    emboss:['EMBOSS','Emboss','0.6 0 0.6 0'], deboss:['EMBOSS','Deboss','0.6 0 0.6 0'] };
+  const finLayers = ['WHITE','VARNISH','FOIL','EMBOSS'], ocFin = {}; for (const n of finLayers){ ocFin[n] = pdf.id(); pdf.obj(ocFin[n], `<< /Type /OCG /Name (${n}) >>`); }
   const ocArt = pdf.id(), ocCut = pdf.id(), ocCrs = pdf.id(), ocInf = pdf.id(), F1 = pdf.id();
   pdf.obj(ocArt, '<< /Type /OCG /Name (Artwork) >>'); pdf.obj(ocCut, '<< /Type /OCG /Name (CUT) >>');
   pdf.obj(ocCrs, '<< /Type /OCG /Name (CREASE) >>'); pdf.obj(ocInf, '<< /Type /OCG /Name (Info) >>');
@@ -1706,7 +1757,16 @@ async function makePdf(){
       return `${pn(c1[0])} ${pn(c1[1])} ${pn(c2[0])} ${pn(c2[1])} ${pn(x)} ${pn(y)} c`; }
     if (t==='Z') return 'h'; path.cur = v.slice(-2);
     return v.map(pn).join(' ') + (t==='M' ? ' m' : t==='L' ? ' l' : ' c'); }).join('\n');
-  const textOps = list => list.map(p => `q ${p.clip ? `${p.clip.map(pn).join(' ')} re W n ` : ''}${fill(p.rgb)}\n${path(p.cmds)}\nf Q`).join('\n');
+  const textOps = list => list.filter(p => !p.el || !['foil_gold','foil_silver','emboss','deboss'].includes(p.el.fin))
+    .map(p => `q ${p.clip ? `${p.clip.map(pn).join(' ')} re W n ` : ''}${p.el?.spot ? `/${spotKey(spotName(p.el))} cs 1 scn` : fill(p.rgb)}\n${path(p.cmds)}\nf Q`).join('\n');
+  const finOps = side => { let r = '';
+    const lay = (name, items) => { if (items) r += `/OC /O${name} BDC q /GSop gs\n${items}\nQ EMC\n`; };
+    if (S.white==='full') lay('WHITE', `/CsWHITE cs 1 scn 0 0 ${pn(w)} ${pn(h)} re f`);
+    if (S.white==='els') lay('WHITE', masks[side].map(k => `q /CsWHITE cs 1 scn ${k.place} /Im${k.id} Do Q`).join('\n'));
+    for (const n of ['VARNISH','FOIL','EMBOSS']) lay(n, masks[side].filter(k => FIN[k.el.fin]?.[0]===n).map(k => `q /Cs${FIN[k.el.fin][1]} cs 1 scn ${k.place} /Im${k.id} Do Q`).join('\n'));
+    const sp = masks[side].filter(k => k.el.spot && k.el.kind==='image' && !['foil_gold','foil_silver','emboss','deboss'].includes(k.el.fin));
+    if (sp.length) r = `/OC /Art BDC\n${sp.map(k => `q /${spotKey(spotName(k.el))} cs 1 scn ${k.place} /Im${k.id} Do Q`).join('\n')}\nEMC\n` + r;
+    return r; };
   const infoLine = (t, y) => { // margin note as outlines (falls back to Helvetica, Latin only)
     if (info){ let cmds = runPath(info, t, 0, 0, 2.3, 'left', 'alphabetic', {a:1,b:0,c:0,d:1,e:0,f:0}, 1);
       const xs = cmds.flatMap(c => c.slice(1).filter((_,i)=>i%2===0)), wd = Math.max(0, ...xs), k = Math.min(1, (PW-2*4)/(wd||1));
@@ -1722,23 +1782,23 @@ async function makePdf(){
     return `q 0.2 w 0 0 0 1 K /GSop gs\n${r}S Q`; };
   const typeName = TYPE_NAMES[S.type] || S.type, nameStr = S.pname ? `«${S.pname}» · ` : '';
   const head = `${nameStr}${typeName} ${S.L}×${S.W}×${S.H} мм (внутр.) · лист ${w.toFixed(1)}×${h.toFixed(1)} мм с вылетами ${BLEED} мм · обрез по меткам · безопасная зона ${SAFE} мм · CMYK ${dpi} dpi · текст в кривых`;
-  const foot = 'Слои: CUT — контур реза (spot CutContour = 100% M, overprint) · CREASE — биговка (spot Crease = 100% C, пунктир, overprint) · Artwork — печать · Info — служебное, не печатать';
+  const foot = 'Слои: Artwork — печать · WHITE / VARNISH / FOIL / EMBOSS — отделка плашками (overprint) · CUT — рез (CutContour, 100% M) · CREASE — биговка (Crease, 100% C, пунктир) · Info — не печатать';
   const pages = [], pagesId = pdf.id();
   const page = async (title, body) => {
     const cs = `${pn(K)} 0 0 ${pn(-K)} ${pn(M*K)} ${pn((PH-M)*K)} cm\n${body}\n${marks()}\n/OC /Inf BDC\n${infoLine(title+' · '+head, -6)}\n${infoLine(foot, h+9)}\nEMC`;
     const c = pdf.id(); pdf.stream(c, '/Filter /FlateDecode', await deflate(enc.encode(cs)));
     const pg = pdf.id(), mm = v => pn(v*K);
     pdf.obj(pg, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(PW)} ${mm(PH)}] /BleedBox [${mm(M)} ${mm(M)} ${mm(M+w)} ${mm(M+h)}] /TrimBox [${mm(M+BLEED)} ${mm(M+BLEED)} ${mm(M+w-BLEED)} ${mm(M+h-BLEED)}] /Contents ${c} 0 R
-/Resources << /XObject << ${[...img.out, ...(img.in||[])].map(i=>`/Im${i.id} ${i.id} 0 R`).join(' ')} >> /Font << /F1 ${F1} 0 R >>
-/ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
-/Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R >> >> >>`);
+/Resources << /XObject << ${[...img.out, ...(img.in||[]), ...masks.out, ...masks.in].map(i=>`/Im${i.id} ${i.id} 0 R`).join(' ')} >> /Font << /F1 ${F1} 0 R >>
+/ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} /CsWHITE ${sep('White','0 0 0 0.08')} ${Object.values(FIN).map(f=>`/Cs${f[1]} ${sep(f[1],f[2])}`).join(' ')} ${[...spots].map(([n,c])=>`/${spotKey(n)} ${sep(pdfName(n),c.map(pn).join(' '))}`).join(' ')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
+/Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R ${finLayers.map(n=>`/O${n} ${ocFin[n]} 0 R`).join(' ')} >> >> >>`);
     pages.push(pg); };
-  const art = side => `/OC /Art BDC\n${img[side].map(i => `q ${pn(w)} 0 0 ${pn(-i.hh)} 0 ${pn(i.y+i.hh)} cm /Im${i.id} Do Q`).join('\n')}\n${vec ? textOps(vt[side]) : ''}\nEMC`;
+  const art = side => `/OC /Art BDC\n${img[side].map(i => `q ${pn(w)} 0 0 ${pn(-i.hh)} 0 ${pn(i.y+i.hh)} cm /Im${i.id} Do Q`).join('\n')}\n${vec ? textOps(vt[side]) : ''}\nEMC\n${finOps(side)}`;
   await page('СТР. 1 — ЛИЦЕВАЯ СТОРОНА (снаружи)', art('out') + '\n' + die(false));
   if (inside) await page('СТР. 2 — ОБОРОТ (внутри коробки), зеркально', art('in') + '\n' + die(true));
   await page(`СТР. ${inside?3:2} — ШТАМП: только рез и биговка`, die(false));
   pdf.obj(pagesId, `<< /Type /Pages /Kids [${pages.map(p=>p+' 0 R').join(' ')}] /Count ${pages.length} >>`);
-  const cat = pdf.id(), inf = pdf.id(), ocs = `${ocArt} 0 R ${ocCut} 0 R ${ocCrs} 0 R ${ocInf} 0 R`;
+  const cat = pdf.id(), inf = pdf.id(), ocs = `${ocArt} 0 R ${finLayers.map(n=>ocFin[n]+' 0 R').join(' ')} ${ocCut} 0 R ${ocCrs} 0 R ${ocInf} 0 R`;
   pdf.obj(cat, `<< /Type /Catalog /Pages ${pagesId} 0 R /OCProperties << /OCGs [${ocs}] /D << /Order [${ocs}] /ON [${ocs}] >> >> >>`);
   pdf.obj(inf, `<< /Title ${pdfStr((S.pname||'Коробка')+' — развёртка')} /Creator (Skladka) /Producer (Skladka) >>`);
   if (!vec) toast('Шрифты не загрузились — текст в PDF картинкой 300 dpi, не в кривых.');
