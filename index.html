@@ -2488,7 +2488,9 @@ document.addEventListener('keydown', e => {
 /* ---------- UI ---------- */
 function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
-  for (const id of ['L','W','H']) $(id).value = +(S[id]/UF()).toFixed(S.unit==='mm'?1:2);
+  for (const id of ['L','W','H']){ const el = $(id); el.dataset.min ??= el.min; el.dataset.max ??= el.max;   // limits and arrow step follow the unit
+    el.min = +(el.dataset.min/UF()).toFixed(2); el.max = +(el.dataset.max/UF()).toFixed(2); el.step = S.unit==='mm' ? 1 : S.unit==='cm' ? .1 : .05;
+    if (document.activeElement !== el) el.value = +(S[id]/UF()).toFixed(S.unit==='mm'?1:2); }
   $('dimTitle').textContent = BOX.has(S.type) ? `Dimensions, ${UNAME[S.unit]} (${{inner:'inside',outer:'outside',mfg:'crease to crease'}[S.dimMode]})` : `Size and shape, ${UNAME[S.unit]}`;
   $('bgOpts').hidden = S.bgMode==='solid'; $('gradOpts').hidden = S.bgMode!=='grad'; $('patOpts').hidden = S.bgMode!=='pattern';
   $('gradAngO').textContent = S.gradAng+'°'; $('patScaleO').textContent = S.patScale+' mm';
@@ -2644,7 +2646,7 @@ const UF = () => ({mm:1, cm:10, in:25.4}[S.unit] || 1), UNAME = {mm:'mm', cm:'cm
 let keepCam = false;
 function bindInputs(){
   for (const id of NUM){ const el=$(id); if (!el || ['lInt','lAng','shadow'].includes(id)) continue;
-    el.addEventListener('input',()=>{ let v=parseFloat(el.value); if (!isFinite(v)) return; if (['L','W','H'].includes(id)) v*=UF(); S[id]=clamp(v,+el.min,+el.max);
+    el.addEventListener('input',()=>{ let v=parseFloat(el.value); if (!isFinite(v)) return; if (['L','W','H'].includes(id)) v = Math.round(v*UF()*100)/100; S[id]=clamp(v, +(el.dataset.min ?? el.min), +(el.dataset.max ?? el.max));
       if (['gradAng','patScale'].includes(id)){ $(id+'O').textContent = S[id] + (id==='gradAng'?'°':' mm'); persist(); refresh(); return; }
       if (['sheetW','sheetH','grip','impGap','qty'].includes(id)){ S.sheetFmt = ['sheetW','sheetH'].includes(id) ? 'custom' : S.sheetFmt; persist(); renderImp(); return; }
       if (VIEW_ONLY.includes(id)){ keepCam = true; if ($(id+'O')) $(id+'O').textContent = S[id]+'%'; }
