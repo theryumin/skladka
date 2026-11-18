@@ -1318,9 +1318,13 @@ function buildBakeryMailer(P,B){
 // front-opening cake box (hood lid): base = bottom + back + sides + a front lip with wings; corners lock without glue —
 // the back-wall ears end in a tongue that pushes through a slit in the side wall. The lid is a hood: top + front wall
 // (thumb notch) + full side walls that slide down over the base sides; its front ears tuck inside the hood sides.
+// hook lock: a narrow neck (fits the slit) widens into barbs that point back toward the ear, then a semicircular head.
+// The head squeezes through the slit, the barbs spring out behind the wall and hook — it can't slip back out.
 function earLock(hx,ya,yb,dx,tp,tw,tl){
-  const s = Math.sign(dx), ym = (ya+yb)/2, x = hx+dx;
-  return [[hx,ya],[x,ya+tp],[x,ym-tw/2],[x+s*tl,ym-tw/2+2],[x+s*tl,ym+tw/2-2],[x,ym+tw/2],[x,yb-tp],[hx,yb]];
+  const s = Math.sign(dx), ym = (ya+yb)/2, x = hx+dx, w = tw-1, n = 2.5, b = clamp(tw*.18, 2, 3.5);
+  const R = Math.min(w/2+b, (yb-ya)/2-tp-1), D = Math.min(R, 11), xc = x+s*n, head = [];   // semicircle (flattened on very wide tongues)
+  for (let i = 0; i <= 14; i++){ const t = -PI/2 + PI*i/14; head.push([xc+s*D*Math.cos(t), ym+R*Math.sin(t)]); }
+  return [[hx,ya],[x,ya+tp],[x,ym-w/2],[xc,ym-w/2],[xc-s*1.2,ym-R], ...head.slice(1,-1), [xc-s*1.2,ym+R],[xc,ym+w/2],[x,ym+w/2],[x,yb-tp],[hx,yb]];
 }
 function buildBakeryFront(P,B){
   const L=P.L, W=P.W, H=P.H, g=1.5, lp = clamp(H*.28, 12, 40), tp = Math.min(6, H*.2);
