@@ -87,6 +87,11 @@ h3.psub{margin:14px 0 8px}
 .uchip .chip{border:0;border-radius:0}
 .uchip .chip+.chip{border-left:1px solid var(--line);padding:5px 8px;color:var(--muted)}
 .uchip:has(.chip[aria-pressed=true]){border-color:var(--accent)}
+.lockgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lockc{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--fg);cursor:pointer;font:inherit}
+.lockc svg{grid-row:1/3;width:44px;height:34px;color:var(--muted)}
+.lockc b{font:600 12.5px var(--sans)} .lockc span{font:400 11px var(--sans);color:var(--muted);line-height:1.25}
+.lockc:hover{border-color:var(--accent)} .lockc[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset} .lockc[aria-pressed="true"] svg{color:var(--accent)}
 .chip{border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:99px;padding:5px 11px;font:500 12px var(--sans);cursor:pointer}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
 .mine{display:grid;gap:6px}
@@ -475,6 +480,20 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
 
     <section data-pane="build">
       <h2>Structure</h2>
+      <div data-for="bakery" class="sub" style="padding-left:0">
+        <div class="f" style="margin-bottom:6px">Closure / lock</div>
+        <div class="lockgrid" id="bkLockCards">
+          <button type="button" class="lockc" data-lock="tuck"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 14h26v15H6zM32 14l6-5v15l-6 5M6 14l6-5h26"/><path d="M17 14a2 2 0 0 0 4 0" /><path d="M12 9l-2 7" stroke-dasharray="2 2"/></svg><b>Tuck lid</b><span>Classic, cheapest</span></button>
+          <button type="button" class="lockc" data-lock="side"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 14h26v15H6zM32 14l6-5v15l-6 5M6 14l6-5h26"/><path d="M35 15v5" stroke-width="2.2"/><path d="M41 17h-4m2-2 2 2-2 2"/></svg><b>Side-lock</b><span>Stays shut in delivery</span></button>
+          <button type="button" class="lockc" data-lock="tongue"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 14h26v15H6zM32 14l6-5v15l-6 5M6 14l6-5h26"/><path d="M6 14v6h26v-6"/><path d="M16 20h6l-1 3h-4z"/><path d="M15 23.5h8" stroke-width="2"/></svg><b>Tongue lock</b><span>Front flap into a slot</span></button>
+          <button type="button" class="lockc" data-lock="hood"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 20h26v9H6zM32 20l6-5v9l-6 5"/><path d="M12 15l26 0M12 15l-6 5M12 15V3h26v12"/><path d="M6 20v-4M32 20v-4"/></svg><b>Front-opening</b><span>Lid + front swing up</span></button>
+          <button type="button" class="lockc" data-lock="gusset"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M5 12h22v18H5zM27 12l10-8v18l-10 8"/><path d="M27 12l5 9 5-17"/><path d="M27 30l5-9"/></svg><b>Gusset corners</b><span>No gaps, pops up</span></button>
+        </div>
+        <select id="bkLock" hidden><option value="tuck">Tuck lid</option><option value="side">Side-lock</option><option value="tongue">Tongue lock</option><option value="hood">Front-opening</option><option value="gusset">Gusset corners</option></select>
+        <p class="note" id="bkNote" style="margin-top:8px"></p>
+        <label class="chk"><input id="bkWin" type="checkbox"> Window in the lid</label>
+        <label class="f">Window margin from the lid edges, mm<input id="bkWm" type="number" min="8" max="150" step="1"></label>
+      </div>
       <div data-for="tube" class="sub" style="padding-left:0">
         <div class="row2">
           <label class="f">Top<select id="topClose"><option value="tuck">Tuck flap</option><option value="seal">Glued</option><option value="open">Open</option></select></label>
@@ -569,17 +588,6 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
           <label class="f">Strip width, mm<input id="tearW" type="number" min="3" max="20" step="1"></label>
         </div>
         </div>
-      </div>
-      <div data-for="bakery" class="sub" style="padding-left:0">
-        <label class="f">Closure / lock<select id="bkLock">
-          <option value="tuck">Tuck lid + thumb notch</option>
-          <option value="side">Side-lock: lid flaps lock into wall slits</option>
-          <option value="tongue">Tongue lock: front flap into a slot</option>
-          <option value="hood">Front-opening hood, tab-and-slit corners</option>
-          <option value="gusset">Webbed (gusset) corners + tuck lid</option></select></label>
-        <label class="chk"><input id="bkWin" type="checkbox"> Window in the lid</label>
-        <label class="f">Window margin from the lid edges, mm<input id="bkWm" type="number" min="8" max="150" step="1"></label>
-        <p class="note" id="bkNote"></p>
       </div>
       <div data-for="mailer" class="sub" style="padding-left:0">
         <p class="note">Double side walls, dust ears and locking tabs, no glue. Usually made from E-flute corrugated. Keep the height below the width.</p>
@@ -2697,6 +2705,7 @@ const BK_NOTES = {
   hood:'Lid, front wall and sides open together, so a tall cake slides in from the front. Base corners: ears with tongues locked in side-wall slits, front lip with wings. No glue.',
   gusset:'Webbed corners: each corner is a folded web, no gaps — cream and crumbs stay in, the tray pops up from flat. Tuck lid.'};
 function syncTypeUI(){
+  document.querySelectorAll('#bkLockCards [data-lock]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lock===(S.bkLock||'tuck')));
   if ($('bkNote')) $('bkNote').textContent = (BK_NOTES[S.bkLock] || BK_NOTES.tuck) + ' Food-safe board; for a window glue clear film behind it.';
   document.querySelectorAll('[data-size]').forEach(el => el.hidden = el.dataset.size !== S.type);
   if (S.type==='label'){ const nv = S.vessel==='none' || S.vessel==='ptube';
@@ -2812,6 +2821,7 @@ function bindInputs(){
     if (el.type==='checkbox') el.addEventListener('change',()=>{ S[k]=el.checked; custom(); syncUI(); refresh(true); });
     else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
+  $('bkLockCards').addEventListener('click', e => { const b = e.target.closest('[data-lock]'); if (!b || S.bkLock===b.dataset.lock) return; S.bkLock = b.dataset.lock; fitNext = true; custom(); syncUI(); refresh(true); });
   for (const id of ['vessel','lshape','place','vglass','vcap','vfill','cupKind','fold']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; if (['vessel','cupKind','fold','place'].includes(id)) fitNext = true;
     if (id==='vessel'){ const V = VESSELS[S.vessel]; if (V.D) S.W = V.D; S.vBody = 0; S.vNeck = 100; if (S.vessel==='none'){ S.place='side'; S.wrap=false; } else S.lblY = S.vessel==='ptube' ? 0 : Math.round(V.zone[0] + (V.zone[1]-V.zone[0])*.12); }
     if (id==='fold' && ['neck','tag'].includes(S.fold)) S.holeD = S.fold==='neck' ? 31 : 5;
