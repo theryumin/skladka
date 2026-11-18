@@ -69,6 +69,13 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-rad
 .tpl:hover{border-color:var(--accent)}
 .tpl[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
 .presets{display:flex;flex-wrap:wrap;gap:6px}
+.presets:empty{display:none}
+h3.psub{margin:14px 0 8px}
+.chip.orig{border-style:dashed}
+.uchip{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;background:var(--field)}
+.uchip .chip{border:0;border-radius:0}
+.uchip .chip+.chip{border-left:1px solid var(--line);padding:5px 8px;color:var(--muted)}
+.uchip:has(.chip[aria-pressed=true]){border-color:var(--accent)}
 .chip{border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:99px;padding:5px 11px;font:500 12px var(--sans);cursor:pointer}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
 .mine{display:grid;gap:6px}
@@ -355,7 +362,33 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
         <label class="f"><span id="lW">Width</span><input id="W" type="number" min="10" max="800" step="1"></label>
         <label class="f"><span id="lH">Height</span><input id="H" type="number" min="5" max="800" step="1"></label>
       </div>
+      <div class="sub" style="padding:0" data-size="label" id="vesselBox">
+        <label class="f">Container<select id="vessel"></select></label>
+        <div class="row2">
+          <label class="f" id="vBodyWrap">Body height to the shoulder, mm<input id="vBody" type="number" min="10" max="600" step="1"></label>
+          <label class="f" id="vNeckWrap">Neck length, %<input id="vNeck" type="number" min="40" max="250" step="5"></label>
+        </div>
+        <h3 class="psub" id="vPresetsH">Standard containers</h3>
+        <div class="presets" id="vPresets"></div>
+        <h3 class="psub">Label sizes</h3>
+      </div>
       <div class="presets" id="presets"></div>
+      <div class="presets" id="myPresets"></div>
+      <div class="sub" style="padding:0" data-size="cup">
+        <h3>Cup shape</h3>
+        <div class="row">
+          <label class="f">Glue overlap, mm<input id="cupOv" type="number" min="0" max="30" step="1" title="0 — standard (8 mm, sleeve 12 mm)"></label>
+          <label class="f">Rim curl Ø, mm<input id="cupRim" type="number" min="1" max="10" step="0.2"></label>
+          <label class="f">Bottom recess, mm<input id="cupBot" type="number" min="2" max="30" step="0.5"></label>
+        </div>
+        <p class="note">Overlap 0 — standard: 8 mm for a cup, 12 mm for a sleeve.</p>
+      </div>
+      <div class="sub" style="padding:0" data-size="card" id="cardShape">
+        <h3>Shape</h3>
+        <label class="f" id="tagCWrap">Corner cut-off at the top, mm (0 — square)<input id="tagC" type="number" min="0" max="40" step="1"></label>
+        <label class="f" id="envFWrap">Bottom flap depth, % of height<input id="envF" type="number" min="25" max="98" step="1"></label>
+        <label class="f" id="holeSWrap">Hole Ø, mm<input id="holeD2" type="number" min="2" max="60" step="0.5"></label>
+      </div>
       <p class="note" id="prodNote"></p>
     </section>
 
@@ -418,7 +451,6 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
       </div>
       <div data-for="label" class="sub" style="padding-left:0">
         <div class="row2">
-          <label class="f">Container<select id="vessel"></select></label>
           <label class="f">Label shape<select id="lshape"><option value="rect">Rectangle</option><option value="oval">Oval</option><option value="circle">Circle</option></select></label>
           <label class="f" id="placeWrap">Placement<select id="place"><option value="side">On the side</option><option value="top">On the lid / top</option></select></label>
           <label class="f" id="lblYWrap">Bottom edge from base, mm<input id="lblY" type="number" min="0" max="400" step="1"></label>
@@ -687,8 +719,12 @@ const TYPE_DIMS = {
 const BOX = new Set(['tube','tray','lidbase','mailer','drawer']);
 const TYPE_MAT = {label:'paper80', card:'card350', cup:'cupb', pouch:'carton05'};
 const TUBE_BASE = {topClose:'tuck',topLid:'back',botClose:'tuck',botLid:'front',window:false,hang:false,notch:true};
-const LBL_BASE = {vessel:'wine', lshape:'rect', wrap:false, place:'side', overlap:8, lblY:55, cornerR:0, vglass:'auto', vcap:'auto', vfill:'auto'};
-const CARD_BASE = {fold:'flat', holeD:5, cornerR:0};
+const LBL_BASE = {vessel:'wine', lshape:'rect', wrap:false, place:'side', overlap:8, lblY:55, cornerR:0, vglass:'auto', vcap:'auto', vfill:'auto', vBody:0, vNeck:100};
+const CARD_BASE = {fold:'flat', holeD:5, cornerR:0, tagC:9, envF:62};
+const CUP_BASE = {cupOv:0, cupRim:3.4, cupBot:7};
+const SHAPE_BASE = {label:{vBody:0, vNeck:100}, cup:CUP_BASE, card:{tagC:9, envF:62}};
+// everything the Size pane controls: what a size preset stores and what “Template original” restores
+const SIZE_KEYS = ['L','W','H','vBody','vNeck','lblY','overlap','cupOv','cupRim','cupBot','tagC','envF','holeD'];
 const TPL = [
   {id:'rte',   type:'tube', cat:'box', name:'Reverse tuck end', set:{...TUBE_BASE}},
   {id:'ste',   type:'tube', cat:'box', name:'Straight tuck end', set:{...TUBE_BASE, botLid:'back'}},
@@ -782,13 +818,34 @@ const SIZE_CHIPS = {
   mailer:[['S','220,160,70'],['M','300,220,100'],['L','400,300,120']],
   drawer:[['Sweets','200,100,50'],['Tea','150,100,40'],['Jewellery','100,100,35']],
   pouch:[['250 g','130,70,200'],['500 g','160,90,250'],['1 kg','190,110,300']],
-  label:[['Wine 750 ml','90,75,100'],['Beer 330 ml','190,60,75'],['Jar 0.5 l','260,80,60'],['Can 400 g','240,73,98'],['Dropper 30 ml','80,32,38']],
-  cup:[['4 oz','62,45,60'],['8 oz','80,55,95'],['12 oz','90,60,112'],['16 oz','90,60,135']],
+  label:[['Front 90×100','90,0,100'],['Back 70×90','70,0,90'],['Neck 60×25','60,0,25'],['Square 60×60','60,0,60'],['Small 50×30','50,0,30'],['Wide 120×80','120,0,80']],
+  cup:[['4 oz','62,46,60'],['7 oz','73,52,80'],['8 oz','80,55,95'],['10 oz','90,58,97'],['12 oz','90,60,112'],['16 oz','90,60,135'],['20 oz','90,62,158']],
   card:[['A6','148,10,105'],['A5','148,10,210'],['DL','99,10,210'],['Business card','85,10,55'],['Square','120,10,120']],
+};
+// card sizes depend on the format
+const CARD_CHIPS = {
+  bi:[['A6 folded','105,0,148'],['A5 folded','148,0,210'],['Square','150,0,150']],
+  tri:[['DL from A4','99,0,210'],['Small','70,0,140']], z:[['DL from A4','99,0,210'],['Small','70,0,140']],
+  tent:[['A6','148,0,105'],['DL','210,0,99'],['A5','210,0,148']],
+  tag:[['S 40×70','40,0,70'],['M 50×90','50,0,90'],['L 60×110','60,0,110'],['Long 45×120','45,0,120']],
+  neck:[['Standard 75×170','75,0,170'],['Short 70×120','70,0,120'],['Wide 90×200','90,0,200']],
+  topper:[['S 100×40','100,0,40'],['M 120×50','120,0,50'],['L 180×60','180,0,60']],
+  env:[['C6 162×114','162,0,114'],['DL 220×110','220,0,110'],['C5 229×162','229,0,162'],['Square 155×155','155,0,155']],
+};
+// standard container sizes: [name, Ø, body height to shoulder, neck %]
+const VPRESETS = {
+  wine:[['187 ml',56,140,80],['375 ml',62,170,90],['750 ml',75,205,100],['1.5 l magnum',100,245,110]],
+  beer:[['330 ml long-neck',60,115,100],['330 ml stubby',62,92,40],['500 ml',70,140,100]],
+  jar:[['100 ml',55,45],['250 ml',66,62],['500 ml',80,80],['720 ml',85,105]],
+  can:[['200 g',73,52],['400 g',73,105],['800 g',99,112],['3 kg',153,168]],
+  dropper:[['10 ml',22,36],['30 ml',32,52],['50 ml',36,62],['100 ml',45,78]],
+  candle:[['Small',65,68],['Medium',80,86],['Large',100,104]],
+  pump:[['100 ml',40,95],['250 ml',50,118],['500 ml',65,152]],
+  ptube:[['Ø 50',50],['Ø 75',75],['Ø 100',100]],
 };
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
   winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
-  ...LBL_BASE, ...CARD_BASE, cupKind:'cup', cupLid:false, base:'',
+  ...LBL_BASE, ...CARD_BASE, cupKind:'cup', cupLid:false, ...CUP_BASE, base:'', tplOrig:'',
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'FOREST TEA', sub:'blend No.4 · 100 g',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
   mat:'carton05', white:'', bgMode:'solid', bg2:'#c9a227', gradAng:90, pattern:'dots', patScale:10, cornerR:0, vents:0, ventD:8, tear:false, tearY:70, tearW:6, grain:'any', thick:0.5, dimMode:'inner', unit:'mm', bleed:3, safe:3, method:'digital', sides:'40',
@@ -801,12 +858,12 @@ const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|IBM Plex Sans','Plex Sans
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair bold'],['500|Oswald','Oswald'],['500|Caveat','Caveat, handwritten']];
 const uid = () => Math.random().toString(36).slice(2,9);
 const FACE_NAMES = {drawer:'Drawer base', pull:'Drawer end', front:'Front', back:'Back', side1:'Right side', side2:'Left side', top:'Top', bottom:'Bottom', mid:'Middle panel', flap:'Fold-in flap', layout:'Whole dieline (PNG on the template)'};
-const NUM = ['gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow','hdr','overlap','lblY','holeD'];
-const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl'};
+const NUM = ['gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow','hdr','overlap','lblY','holeD','vBody','vNeck','cupOv','cupRim','cupBot','tagC','envF'];
+const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl', holeD2:'holeD'};
 const DIM_LABELS = {pouch:['Width','Gusset depth','Height'], label:['Label width','Container Ø','Label height'], cup:['Rim Ø (top)','Base Ø','Height'], card:['Width (folded)',null,'Height']};
 const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern','vessel','lshape','place','vglass','vcap','vfill','cupKind','fold'];
 const CHK = ['notch','window','hang','showText','showLines','dbl','tear','wrap','cupLid'];
-const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl','hdr',...Object.keys(LBL_BASE),...Object.keys(CARD_BASE),'cupKind','cupLid'];
+const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl','hdr',...Object.keys(LBL_BASE),...Object.keys(CARD_BASE),'cupKind','cupLid',...Object.keys(CUP_BASE)];
 
 const store = {
   get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -1032,6 +1089,13 @@ const VESSELS = {
   ptube:  {n:'Paper tube with lid',  D:75, zone:[0,9999], top:0},
   none:   {n:'Flat sticker (on liner)', D:0, zone:[0,0], top:0},
 };
+const NECK = {wine:[262,288], beer:[176,214]};
+// a container keeps its own shape but the body height and neck length are free: nominal y → real y, radius × k
+function vMap(P){
+  const V = VESSELS[P.vessel] || VESSELS.wine, k = V.D ? +P.W/V.D : 1, Z = V.zone[1], hb = +P.vBody > 0 ? +P.vBody : Z*k, kb = hb/Z, nf = (+P.vNeck||100)/100, N = NECK[P.vessel];
+  const Y = y => y <= Z ? y*kb : hb + (y - Z + (N && y > N[0] ? (Math.min(y, N[1]) - N[0])*(nf-1) : 0))*k;
+  return {k, Y, hb, bot: V.zone[0]*kb, top: V.top ? Y(V.top) : 0};
+}
 const labelL = P => P.wrap && P.vessel!=='none' && P.place!=='top' ? Math.round((PI*P.W + (+P.overlap||0))*10)/10 : +P.L;
 const ellipsePoly = (cx,cy,a,b,n=96) => Array.from({length:n}, (_,i) => { const t = i/n*2*PI; return [cx+a*Math.cos(t), cy+b*Math.sin(t)]; });
 function buildLabel(P,B){
@@ -1044,8 +1108,8 @@ function buildLabel(P,B){
 }
 function cupGeom(P){
   const R1 = P.L/2, R0 = Math.min(P.W/2, R1-1), H = +P.H, dr = R1-R0, s = Math.hypot(H,dr), rho0 = R0*s/dr, rho1 = rho0+s;
-  const ov = P.cupKind==='sleeve' ? 12 : 8, th = 2*PI*R1/rho1;
-  return {R0, R1, H, s, rho0, rho1, ov, th, A: th + ov/rho1, kind:P.cupKind, lid:!!P.cupLid};
+  const ov = +P.cupOv > 0 ? +P.cupOv : P.cupKind==='sleeve' ? 12 : 8, th = 2*PI*R1/rho1;
+  return {R0, R1, H, s, rho0, rho1, ov, th, A: th + ov/rho1, kind:P.cupKind, lid:!!P.cupLid, rim: clamp(+P.cupRim||3.4, 1, 10), bot: clamp(+P.cupBot||7, 2, H*.4)};
 }
 // a cup wall / sleeve is a flat annular sector ("fan") that rolls into a cone
 function buildCup(P,B){
@@ -1085,8 +1149,8 @@ function buildCard(P,B){
     B.add('tab','back',[0,2*H],'x',-(90-lean)*DEG,[.7,.98],rect(0,2*H,L,2*H+tb));
     B.face('front',[0,0,L,H]); B.face('back',[0,H,L,2*H],PI); return {};
   }
-  if (f==='tag'){ const c = Math.min(L*.2, 9), hy = H - c - hd/2 - 2;
-    B.add('front',null,[0,0],null,0,null,[[0,0],[L,0],[L,H-c],[L-c,H],[c,H],[0,H-c]],{holes:[circle(L/2,hy,hd/2)],
+  if (f==='tag'){ const c = Math.max(0, Math.min(L*.45, H*.3, P.tagC ?? 9)), hy = H - c - hd/2 - 2;
+    B.add('front',null,[0,0],null,0,null,c < .5 ? rect(0,0,L,H) : [[0,0],[L,0],[L,H-c],[L-c,H],[c,H],[0,H-c]],{holes:[circle(L/2,hy,hd/2)],
       final:{p:[0,0,0], q:qOf(['y',-14*DEG])}, flat:{p:[0,0,H*.6], q:Q_LID}});
     B.face('front',[0,0,L,hy-hd/2-2]); return {tag:{x:L/2, y:hy, r:hd/2}};
   }
@@ -1108,7 +1172,7 @@ function buildCard(P,B){
     B.add('back','front',[0,H],'x',-178*DEG,[.1,.9],rect(0,H,L,2*H),{holes:[euroHole(L/2,2*H-eh,a)]});
     B.face('front',[0,0,L,H]); B.face('back',[0,H,L,2*H],PI); return {topper:{L,H}};
   }
-  if (f==='env'){ const d = Math.min(L*.2, 32), bd = H*.62, td = H*.48;
+  if (f==='env'){ const d = Math.min(L*.2, 32), fr = clamp(+P.envF||62, 25, 98)/100, bd = H*fr, td = H*.48*Math.min(1.4, fr/.62);
     B.add('front',null,[0,0],null,0,null,rect(0,0,L,H),{final:{p:[0,0,0], q:qOf(['x',6*DEG],['y',PI])}});
     B.add('sl','front',[0,0],'y',-171*DEG,[0,.3],[[0,0],[0,H],[-d,H*.74],[-d,H*.2]]);
     B.add('sr','front',[L,0],'y',171*DEG,[.05,.35],[[L,0],[L+d,H*.2],[L+d,H*.74],[L,H]]);
@@ -1432,7 +1496,7 @@ function thumbSvg(G){
   const {minX,maxY,w,h} = G.b, X = x=>f2(x-minX), Y = y=>f2(maxY-y);
   const lines = l => l.map(([a,b])=>`M${X(a[0])} ${Y(a[1])}L${X(b[0])} ${Y(b[1])}`).join('');
   const Lb = G.lbl, V = Lb && VESSELS[Lb.vessel];
-  let prof = Lb && (Lb.vessel==='ptube' ? [[Lb.D/2,0],[Lb.D/2,Lb.H]] : VSIL[Lb.vessel]?.map(([r,y]) => [r*Lb.D/V.D, y*Lb.D/V.D]));
+  let prof = Lb && (Lb.vessel==='ptube' ? [[Lb.D/2,0],[Lb.D/2,Lb.H]] : (M => VSIL[Lb.vessel]?.map(([r,y]) => [r*M.k, M.Y(y)]))(vMap(G.P)));
   if (!prof){ const sw = f2(Math.max(w,h)/90);
     return `<svg viewBox="0 0 ${f2(w)} ${f2(h)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${lines(G.creases)}" fill="none" stroke="var(--crease)" stroke-width="${sw}" stroke-dasharray="${sw*3} ${sw*2}"/><path d="${lines(G.cuts)}" fill="none" stroke="var(--fg)" stroke-width="${sw}"/></svg>`; }
   // flat label on the left, the container with the label on it on the right
@@ -1555,41 +1619,41 @@ function knurl(r, h, n, depth=.025){
 // container under the label; returns the radius the label wraps at and the height of its top
 function vesselMeshes(kind, D, H, grp){
   const V = VESSELS[kind]; if (!V || kind==='none') return {R:0, top:0};
-  const k = kind==='ptube' ? 1 : D / V.D, gl = glassMat(S.vglass!=='auto' ? S.vglass : (V.glass || 'clear')), cap = capMat(S.vcap!=='auto' ? S.vcap : (V.cap || 'gold'));
+  const M = vMap(S), k = kind==='ptube' ? 1 : M.k, Y = M.Y, lathe2 = (pts) => lathe(pts.map(([r,y]) => [r, Y(y)/k]), k), gl = glassMat(S.vglass!=='auto' ? S.vglass : (V.glass || 'clear')), cap = capMat(S.vcap!=='auto' ? S.vcap : (V.cap || 'gold'));
   const fillKey = S.vfill!=='auto' ? S.vfill : (kind==='candle' ? 'cream' : 'jam'), F = FILLS[fillKey];
   if (kind==='wine'){
-    mesh(lathe([[0,12],[13,8.5],[29,2],[35.8,.4],[37.5,4],[37.5,205],[36.8,214],[34,224],[28,236],[21,247],[16,256],[14.6,262],[14.6,288],[15.6,290],[15.6,296],[14,299.6],[10,300],[9.6,297]], k), gl, grp);
-    mesh(lathe([[16.3,257],[15.25,262],[15.25,288],[16.15,290],[16.15,299],[15.8,301],[0,301.4]], k), vm(THREE.MeshStandardMaterial, {color:0x4a0e1d, metalness:.55, roughness:.32}), grp);
-    mesh(new THREE.TorusGeometry(16.2*k, .35*k, 8, 96), plainMat(0xcaa54b,.3,1), grp, 286*k).rotation.x = PI/2;
+    mesh(lathe2([[0,12],[13,8.5],[29,2],[35.8,.4],[37.5,4],[37.5,205],[36.8,214],[34,224],[28,236],[21,247],[16,256],[14.6,262],[14.6,288],[15.6,290],[15.6,296],[14,299.6],[10,300],[9.6,297]], k), gl, grp);
+    mesh(lathe2([[16.3,257],[15.25,262],[15.25,288],[16.15,290],[16.15,299],[15.8,301],[0,301.4]], k), vm(THREE.MeshStandardMaterial, {color:0x4a0e1d, metalness:.55, roughness:.32}), grp);
+    mesh(new THREE.TorusGeometry(16.2*k, .35*k, 8, 96), plainMat(0xcaa54b,.3,1), grp, Y(286)).rotation.x = PI/2;
   } else if (kind==='beer'){
-    mesh(lathe([[0,6],[20,3.2],[28.6,.5],[30,3.5],[30,115],[29,125],[25,140],[18,155],[13.6,168],[12.8,176],[12.8,214],[13.7,216.5],[13.7,221],[12.4,222.5],[9,222.5]], k), gl, grp);
-    const c = mesh(knurl(14.3*k, 6.5*k, 21, .045), cap, grp, 224.5*k);
-    mesh(new THREE.CylinderGeometry(13.2*k, 14.2*k, 1.2*k, 64), cap, grp, 228.2*k); c.castShadow = true;
+    mesh(lathe2([[0,6],[20,3.2],[28.6,.5],[30,3.5],[30,115],[29,125],[25,140],[18,155],[13.6,168],[12.8,176],[12.8,214],[13.7,216.5],[13.7,221],[12.4,222.5],[9,222.5]], k), gl, grp);
+    const c = mesh(knurl(14.3*k, 6.5*k, 21, .045), cap, grp, Y(224.5));
+    mesh(new THREE.CylinderGeometry(13.2*k, 14.2*k, 1.2*k, 64), cap, grp, Y(228.2)); c.castShadow = true;
   } else if (kind==='jar'){
-    mesh(lathe([[0,.2],[35,0],[39.2,1.4],[40,5],[40,80],[39.2,84],[36.5,87],[36.5,96]], k), gl, grp);
-    if (fillKey!=='none' && !(GLASS[S.vglass]?.o === undefined && S.vglass!=='auto')) mesh(new THREE.CylinderGeometry(38.2*k, 38.2*k, 76*k, 72), plainMat(F.c, F.r), grp, 40*k);
-    mesh(knurl(41*k, 14*k, 90, .012), cap, grp, 94*k);
-    mesh(new THREE.TorusGeometry(40.4*k, .9*k, 10, 96), cap, grp, 100.4*k).rotation.x = PI/2;
-    mesh(new THREE.CylinderGeometry(37*k, 37*k, .6*k, 72), cap, grp, 100.9*k);
+    mesh(lathe2([[0,.2],[35,0],[39.2,1.4],[40,5],[40,80],[39.2,84],[36.5,87],[36.5,96]], k), gl, grp);
+    if (fillKey!=='none' && !(GLASS[S.vglass]?.o === undefined && S.vglass!=='auto')) mesh(new THREE.CylinderGeometry(38.2*k, 38.2*k, 76*k, 72), plainMat(F.c, F.r), grp, Y(40));
+    mesh(knurl(41*k, 14*k, 90, .012), cap, grp, Y(94));
+    mesh(new THREE.TorusGeometry(40.4*k, .9*k, 10, 96), cap, grp, Y(100.4)).rotation.x = PI/2;
+    mesh(new THREE.CylinderGeometry(37*k, 37*k, .6*k, 72), cap, grp, Y(100.9));
   } else if (kind==='can'){
     const tin = vm(THREE.MeshStandardMaterial, {color:0xcdd1d4, metalness:1, roughness:.26, envMapIntensity:1.4});
-    mesh(lathe([[0,2.6],[31,2.8],[34.5,1.6],[36.8,.2],[37.5,1.6],[37.5,3.6],[36.5,4.6],[36.5,105.4],[37.5,106.4],[37.5,108.4],[36.8,109.8],[34.5,108.4],[31,107.2],[0,107.4]], k), tin, grp);
-    for (const r of [8,16,24]) mesh(new THREE.TorusGeometry(r*k, .55*k, 8, 72), tin, grp, 107.3*k).rotation.x = PI/2;
-    for (let y = 9; y < 102; y += 7) if (y < S.lblY || y > S.lblY + S.H) mesh(new THREE.TorusGeometry(36.5*k, .45*k, 8, 96), tin, grp, y*k).rotation.x = PI/2;
+    mesh(lathe2([[0,2.6],[31,2.8],[34.5,1.6],[36.8,.2],[37.5,1.6],[37.5,3.6],[36.5,4.6],[36.5,105.4],[37.5,106.4],[37.5,108.4],[36.8,109.8],[34.5,108.4],[31,107.2],[0,107.4]], k), tin, grp);
+    for (const r of [8,16,24]) mesh(new THREE.TorusGeometry(r*k, .55*k, 8, 72), tin, grp, Y(107.3)).rotation.x = PI/2;
+    for (let y = 9; y < 102; y += 7) if (Y(y) < S.lblY || Y(y) > S.lblY + S.H) mesh(new THREE.TorusGeometry(36.5*k, .45*k, 8, 96), tin, grp, Y(y)).rotation.x = PI/2;
   } else if (kind==='dropper'){
-    mesh(lathe([[0,2.2],[13,.3],[15.6,1.2],[16,3],[16,52],[15.3,56],[12.4,59.5],[9.6,61.6],[9.2,64],[9.2,66.5]], k), gl, grp);
-    mesh(knurl(10.6*k, 14*k, 36, .03), cap, grp, 70*k);
-    mesh(lathe([[9.7,76.8],[9.9,79],[8.8,83],[7.4,89],[7.9,94],[8.4,98],[7.5,102],[4.8,104.4],[0,105]], k), vm(THREE.MeshPhysicalMaterial, {color:0x1c1c1e, roughness:.45, clearcoat:.4}), grp);
+    mesh(lathe2([[0,2.2],[13,.3],[15.6,1.2],[16,3],[16,52],[15.3,56],[12.4,59.5],[9.6,61.6],[9.2,64],[9.2,66.5]], k), gl, grp);
+    mesh(knurl(10.6*k, 14*k, 36, .03), cap, grp, Y(70));
+    mesh(lathe2([[9.7,76.8],[9.9,79],[8.8,83],[7.4,89],[7.9,94],[8.4,98],[7.5,102],[4.8,104.4],[0,105]], k), vm(THREE.MeshPhysicalMaterial, {color:0x1c1c1e, roughness:.45, clearcoat:.4}), grp);
   } else if (kind==='candle'){
-    mesh(lathe([[0,.1],[35,0],[39,1.2],[40,4],[40,88.5],[39.3,90],[38.2,89.5],[38,6.5],[0,7]], k), gl, grp);
-    if (fillKey!=='none') mesh(new THREE.CylinderGeometry(37.9*k, 37.9*k, 62*k, 72), plainMat(F.c||0xefe6d2, .85), grp, 38*k);
-    mesh(new THREE.CylinderGeometry(.7*k, .9*k, 9*k, 10), plainMat(0x1d1a17,.9), grp, 73.5*k);
+    mesh(lathe2([[0,.1],[35,0],[39,1.2],[40,4],[40,88.5],[39.3,90],[38.2,89.5],[38,6.5],[0,7]], k), gl, grp);
+    if (fillKey!=='none') mesh(new THREE.CylinderGeometry(37.9*k, 37.9*k, 62*k, 72), plainMat(F.c||0xefe6d2, .85), grp, Y(38));
+    mesh(new THREE.CylinderGeometry(.7*k, .9*k, 9*k, 10), plainMat(0x1d1a17,.9), grp, Y(73.5));
   } else if (kind==='pump'){
-    mesh(lathe([[0,1],[21,0],[24.4,1.4],[25,5],[25,118],[24.2,123.5],[21,128],[15,131.5],[12.6,132.6],[12.6,136]], k), gl, grp);
-    mesh(knurl(13.8*k, 9*k, 48, .02), cap, grp, 138.5*k);
-    mesh(new THREE.CylinderGeometry(3.4*k, 3.4*k, 9*k, 24), cap, grp, 147*k);
-    mesh(lathe([[0,150.5],[8.6,150.5],[9.4,152],[9.4,159.5],[8.2,161.6],[0,162]], k), cap, grp);
-    const nz = mesh(new THREE.BoxGeometry(17*k, 4.2*k, 5.2*k), cap, grp, 158.4*k); nz.position.x = 13*k;
+    mesh(lathe2([[0,1],[21,0],[24.4,1.4],[25,5],[25,118],[24.2,123.5],[21,128],[15,131.5],[12.6,132.6],[12.6,136]], k), gl, grp);
+    mesh(knurl(13.8*k, 9*k, 48, .02), cap, grp, Y(138.5));
+    mesh(new THREE.CylinderGeometry(3.4*k, 3.4*k, 9*k, 24), cap, grp, Y(147));
+    mesh(lathe2([[0,150.5],[8.6,150.5],[9.4,152],[9.4,159.5],[8.2,161.6],[0,162]], k), cap, grp);
+    const nz = mesh(new THREE.BoxGeometry(17*k, 4.2*k, 5.2*k), cap, grp, Y(158.4)); nz.position.x = 13*k;
   } else if (kind==='ptube'){
     const r = D/2 - .15, t = bgMat();
     mesh(new THREE.CylinderGeometry(r, r, H, 96, 1, true), plainMat(0x9c7a52,.9), grp, H/2);
@@ -1599,7 +1663,7 @@ function vesselMeshes(kind, D, H, grp){
     mesh(new THREE.TorusGeometry(r+.35, .9, 10, 120), t, grp, H-.3).rotation.x = PI/2;
     return {R: r+.3, top: H+.6};
   }
-  return {R: D/2 + .3, top: V.top*k};
+  return {R: D/2 + .3, top: M.top};
 }
 function bgMat(){ const m = vm(THREE.MeshStandardMaterial, {color:S.bg, roughness:.7}); bgTint.push(m); return m; }
 function gridGeo(nu, nv, uvOf){
@@ -1657,8 +1721,8 @@ function cup3D(){
     mesh(new THREE.TorusGeometry(topR+.4, 1.6, 10, 120), paper, grp, topY).rotation.x = PI/2;
     grp.position.y = eb; body.castShadow = true;
   } else {
-    mesh(new THREE.CylinderGeometry(rAt(7), rAt(7), .6, 72), paper, extras, 7);
-    mesh(new THREE.TorusGeometry(c.R1+.5, 1.7, 10, 120), bgMat(), extras, c.H).rotation.x = PI/2;
+    mesh(new THREE.CylinderGeometry(rAt(c.bot), rAt(c.bot), .6, 72), paper, extras, c.bot);
+    mesh(new THREE.TorusGeometry(c.R1+c.rim*.3, c.rim/2, 10, 120), bgMat(), extras, c.H).rotation.x = PI/2;
   }
   if (c.lid) mesh(new THREE.LatheGeometry([[topR-1.5,topY-2],[topR+2.3,topY-1.4],[topR+2.6,topY+3.2],[topR+1.4,topY+5.2],[topR*.87,topY+6.2],[topR*.85,topY+11],[topR*.62,topY+13.2],[topR*.3,topY+13.6],[0,topY+13.4]].map(([r,y]) => new THREE.Vector2(r,y)), 96), plastic, sleeve ? grp : extras);
   const sinF = c.R1 / c.rho1, off = sleeve ? .9 : 0, ovFrom = c.A/2 - (c.A - c.th);
@@ -2073,7 +2137,7 @@ $('view2d').addEventListener('pointercancel', () => { dragging = false; pan = nu
 function syncUI(){
   for (const id of NUM){ if ($(id)) $(id).value = S[id]; }
   for (const id of ['L','W','H']) $(id).value = +(S[id]/UF()).toFixed(S.unit==='mm'?1:2);
-  $('dimTitle').textContent = `Dimensions, ${UNAME[S.unit]} (${{inner:'inside',outer:'outside',mfg:'crease to crease'}[S.dimMode]})`;
+  $('dimTitle').textContent = BOX.has(S.type) ? `Dimensions, ${UNAME[S.unit]} (${{inner:'inside',outer:'outside',mfg:'crease to crease'}[S.dimMode]})` : `Size and shape, ${UNAME[S.unit]}`;
   $('bgOpts').hidden = S.bgMode==='solid'; $('gradOpts').hidden = S.bgMode!=='grad'; $('patOpts').hidden = S.bgMode!=='pattern';
   $('gradAngO').textContent = S.gradAng+'°'; $('patScaleO').textContent = S.patScale+' mm';
   $('thickWrap').hidden = S.mat!=='custom'; $('tearOpts').hidden = !S.tear; $('cornerRO').textContent = S.cornerR+' mm';
@@ -2088,10 +2152,51 @@ function syncUI(){
   $('winOpts').hidden = !S.window; $('hangOpts').hidden = !S.hang;
   $('topLid').disabled = S.topClose!=='tuck' || S.hang; $('botLid').disabled = S.botClose!=='tuck';
   document.querySelectorAll('.tpl').forEach(b => b.setAttribute('aria-pressed', b.dataset.id===S.tpl));
-  $('presets').innerHTML = (SIZE_CHIPS[S.type]||[]).map(([n,d])=>`<button class="chip" data-d="${d}">${n} ${d.replaceAll(',','×')}</button>`).join('');
+  renderPresets();
+}
+// ---------- Size pane: standard sizes, the template original and my own sizes
+const chipDims = d => d.split(',').map(Number);
+const dimTxt = (d, t) => { const [l,w,h] = chipDims(d); return t==='label' || t==='card' ? `${l}×${h}` : t==='cup' ? `Ø${l}/${w}×${h}` : `${l}×${w}×${h}`; };
+const sizeChips = () => S.type==='card' ? CARD_CHIPS[S.fold] || SIZE_CHIPS.card : SIZE_CHIPS[S.type] || [];
+const hitDims = d => { const [l,w,h] = chipDims(d); return +S.L===l && +S.H===h && (S.type==='label' || S.type==='card' || +S.W===w); };
+const myPresets = () => store.get('skladka-sizes', {});
+function tplOrig(){ const t = TPL.find(x => x.id===S.tplOrig); if (!t || t.type!==S.type) return null;
+  const P = {...DEFAULTS, ...TYPE_DIMS[t.type], ...(SHAPE_BASE[t.type]||{}), ...t.set}, o = {};
+  for (const k of SIZE_KEYS) o[k] = P[k]; if (t.type==='label') o.vessel = P.vessel; if (t.type==='card') o.fold = P.fold; return {t, o}; }
+const sameVals = o => Object.entries(o).every(([k,v]) => String(S[k])===String(v));
+function renderPresets(){
+  const orig = tplOrig(), mine = (myPresets()[S.type]||[]);
+  $('presets').innerHTML = (orig ? `<button type="button" class="chip orig" data-orig="1" aria-pressed="${sameVals(orig.o)}" title="Back to the sizes of “${esc(orig.t.name)}”">↺ Original</button>` : '') +
+    sizeChips().map(([n,d]) => `<button type="button" class="chip" data-d="${d}" aria-pressed="${hitDims(d)}">${n}${/\d×\d/.test(n) ? '' : ' · '+dimTxt(d, S.type)}</button>`).join('');
+  $('myPresets').innerHTML = mine.map((p,i) => `<span class="uchip"><button type="button" class="chip" data-u="${i}" aria-pressed="${sameVals(p.v)}">★ ${esc(p.n)}</button><button type="button" class="chip" data-ux="${i}" aria-label="Delete size ${esc(p.n)}">×</button></span>`).join('') +
+    `<button type="button" class="chip" id="savePreset">+ Save this size</button>`;
+  const lab = S.type==='label', VP = lab && VPRESETS[S.vessel] || [];
+  $('vPresetsH').hidden = !VP.length;
+  $('vPresets').innerHTML = VP.map(([n,D,b,nk],i) => `<button type="button" class="chip" data-v="${i}" aria-pressed="${+S.W===D && (b===undefined || Math.round(vMap(S).hb)===b) && (nk===undefined || +S.vNeck===nk)}">${n} · Ø${D}${b ? ' × '+b : ''}</button>`).join('');
+}
+function bindPresets(){
+  const done = () => { syncUI(); refresh(true); };
+  $('presets').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.orig){ const o = tplOrig(); if (o){ Object.assign(S, o.o); toast('Back to the template sizes'); } return done(); }
+    const [l,w,h] = chipDims(b.dataset.d); S.L = l; S.H = h; if (S.type!=='label' && S.type!=='card') S.W = w; done(); });
+  $('vPresets').addEventListener('click', e => { const i = e.target.closest('[data-v]')?.dataset.v; if (i===undefined) return;
+    const [, D, b, nk] = VPRESETS[S.vessel][i]; S.W = D; S.vBody = b || 0; S.vNeck = nk || 100;
+    if (S.vessel!=='ptube'){ const M = vMap(S), lh = S.lshape==='circle' ? labelL(S) : +S.H; if (+S.lblY + lh > M.hb) S.lblY = Math.max(Math.round(M.bot), Math.round(M.hb - lh - 3)); }
+    done(); });
+  $('myPresets').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const all = myPresets(), list = all[S.type] ||= [];
+    if (b.id==='savePreset'){ const v = {}; for (const k of SIZE_KEYS) v[k] = S[k]; if (S.type==='label') v.vessel = S.vessel; if (S.type==='card') v.fold = S.fold;
+      const n = (prompt('Name for this size', tplSize(S)) || '').trim(); if (!n) return;
+      list.push({n:n.slice(0,40), v}); store.set('skladka-sizes', all); renderPresets(); toast(`Saved “${n}” — it is in Size for every ${(TYPE_NAMES[S.type]||'').toLowerCase()} project`); return; }
+    if (b.dataset.ux !== undefined){ list.splice(+b.dataset.ux, 1); store.set('skladka-sizes', all); renderPresets(); return; }
+    if (b.dataset.u !== undefined){ Object.assign(S, list[+b.dataset.u].v); done(); } });
 }
 // type-specific controls and notes in the Structure pane
 function syncTypeUI(){
+  document.querySelectorAll('[data-size]').forEach(el => el.hidden = el.dataset.size !== S.type);
+  if (S.type==='label'){ const nv = S.vessel==='none' || S.vessel==='ptube';
+    $('vBodyWrap').hidden = nv; $('vNeckWrap').hidden = !NECK[S.vessel]; if (!nv) $('vBody').value = +vMap(S).hb.toFixed(1); }
+  if (S.type==='card'){ $('tagCWrap').hidden = S.fold!=='tag'; $('envFWrap').hidden = S.fold!=='env'; $('holeSWrap').hidden = !['tag','neck','topper'].includes(S.fold);
+    $('cardShape').hidden = !['tag','env','neck','topper'].includes(S.fold); }
   const lab = S.type==='label', none = S.vessel==='none', wrapOn = lab && S.wrap && !none && S.place!=='top';
   $('L').disabled = wrapOn; if (wrapOn) $('L').value = +(labelL(S)/UF()).toFixed(1);
   $('H').disabled = lab && S.lshape==='circle'; if ($('H').disabled) $('H').value = +(labelL(S)/UF()).toFixed(1);
@@ -2106,7 +2211,7 @@ function syncTypeUI(){
     else if (wrapOn) n.push(`Full wrap: π × ${D} + ${S.overlap} mm overlap = ${L} mm. The front panel is in the middle, the seam at the back.`);
     else { n.push(`Visible from the front: about ${Math.min(L, D).toFixed(0)} mm of ${L} mm.`);
       if (L > half) n.push(`Wider than half the circumference (${half.toFixed(0)} mm) — the edges wrap out of sight.`); }
-    if (!none && S.place!=='top' && S.vessel!=='ptube'){ const k = D/V.D, top = V.zone[1]*k, bot = V.zone[0]*k;
+    if (!none && S.place!=='top' && S.vessel!=='ptube'){ const M = vMap(S), top = M.hb, bot = M.bot;
       if (+S.lblY + (S.lshape==='circle' ? L : +S.H) > top + .5) n.push(`⚠ The label runs past the straight part of the container (ends at ${top.toFixed(0)} mm) — it will wrinkle on the shoulder.`);
       else if (+S.lblY < bot - .5) n.push(`⚠ Below ${bot.toFixed(0)} mm the container curves into the base.`); }
     $('lblNote').textContent = n.join(' ');
@@ -2125,7 +2230,7 @@ const TPL_LOOK = {
   round:{bg:'#b8462f', ink:'#fff4e6', title:'DAILY BREW', sub:'coffee · roasted fresh', inside:'white'},
   print:{bg:'#ece3d3', ink:'#2e2a26', title:'THANK YOU', sub:'for your order', inside:'white'},
 };
-const BASE_SKIP = new Set(['pid','pname','base','tpl','lidOpen','pull','scBg','scBgColor','light','lInt','lAng','shadow','unit','sheetFmt','sheetW','sheetH','grip','impGap','qty']);
+const BASE_SKIP = new Set(['pid','pname','base','tpl','tplOrig','lidOpen','pull','scBg','scBgColor','light','lInt','lAng','shadow','unit','sheetFmt','sheetW','sheetH','grip','impGap','qty']);
 const sigOf = () => { const o = {}; for (const k of Object.keys(S).sort()) if (!BASE_SKIP.has(k)) o[k] = S[k]; return String(hash(JSON.stringify(o))); };
 const markBase = () => { S.base = sigOf(); persist(); };
 const customized = () => Object.keys(IMGS).length > 0 || Object.keys(ELIMG).length > 0 || S.base !== sigOf();
@@ -2133,7 +2238,7 @@ function selectTpl(id){
   const t = TPL.find(x=>x.id===id); if (!t) return;
   if (S.type !== t.type){ Object.assign(S, TYPE_DIMS[t.type], {cornerR:0});
     S.mat = TYPE_MAT[t.type] || (MATS[S.mat] && BOX.has(t.type) && !['paper80','vinyl','kraftp','card350','cupb'].includes(S.mat) ? S.mat : 'carton05'); }
-  Object.assign(S, {type:t.type, tpl:t.id}, t.set);
+  Object.assign(S, SHAPE_BASE[t.type] || {}, {type:t.type, tpl:t.id, tplOrig:t.id}, t.set);
   T = 1; $('t').value = 1000; anim = null;
   syncUI(); refresh(true);
 }
@@ -2191,8 +2296,8 @@ function bindInputs(){
       if (['gradAng','patScale'].includes(id)){ $(id+'O').textContent = S[id] + (id==='gradAng'?'°':' mm'); persist(); refresh(); return; }
       if (['sheetW','sheetH','grip','impGap','qty'].includes(id)){ S.sheetFmt = ['sheetW','sheetH'].includes(id) ? 'custom' : S.sheetFmt; persist(); renderImp(); return; }
       if (VIEW_ONLY.includes(id)){ keepCam = true; if ($(id+'O')) $(id+'O').textContent = S[id]+'%'; }
-      else if (!['L','W','H'].includes(id)) custom();
-      if (['L','W','H','lblY','overlap'].includes(id)) syncTypeUI();
+      else if (!SIZE_KEYS.includes(id)) custom();
+      if (SIZE_KEYS.includes(id)){ syncTypeUI(); renderPresets(); }
       refresh(true); });
     el.addEventListener('change',()=>{ el.value = ['L','W','H'].includes(id) ? +(S[id]/UF()).toFixed(S.unit==='mm'?1:2) : S[id]; }); }
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a);
@@ -2200,7 +2305,7 @@ function bindInputs(){
     else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
   for (const id of ['vessel','lshape','place','vglass','vcap','vfill','cupKind','fold']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
-    if (id==='vessel'){ const V = VESSELS[S.vessel]; if (V.D) S.W = V.D; if (S.vessel==='none'){ S.place='side'; S.wrap=false; } else S.lblY = S.vessel==='ptube' ? 0 : Math.round(V.zone[0] + (V.zone[1]-V.zone[0])*.12); }
+    if (id==='vessel'){ const V = VESSELS[S.vessel]; if (V.D) S.W = V.D; S.vBody = 0; S.vNeck = 100; if (S.vessel==='none'){ S.place='side'; S.wrap=false; } else S.lblY = S.vessel==='ptube' ? 0 : Math.round(V.zone[0] + (V.zone[1]-V.zone[0])*.12); }
     if (id==='fold' && ['neck','tag'].includes(S.fold)) S.holeD = S.fold==='neck' ? 31 : 5;
     custom(); syncUI(); refresh(true); });
   for (const id of ['wrap','cupLid']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; custom(); syncUI(); refresh(true); });
@@ -2212,8 +2317,7 @@ function bindInputs(){
     syncUI(); refresh(true); });
   $('unit').addEventListener('input',()=>{ S.unit=$('unit').value; syncUI(); persist(); });
   for (const id of ['showText','showLines']) $(id).addEventListener('change',()=>{ S[id]=$(id).checked; refresh(); });
-  $('presets').addEventListener('click',e=>{ const d=e.target.closest('[data-d]')?.dataset.d; if(!d) return;
-    [S.L,S.W,S.H]=d.split(',').map(Number); syncUI(); refresh(true); });
+  bindPresets();
   $('t').addEventListener('input',()=>{ anim=null; applyFold($('t').value/1000,false); });
   $('play').addEventListener('click',()=>{ const to = T > .5 ? 0 : 1;
     const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 2800*Math.abs(to-T)+200;
