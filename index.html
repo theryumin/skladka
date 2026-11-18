@@ -394,6 +394,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         <button class="btn" role="menuitem" id="exZip"><b>Everything as one archive</b><small>ZIP — PDF, SVG, PNG and the project file</small></button>
         <button class="btn" role="menuitem" id="exPdf"><b>Print-ready PDF</b><small>cover with 3D and specs, then 1:1 mm CMYK 300 dpi, CUT and CREASE layers</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Dieline with artwork, SVG</b><small>design + die lines as layers</small></button>
+        <button class="btn" role="menuitem" id="exDxf"><b>Die for CAD / cutter, DXF</b><small>ArtiosCAD, Esko, AutoCAD, CorelDRAW, cutting tables — layers CUT, CREASE, BLEED…</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Blank template, SVG</b><small>lines only — design in Illustrator / Figma</small></button>
         <button class="btn" role="menuitem" id="exRender"><b>Renders, PNG</b><small>angles and size are set in the “Scene” tab</small></button>
         <button class="btn" role="menuitem" id="exVideo"><b>Video, MP4</b><small>turntable or fold animation — settings in “Scene”</small></button>
@@ -1543,7 +1544,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
     ctx.save(); ctx.setLineDash([]); ctx.beginPath();
     for (const n of G.N) for (const p of [n.poly, ...(n.holes||[])]){ p.forEach(([px,py],i) => ctx[i?'lineTo':'moveTo'](X(px), Y(py))); ctx.closePath(); }
     const m = document.createElement('canvas'); m.width = canvas.width; m.height = canvas.height; const mx = m.getContext('2d');
-    mx.setTransform(ctx.getTransform()); mx.fillStyle = mx.strokeStyle = '#000'; mx.lineJoin = 'miter'; mx.miterLimit = 4; mx.lineWidth = 2*BLEED*s;
+    mx.setTransform(ctx.getTransform()); mx.fillStyle = mx.strokeStyle = '#000'; mx.lineJoin = 'miter'; mx.miterLimit = 2; mx.lineWidth = 2*BLEED*s;
     const path = new Path2D(); for (const n of G.N) for (const p of [n.poly, ...(n.holes||[])]){ p.forEach(([px,py],i) => path[i?'lineTo':'moveTo'](X(px), Y(py))); path.closePath(); }
     mx.fill(path, 'evenodd'); mx.stroke(path);
     ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation = 'destination-in'; ctx.drawImage(m, 0, 0);
@@ -1558,9 +1559,77 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
   return canvas;
 }
 
+/* ---------- prepress geometry (sheet mm, y down, origin = top-left of the sheet incl. bleed — same as the SVG) */
+// bleed limit: the die shape offset outwards by the bleed (mitred, like the artwork mask), traced from a bitmap
+function rdp(P, eps){ const keep = new Uint8Array(P.length); keep[0] = keep[P.length-1] = 1; const st = [[0, P.length-1]];
+  while (st.length){ const [a,b] = st.pop(); if (b-a < 2) continue; const [ax,ay] = P[a], [bx,by] = P[b], dx = bx-ax, dy = by-ay, L = Math.hypot(dx,dy) || 1e-9; let md = 0, mi = -1;
+    for (let i = a+1; i < b; i++){ const d = Math.abs((P[i][0]-ax)*dy - (P[i][1]-ay)*dx)/L; if (d > md){ md = d; mi = i; } }
+    if (md > eps){ keep[mi] = 1; st.push([a,mi],[mi,b]); } }
+  return P.filter((_,i) => keep[i]); }
+function rdpLoop(P, eps){ let m = 0, md = 0; P.forEach((p,i) => { const d = Math.hypot(p[0]-P[0][0], p[1]-P[0][1]); if (d > md){ md = d; m = i; } });
+  return [...rdp(P.slice(0, m+1), eps).slice(0,-1), ...rdp([...P.slice(m), P[0]], eps).slice(0,-1)]; }
+const BLC = new WeakMap();
+function bleedLoops(G, hi=true){
+  const key = hi ? 'hi' : 'lo', c0 = BLC.get(G) || {}; if (c0[key]) return c0[key];
+  const {minX,maxY,w,h} = G.b, ppm = hi ? Math.min(10, 4000/Math.max(w,h)) : Math.min(3, 1200/Math.max(w,h)), pad = 3;
+  const W = Math.ceil(w*ppm)+2*pad, H = Math.ceil(h*ppm)+2*pad, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const x = cv.getContext('2d', {willReadFrequently:true}), path = new Path2D();
+  for (const n of G.N) for (const p of [n.poly, ...(n.holes||[])]){ p.forEach(([px,py],i) => path[i?'lineTo':'moveTo']((px-minX)*ppm+pad, (maxY-py)*ppm+pad)); path.closePath(); }
+  x.fillStyle = x.strokeStyle = '#000'; x.lineJoin = 'miter'; x.miterLimit = 2; x.lineWidth = 2*BLEED*ppm; x.fill(path, 'evenodd'); x.stroke(path);
+  const a = x.getImageData(0,0,W,H).data, M = new Uint8Array((W+2)*(H+2));
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (a[(j*W+i)*4+3] > 127) M[(j+1)*(W+2)+i+1] = 1;
+  const on = (i,j) => M[(j+1)*(W+2)+i+1];
+  // marching squares on pixel centres: every boundary edge midpoint is shared by exactly two segments
+  const adj = new Map(), link = (p,q) => { let l = adj.get(p); if (!l) adj.set(p, l = []); l.push(q); l = adj.get(q); if (!l) adj.set(q, l = []); l.push(p); };
+  const T = (i,j) => 2*((j+1)*(W+2)+i+1), V = (i,j) => 2*((j+1)*(W+2)+i+1)+1;   // horizontal edge (i,j)-(i+1,j) / vertical edge (i,j)-(i,j+1)
+  for (let j = -1; j < H; j++) for (let i = -1; i < W; i++){
+    const k = on(i,j) | on(i+1,j)<<1 | on(i+1,j+1)<<2 | on(i,j+1)<<3; if (k===0 || k===15) continue;
+    const t = T(i,j), b = T(i,j+1), l = V(i,j), r = V(i+1,j);
+    switch (k){ case 1: case 14: link(l,t); break; case 2: case 13: link(t,r); break; case 3: case 12: link(l,r); break; case 4: case 11: link(r,b); break;
+      case 6: case 9: link(t,b); break; case 7: case 8: link(l,b); break; case 5: link(l,t); link(r,b); break; case 10: link(t,r); link(l,b); break; }
+  }
+  const pt = k => { const c = k>>1, i = c%(W+2)-1, j = Math.floor(c/(W+2))-1; return k&1 ? [(i+.5-pad)/ppm, (j+1-pad)/ppm] : [(i+1-pad)/ppm, (j+.5-pad)/ppm]; };
+  const seen = new Set(), loops = [];
+  for (const k0 of adj.keys()){ if (seen.has(k0)) continue; const loop = []; let prev = -1, k = k0;
+    while (k !== undefined && !seen.has(k)){ seen.add(k); loop.push(pt(k)); const nb = adj.get(k); const nx = nb[0] !== prev ? nb[0] : nb[1]; prev = k; k = nx; }
+    if (loop.length > 6) loops.push(rdpLoop(loop, .75/ppm)); }
+  c0[key] = loops; BLC.set(G, c0); return loops;
+}
+// glue flaps / glue tabs: no ink, no varnish (the glue must hold)
+const isGlue = id => id==='glue' || id==='sg' || /t[fb][lr]$/.test(id);
+const glueAreas = G => G.N.filter(n => isGlue(n.id)).map(n => n.poly.map(([x,y]) => [x-G.b.minX, G.b.maxY-y]));
+// safe zone (copy limit): every printable panel inset by the safe distance
+const safeRects = G => { const {minX,maxY} = G.b, seen = new Set(), out = [];
+  for (const f of G.faces){ const [x0,y0,x1,y1] = f.r; if (f.cp || x1-x0 <= 2*SAFE || y1-y0 <= 2*SAFE) continue; const k = [x0,y0,x1,y1].join(); if (seen.has(k)) continue; seen.add(k);
+    out.push([x0-minX+SAFE, maxY-y1+SAFE, x1-x0-2*SAFE, y1-y0-2*SAFE]); } return out; };
+// dimension chains: trim edges + every straight crease across the sheet
+function dimChains(G){
+  const {minX,maxY,w,h} = G.b, near = (a,b) => Math.abs(a-b) < .05, xs = [BLEED, w-BLEED], ys = [BLEED, h-BLEED];
+  for (const [a,b] of G.creases){ if (near(a[0],b[0]) && Math.abs(a[1]-b[1]) > 2) xs.push(a[0]-minX); else if (near(a[1],b[1]) && Math.abs(a[0]-b[0]) > 2) ys.push(maxY-a[1]); }
+  const uniq = v => v.sort((p,q) => p-q).filter((x,i,a) => i===0 || x-a[i-1] > .3);
+  return {xs: uniq(xs), ys: uniq(ys)};
+}
+// DXF (R12, mm) for CAD and cutting tables: ArtiosCAD, Esko, AutoCAD, CorelDRAW, Illustrator, Zünd / Kongsberg
+function dxfDoc(G){
+  const {minX,maxY,h} = G.b, f = v => (+v).toFixed(4), out = [], X = x => x-minX, Y = y => y-(maxY-h);
+  const LAY = [['CUT',1],['CREASE',5],['PERF',30],['BLEED',3],['SAFE',94],['GLUE',40]];
+  const line = (lay, x1,y1,x2,y2) => out.push('0','LINE','8',lay,'10',f(x1),'20',f(y1),'30','0','11',f(x2),'21',f(y2),'31','0');
+  for (const [a,b] of G.cuts) line('CUT', X(a[0]),Y(a[1]),X(b[0]),Y(b[1]));
+  for (const [a,b] of G.creases) line('CREASE', X(a[0]),Y(a[1]),X(b[0]),Y(b[1]));
+  for (const [a,b] of G.perfs||[]) line('PERF', X(a[0]),Y(a[1]),X(b[0]),Y(b[1]));
+  const loop = (lay, P) => P.forEach((p,i) => { const q = P[(i+1)%P.length]; line(lay, p[0], h-p[1], q[0], h-q[1]); });
+  for (const P of bleedLoops(G)) loop('BLEED', P);
+  for (const [x,y,w2,h2] of safeRects(G)) loop('SAFE', [[x,y],[x+w2,y],[x+w2,y+h2],[x,y+h2]]);
+  for (const P of glueAreas(G)) loop('GLUE', P);
+  const tbl = ['0','SECTION','2','TABLES','0','TABLE','2','LTYPE','70','1','0','LTYPE','2','CONTINUOUS','70','0','3','Solid line','72','65','73','0','40','0.0','0','ENDTAB',
+    '0','TABLE','2','LAYER','70',String(LAY.length), ...LAY.flatMap(([n,c]) => ['0','LAYER','2',n,'70','0','62',String(c),'6','CONTINUOUS']), '0','ENDTAB','0','ENDSEC'];
+  const hdr = ['0','SECTION','2','HEADER','9','$ACADVER','1','AC1009','9','$EXTMIN','10','0','20','0','9','$EXTMAX','10',f(G.b.w),'20',f(h),'0','ENDSEC'];
+  return [...hdr, ...tbl, '0','SECTION','2','ENTITIES', ...out, '0','ENDSEC','0','EOF'].join('\r\n') + '\r\n';
+}
+
 /* ---------- SVG / PDF ---------- */
 const f2 = v => (+v.toFixed(3)).toString();
-function svgDoc(G, artHref, mirror, guides, vtext=''){
+function svgDoc(G, artHref, mirror, guides, vtext='', hi=true){
   const {minX,maxX,maxY,w,h} = G.b, X = mirror ? x=>maxX-x : x=>x-minX, Y = y=>maxY-y;
   const lines = l => l.map(([a,b])=>`<line x1="${f2(X(a[0]))}" y1="${f2(Y(a[1]))}" x2="${f2(X(b[0]))}" y2="${f2(Y(b[1]))}"/>`).join('');
   const L = (id, attrs, body) => `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${id}" ${attrs}>${body}</g>`;
@@ -1576,9 +1645,11 @@ function svgDoc(G, artHref, mirror, guides, vtext=''){
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(w)}mm" height="${f2(h)}mm" viewBox="0 0 ${f2(w)} ${f2(h)}">
 <title>Dieline ${G.P.L}×${G.P.W}×${G.P.H} mm${mirror?' — inside':''}</title>
+<defs><pattern id="glueHatch" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.2" stroke="#f08c00" stroke-width="0.25"/></pattern></defs>
 ${artHref ? L('Artwork','',`<image x="0" y="0" width="${f2(w)}" height="${f2(h)}" preserveAspectRatio="none" href="${artHref}" xlink:href="${artHref}"/>`) : ''}
 ${vtext ? L('Text (outlines)','',vtext) : ''}
-${L('Bleed','fill="none" stroke="#7fbf3f" stroke-width="0.2"',`<rect x="0.1" y="0.1" width="${f2(w-.2)}" height="${f2(h-.2)}"/>`)}
+${L('Bleed limit','fill="none" stroke="#7fbf3f" stroke-width="0.25"', `<path d="${bleedLoops(G, hi).map(p => p.map(([x,y],i) => (i?'L':'M') + f2(mirror ? w-x : x) + ' ' + f2(y)).join('') + 'Z').join('')}"/>`)}
+${guides && glueAreas(G).length ? L('Glue area — no print','fill="url(#glueHatch)" stroke="#f08c00" stroke-width="0.2"', glueAreas(G).map(p => `<path d="${p.map(([x,y],i) => (i?'L':'M') + f2(mirror ? w-x : x) + ' ' + f2(y)).join('')}Z"/>`).join('')) : ''}
 ${g}
 ${L('CREASE','fill="none" stroke="#00aeef" stroke-width="0.25" stroke-dasharray="3 1.5"', lines(G.creases))}
 ${L('CUT','fill="none" stroke="#ec008c" stroke-width="0.25"', lines(G.cuts))}
@@ -2198,8 +2269,8 @@ function render2D(){
   sig2d = sig;
   const grid = `<g class="gridl" stroke="#7d5cff" stroke-opacity=".5" stroke-width="0.3">${Array.from({length:Math.floor(G.b.w/10)+1},(_,i)=>`<line x1="${i*10+BLEED}" y1="0" x2="${i*10+BLEED}" y2="${f2(G.b.h)}"/>`).join('')}${Array.from({length:Math.floor(G.b.h/10)+1},(_,i)=>`<line x1="0" y1="${i*10+BLEED}" x2="${f2(G.b.w)}" y2="${i*10+BLEED}"/>`).join('')}</g>`;
   const sz = svg => svg.replace('<svg ', `<svg style="width:${(G.b.w*BK).toFixed(1)}px;height:${(G.b.h*BK).toFixed(1)}px" `).replace('</svg>', grid+'</svg>');
-  $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Outside · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm</p>${sz(svgDoc(G, out, false, true))}</div>` +
-    (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Reverse, inside of the box · mirrored, as printed</p>${sz(svgDoc(G, inn, true, true))}</div>` : '');
+  $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Outside · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm</p>${sz(svgDoc(G, out, false, true, '', false))}</div>` +
+    (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Reverse, inside of the box · mirrored, as printed</p>${sz(svgDoc(G, inn, true, true, '', false))}</div>` : '');
   fitBoard(); drawSel();
 }
 // ---------- board: select, move, scale, crop, rotate and flip elements right on the sheet
@@ -2882,6 +2953,7 @@ document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest(
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden){ setMenu(false); mbtn.focus(); } });
 
 /* ---------- exports ---------- */
+$('exDxf').addEventListener('click', () => saveFile(fname('-die-mm.dxf'), new Blob([dxfDoc(G)], {type:'application/dxf'})));
 $('exSvg').addEventListener('click',()=>saveFile(fname('-template.svg'), new Blob([svgDoc(G,null,false,true)],{type:'image/svg+xml'})));
 /* ---------- print: text to outlines ---------- */
 const OT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js', FS_VER = '5.3.0';
@@ -3011,6 +3083,8 @@ async function makePdf(){
   const ocArt = pdf.id(), ocCut = pdf.id(), ocCrs = pdf.id(), ocInf = pdf.id(), F1 = pdf.id();
   pdf.obj(ocArt, '<< /Type /OCG /Name (Artwork) >>'); pdf.obj(ocCut, '<< /Type /OCG /Name (CUT) >>');
   pdf.obj(ocCrs, '<< /Type /OCG /Name (CREASE) >>'); pdf.obj(ocInf, '<< /Type /OCG /Name (Info) >>');
+  const ocBld = pdf.id(), ocSaf = pdf.id(), ocGlu = pdf.id();
+  pdf.obj(ocBld, '<< /Type /OCG /Name (BLEED LIMIT) >>'); pdf.obj(ocSaf, '<< /Type /OCG /Name (SAFE ZONE) >>'); pdf.obj(ocGlu, '<< /Type /OCG /Name (GLUE AREA) >>');
   pdf.obj(F1, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
   const sep = (name, c) => `[/Separation /${name} /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [${c}] /N 1 >>]`;
   const fill = rgb => rgb2cmyk(rgb).map(pn).join(' ') + ' k';
@@ -3060,7 +3134,7 @@ async function makePdf(){
     pdf.obj(pg, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(PG.W)} ${mm(PG.H)}] /BleedBox [${bb.map(mm).join(' ')}] /TrimBox [${mm(bb[0]+BLEED)} ${mm(bb[1]+BLEED)} ${mm(bb[2]-BLEED)} ${mm(bb[3]-BLEED)}] /Contents ${c} 0 R
 /Resources << /XObject << ${[...img.out, ...(img.in||[]), ...masks.out, ...masks.in].map(i=>`/Im${i.id} ${i.id} 0 R`).join(' ')} >> /Font << /F1 ${F1} 0 R >>
 /ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} /CsWHITE ${sep('White','0 0 0 0.08')} /CsPerf ${sep('Perforation','0.6 0 1 0')} ${Object.values(FIN).map(f=>`/Cs${f[1]} ${sep(f[1],f[2])}`).join(' ')} ${[...spots].map(([n,c])=>`/${spotKey(n)} ${sep(pdfName(n),c.map(pn).join(' '))}`).join(' ')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
-/Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R ${finLayers.map(n=>`/O${n} ${ocFin[n]} 0 R`).join(' ')} >> >> >>`);
+/Properties << /Art ${ocArt} 0 R /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R /Bld ${ocBld} 0 R ${finLayers.map(n=>`/O${n} ${ocFin[n]} 0 R`).join(' ')} >> >> >>`);
     pages.push(pg); };
   // ---- cover page: A4 portrait, 3D render + full specification (RGB, for people, not for the press)
   const cover = async () => {
@@ -3112,7 +3186,7 @@ async function makePdf(){
     const vis = S.els.filter(e => !e.hidden);
     add('Elements', [S.showText && (S.title||S.sub) && ['Panel text', [S.title, S.sub].filter(Boolean).join(' / ')], ...vis.slice(0,10).map(e => [elName(e), [(e.side==='in' ? 'inside, ' : '') + (FACE_NAMES[e.face]||e.face).toLowerCase(), FINN[e.fin], e.spot && 'Pantone '+e.spot].filter(Boolean).join(' · ')]),
       vis.length > 10 && ['…', `${vis.length-10} more`], !vis.length && !(S.showText && (S.title||S.sub)) && ['—', 'no elements']]);
-    add('Pages', [['1', 'This cover'], ['2', 'Outside artwork + die lines'], inside && ['3', 'Inside artwork (mirrored) + die lines'], [String(inside?4:3), 'Die only: CUT and CREASE']]);
+    add('Pages', [['1', 'This cover'], ['2', 'Outside artwork + die lines'], inside && ['3', 'Inside artwork (mirrored) + die lines'], [String(inside?4:3), 'Technical drawing: die, bleed and copy limits, glue area, dimensions, legend']]);
     // fonts
     const name = S.pname || 'Untitled box', allTxt = name + JSON.stringify(sec);
     let fR = null, fB = null; try { [fR, fB] = await Promise.all([fontSet('IBM Plex Sans', 400, allTxt), fontSet('IBM Plex Sans', 600, allTxt)]); } catch {}
@@ -3161,11 +3235,84 @@ async function makePdf(){
   };
   await cover();
   const art = side => `/OC /Art BDC\n${img[side].map(i => `q ${pn(w)} 0 0 ${pn(-i.hh)} 0 ${pn(i.y+i.hh)} cm /Im${i.id} Do Q`).join('\n')}\n${vec ? textOps(vt[side]) : ''}\nEMC\n${finOps(side)}`;
-  await page('PAGE 2 — OUTSIDE (print side)', art('out') + '\n' + die(false));
-  if (inside) await page('PAGE 3 — REVERSE (inside of the box), mirrored', art('in') + '\n' + die(true));
-  await page(`PAGE ${inside?4:3} — DIE: cut and crease only`, die(false));
+  // ---- technical drawing (packaging-engineering style): die, bleed and copy limits, glue area, dimensions, information box, legend
+  const techPage = async (title) => {
+    const B = BLEED, D = 30, ox = 16, oy = 16 + D, TB = 82, gx = ox + w + D, PWt = gx + TB + 10;
+    const otx = id => ($(id)?.selectedOptions?.[0]?.text || '').replace(/≈/g,'~'), tpl = TPL.find(x => x.id===S.tpl), P = G.Pm || G.P, bx = BOX.has(S.type);
+    const design = 'PKG-' + String(S.pid || uid()).replace(/[^a-z0-9]/gi,'').slice(0,8).toUpperCase();
+    const rows = [['Date', new Date().toLocaleDateString('en-GB')], ['Design style', (TYPE_NAMES[S.type]||S.type) + (tpl ? ' · ' + tpl.name : '')], ['Part name', S.pname || 'Untitled'],
+      bx ? ['Inside dims', `${S.L} × ${S.W} × ${S.H} mm`] : ['Size', tplSize(S)], bx && ['Crease to crease', `${+(+P.L).toFixed(1)} × ${+(+P.W).toFixed(1)} × ${+(+P.H).toFixed(1)} mm`],
+      ['Blank size (trim)', `${(w-2*B).toFixed(1)} × ${(h-2*B).toFixed(1)} mm`], ['With bleed', `${w.toFixed(1)} × ${h.toFixed(1)} mm`],
+      ['Board', S.mat==='custom' ? 'Custom' : otx('mat')], bx && ['Inner liner', otx('inside')], ['Coating', otx('finish')], S.grain && S.grain!=='any' && ['Grain', otx('grain')],
+      ['View', 'Printed side (outside)'], ['Units / scale', 'mm · 1:1'], ['Bleed / safe', `${B} mm / ${SAFE} mm`]].filter(Boolean);
+    const glue = glueAreas(G), loops = bleedLoops(G), safe = safeRects(G), {xs, ys} = dimChains(G), perf = (G.perfs||[]).length > 0;
+    const legend = [['cut','Cut (knife) — CutContour'], ['crease','Crease (score) — Crease'], perf && ['perf','Perforation'], ['bleed','Bleed limit'], ['safe','Copy limit (safe zone)'], glue.length && ['glue','Glue area — no ink, no varnish']].filter(Boolean);
+    const layers = [['CUT','Die outline, cut'], ['CREASE','Creases'], perf && ['PERF','Perforation'], ['BLEED LIMIT','Bleed limit'], ['SAFE ZONE','Copy limit'], glue.length && ['GLUE AREA','No print areas'], ['Info','Dimensions, information box, legend']].filter(Boolean);
+    const fmt = v => (+v.toFixed(1)).toString();
+    const allTxt = design + JSON.stringify(rows) + JSON.stringify(legend) + JSON.stringify(layers) + 'INFORMATION LEGEND LAYER TYPE GLUE Design # Rev 0123456789.×' + title;
+    let FT = null; try { FT = await Promise.all([fontSet('IBM Plex Sans', 400, allTxt), fontSet('IBM Plex Sans', 600, allTxt)]); } catch {}
+    const BLUE = '0.95 0.6 0 0', GREEN = '0.6 0 1 0', ORANGE = '0 0.5 0.95 0', GREY = '0 0 0 0.45';
+    const tx = (t, x, y, size, o={}) => { t = String(t);
+      if (FT){ const r = (o.rot||0)*DEG, c = Math.cos(r), sn = Math.sin(r);
+        return `q ${o.col||'0 0 0 1'} k\n${path(runPath(FT[o.bold?1:0], t, 0, 0, size, o.align||'left', 'alphabetic', {a:c, b:sn, c:-sn, d:c, e:x, f:y}, 1))}\nf Q\n`; }
+      const lat = t.normalize('NFD').replace(/[^\x20-\x7e]/g,'').replace(/[()\\]/g,''), wd = lat.length*size*.5, x0 = o.align==='center' ? x-wd/2 : o.align==='right' ? x-wd : x;
+      return `BT /F1 1 Tf ${pn(size)} 0 0 ${pn(-size)} ${pn(x0)} ${pn(y)} Tm 0 0 0 1 rg (${lat}) Tj ET\n`; };
+    const ln = (x1,y1,x2,y2) => `${pn(x1)} ${pn(y1)} m ${pn(x2)} ${pn(y2)} l\n`;
+    const arrow = (x,y,ang) => { const L = 1.8, W = .6, c = Math.cos(ang), s = Math.sin(ang); return `${pn(x)} ${pn(y)} m ${pn(x-L*c+W*s)} ${pn(y-L*s-W*c)} l ${pn(x-L*c-W*s)} ${pn(y-L*s+W*c)} l h f\n`; };
+    const fs = v => Math.abs(v) < 8 ? 1.8 : 2.4;
+    const hdim = (x1, x2, y, ey) => { const d = Math.sign(ey-y);
+      return `q ${BLUE} K ${BLUE} k 0.15 w\n${ln(x1, ey-d*1.2, x1, y-d*1.5)}${ln(x2, ey-d*1.2, x2, y-d*1.5)}${ln(x1,y,x2,y)}S\n${arrow(x1,y,PI)}${arrow(x2,y,0)}Q\n` + tx(fmt(x2-x1), (x1+x2)/2, y-1, fs(x2-x1), {align:'center', col:BLUE}); };
+    const vdim = (y1, y2, x, ex) => { const d = Math.sign(ex-x);
+      return `q ${BLUE} K ${BLUE} k 0.15 w\n${ln(ex-d*1.2, y1, x-d*1.5, y1)}${ln(ex-d*1.2, y2, x-d*1.5, y2)}${ln(x,y1,x,y2)}S\n${arrow(x,y1,-PI/2)}${arrow(x,y2,PI/2)}Q\n` + tx(fmt(y2-y1), x + 1 + fs(y2-y1)*.72, (y1+y2)/2, fs(y2-y1), {align:"center", col:BLUE, rot:-90}); };
+    const poly = p => p.map(([x,y],i) => `${pn(x)} ${pn(y)} ${i?'l':'m'}`).join(' ') + ' h\n';
+    // the drawing, in sheet coordinates
+    let g = `q 1 0 0 1 ${pn(ox)} ${pn(oy)} cm\n`;
+    if (glue.length){ g += `/OC /Glu BDC q ${ORANGE} K 0.2 w\n`;
+      for (const p of glue){ const X = p.map(q=>q[0]), Y = p.map(q=>q[1]), x0 = Math.min(...X), x1 = Math.max(...X), y0 = Math.min(...Y), y1 = Math.max(...Y);
+        g += `q ${poly(p)}W n\n`; for (let t = x0-(y1-y0); t < x1; t += 2.2) g += ln(t, y1, t+(y1-y0), y0); g += 'S Q\n' + poly(p) + 'S\n';
+        const long = y1-y0 > x1-x0; g += tx('GLUE', (x0+x1)/2 + (long ? 1 : 0), (y0+y1)/2 + (long ? 0 : 1), Math.min(3, Math.min(x1-x0, y1-y0)*.45), {align:'center', col:ORANGE, bold:true, rot: long ? -90 : 0}); }
+      g += 'Q EMC\n'; }
+    g += `/OC /Saf BDC q ${GREEN} K 0.2 w [1.5 1] 0 d\n${safe.map(([x,y,a,b]) => `${pn(x)} ${pn(y)} ${pn(a)} ${pn(b)} re`).join('\n')}\nS Q EMC\n`;
+    g += `/OC /Bld BDC q ${GREEN} K 0.25 w\n${loops.map(poly).join('')}S Q EMC\n`;
+    g += die(false) + '\nQ\n';
+    // dimensions: chains along the top and the right, overall size outside them
+    let dm = '/OC /Inf BDC\n';
+    for (let i = 1; i < xs.length; i++) dm += hdim(ox+xs[i-1], ox+xs[i], oy-9, oy+B);
+    if (xs.length > 2) dm += hdim(ox+xs[0], ox+xs[xs.length-1], oy-20, oy-9);
+    for (let i = 1; i < ys.length; i++) dm += vdim(oy+ys[i-1], oy+ys[i], ox+w+9, ox+w-B);
+    if (ys.length > 2) dm += vdim(oy+ys[0], oy+ys[ys.length-1], ox+w+20, ox+w+9);
+    dm += tx(design + '-001', ox + w/2, oy + h + 13, 5, {align:'center', col:BLUE});
+    // information box
+    let y = 16, ib = `q ${GREY} K 0.3 w ${pn(gx-6)} 10 m ${pn(gx-6)} ${pn(Math.max(oy+h+20, 200))} l S Q\n`;
+    ib += tx(S.pname || 'Untitled', gx, y+3, 4.6, {bold:true}); y += 8;
+    ib += tx('Packaging dieline · Skladka', gx, y, 2.4, {col:GREY}); y += 6;
+    const bar = t => { const r = `q 0 0 0 1 k ${pn(gx)} ${pn(y)} ${TB} 6 re f Q\n` + tx(t, gx + TB/2, y + 4.3, 3, {align:'center', bold:true, col:'0 0 0 0'}); y += 10; return r; };
+    ib += bar('INFORMATION');
+    for (const [k,v] of rows){ ib += tx(k, gx, y, 2.4, {col:GREY}) + tx(v, gx+29, y, 2.4) + `q 0 0 0 0.15 K 0.15 w ${ln(gx, y+1.6, gx+TB, y+1.6)}S Q\n`; y += 5.2; }
+    y += 5; ib += bar('LEGEND');
+    for (const [k,t] of legend){ const yy = y - .9, x1 = gx, x2 = gx + 18;
+      ib += k==='cut' ? `q /CsCut CS 1 SCN 0.35 w ${ln(x1,yy,x2,yy)}S Q\n` : k==='crease' ? `q /CsCrease CS 1 SCN 0.35 w [3 1.5] 0 d ${ln(x1,yy,x2,yy)}S Q\n`
+        : k==='perf' ? `q /CsPerf CS 1 SCN 0.45 w [2 1.2] 0 d ${ln(x1,yy,x2,yy)}S Q\n` : k==='bleed' ? `q ${GREEN} K 0.35 w ${ln(x1,yy,x2,yy)}S Q\n`
+        : k==='safe' ? `q ${GREEN} K 0.3 w [1.5 1] 0 d ${ln(x1,yy,x2,yy)}S Q\n`
+        : `q ${pn(x1)} ${pn(yy-2)} 18 4 re W n ${ORANGE} K 0.2 w ${Array.from({length:12}, (_,i) => ln(x1-4+i*2.2, yy+2, x1+i*2.2, yy-2)).join('')}S Q q ${ORANGE} K 0.2 w ${pn(x1)} ${pn(yy-2)} 18 4 re S Q\n`;
+      ib += tx(t, gx + 22, y, 2.4); y += 6; }
+    y += 4; ib += bar('LAYER · TYPE');
+    for (const [k,t] of layers){ ib += tx(k, gx, y, 2.4, {bold:true}) + tx(t, gx+26, y, 2.4); y += 5.2; }
+    y += 6; ib += tx('Design #', gx, y, 2.4, {col:GREY}) + tx(design, gx+16, y, 2.8, {bold:true, col:BLUE}) + tx('Rev', gx+TB-12, y, 2.4, {col:GREY}) + tx('A', gx+TB-5, y, 2.8, {bold:true, col:BLUE});
+    y += 7; ib += tx(title, gx, y, 2, {col:GREY});
+    const PHt = Math.max(oy + h + 22, y + 10), body = `${pn(K)} 0 0 ${pn(-K)} 0 ${pn(PHt*K)} cm\n${g}${dm}${ib}EMC`;
+    const c = pdf.id(); pdf.stream(c, '/Filter /FlateDecode', await deflate(enc.encode(body)));
+    const pg = pdf.id();
+    pdf.obj(pg, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pn(PWt*K)} ${pn(PHt*K)}] /Contents ${c} 0 R
+/Resources << /Font << /F1 ${F1} 0 R >> /ColorSpace << /CsCut ${sep('CutContour','0 1 0 0')} /CsCrease ${sep('Crease','1 0 0 0')} /CsPerf ${sep('Perforation','0.6 0 1 0')} >> /ExtGState << /GSop << /Type /ExtGState /OP true /op true /OPM 1 >> >>
+/Properties << /Cut ${ocCut} 0 R /Crs ${ocCrs} 0 R /Inf ${ocInf} 0 R /Bld ${ocBld} 0 R /Saf ${ocSaf} 0 R /Glu ${ocGlu} 0 R >> >> >>`);
+    pages.push(pg); };
+  const bleedOps = mirror => `/OC /Bld BDC q 0.6 0 1 0 K 0.25 w\n${bleedLoops(G).map(p => p.map(([x,y],i) => `${pn(mirror ? w-x : x)} ${pn(y)} ${i?'l':'m'}`).join(' ') + ' h').join('\n')}\nS Q EMC`;
+  await page('PAGE 2 — OUTSIDE (print side)', art('out') + '\n' + die(false) + '\n' + bleedOps(false));
+  if (inside) await page('PAGE 3 — REVERSE (inside of the box), mirrored', art('in') + '\n' + die(true) + '\n' + bleedOps(true));
+  await techPage(`PAGE ${inside?4:3} — TECHNICAL DRAWING: die, bleed and copy limits, glue area, dimensions`);
   pdf.obj(pagesId, `<< /Type /Pages /Kids [${pages.map(p=>p+' 0 R').join(' ')}] /Count ${pages.length} >>`);
-  const cat = pdf.id(), inf = pdf.id(), ocs = `${ocArt} 0 R ${finLayers.map(n=>ocFin[n]+' 0 R').join(' ')} ${ocCut} 0 R ${ocCrs} 0 R ${ocInf} 0 R`;
+  const cat = pdf.id(), inf = pdf.id(), ocs = `${ocArt} 0 R ${finLayers.map(n=>ocFin[n]+' 0 R').join(' ')} ${ocCut} 0 R ${ocCrs} 0 R ${ocBld} 0 R ${ocSaf} 0 R ${ocGlu} 0 R ${ocInf} 0 R`;
   pdf.obj(cat, `<< /Type /Catalog /Pages ${pagesId} 0 R /OCProperties << /OCGs [${ocs}] /D << /Order [${ocs}] /ON [${ocs}] >> >> >>`);
   pdf.obj(inf, `<< /Title ${pdfStr((S.pname||'Box')+' — dieline')} /Creator (Skladka) /Producer (Skladka) >>`);
   if (!vec) toast('Fonts did not load — PDF text is a 300 dpi image, not outlines.');
@@ -3197,6 +3344,7 @@ $('exZip').addEventListener('click', async () => {
   zip.file(base+'-dieline.svg', (await artSvg('out')).svg);
   if (hasInside()) zip.file(base+'-inside.svg', (await artSvg('in')).svg);
   zip.file(base+'-template.svg', svgDoc(G, null, false, true));
+  zip.file(base+'-die-mm.dxf', dxfDoc(G));
   zip.file(base+'-mockup.png', await mockupBlob());
   const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
   zip.file(base+'.json', JSON.stringify({app:'skladka', v:3, settings:S, imgs, elimgs, mine}));
@@ -3208,12 +3356,14 @@ ${base}-print.pdf — print-ready file:
   • ${BLEED} mm bleed (BleedBox), trim at crop marks (TrimBox), ${SAFE} mm safe zone
   • CUT layer — cut contour, spot colour CutContour (100% M), overprint
   • CREASE layer — creases, spot colour Crease (100% C, dashed), overprint
+  • BLEED LIMIT — the die outline offset by the bleed; SAFE ZONE — copy limit; GLUE AREA — no ink / no varnish (not printed)
   • Artwork layer — print; Info layer — notes in the margins, do not print
   • page 1 — cover: 3D view, sizes, structure, material, print and colour specs
-  • page 2 — outside${hasInside()?', page 3 — inside (mirrored)':''}, last page — die (CUT and CREASE only)
+  • page 2 — outside${hasInside()?', page 3 — inside (mirrored)':''}, last page — technical drawing: die, bleed / copy limits, glue area, dimensions, information box and legend
   CMYK conversion is basic, without an ICC profile: ask your printer to check colour against their profile and send a proof.
 ${base}-dieline.svg — dieline: Artwork with outlined text, CUT / CREASE layers.
-${base}-template.svg — blank template for Illustrator / Figma.
+${base}-template.svg — blank template for Illustrator / Figma: CUT, CREASE, bleed limit, safe zone, glue area, dimensions as layers.
+${base}-die-mm.dxf — die for CAD and cutting tables (ArtiosCAD, Esko, AutoCAD, CorelDRAW, Zünd / Kongsberg): layers CUT, CREASE, PERF, BLEED, SAFE, GLUE, units mm.
 ${base}-mockup.png — 3D mockup.
 ${base}.json — the project; open it with “Open .json”.
 `);
