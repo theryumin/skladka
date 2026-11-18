@@ -2020,10 +2020,16 @@ function applyFold(t, fitCam){
   if (fitCam) fitCamera();
   $('tOut').textContent = t >= .999 ? 'folded' : t <= .001 ? 'flat' : Math.round(t*100)+' %';
 }
-function fitCamera(){
+function fitDist(){
   const aspect = camera.aspect, tanH = Math.tan(camera.fov*DEG/2);
   const fit = v => { const d = v.length(); return Math.max(d, d/aspect)/(2*tanH); };
-  const dist = isStatic() ? fit(foldedSize)*1.25 : G.lbl || G.cup ? fit(foldedSize)*1.35 : Math.max(fit(foldedSize)*1.3, fit(flatSize)*.62);
+  return isStatic() ? fit(foldedSize)*1.25 : G.lbl || G.cup ? fit(foldedSize)*1.35 : Math.max(fit(foldedSize)*1.3, fit(flatSize)*.62);
+}
+// size edits keep the camera still, so the box really gets smaller / bigger on screen; it only backs off when the box would leave the frame
+let fitNext = true;
+function fitCamera(grow){
+  const dist = fitDist();
+  const cur = camera.position.distanceTo(controls.target); if (grow && cur >= dist*.98 && cur <= dist*2.6) return;
   const dir = camera.position.clone().sub(controls.target);
   if (dir.lengthSq() < 1e-6) dir.set(.55,.38,1);
   controls.target.set(0,0,0); camera.position.copy(dir.normalize().multiplyScalar(dist));
@@ -2249,7 +2255,7 @@ function doRefresh(){
   pending = 0;
   if (geomDirty){
     BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
-    G = build(S); rebuild3D(); applyFold(T, !keepCam); keepCam = false; geomDirty = false;
+    G = build(S); rebuild3D(); applyFold(T, false); if (fitNext) fitCamera(); else if (!keepCam) fitCamera(true); fitNext = false; keepCam = false; geomDirty = false;
     $('sheet').textContent = `${tplSize(S)} · sheet ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm`;
     renderProd(); renderImp();
     gen++; renderSlots(); renderEls();
@@ -2589,6 +2595,7 @@ const sigOf = () => { const o = {}; for (const k of Object.keys(S).sort()) if (!
 const markBase = () => { S.base = sigOf(); persist(); };
 const customized = () => Object.keys(IMGS).length > 0 || Object.keys(ELIMG).length > 0 || S.base !== sigOf();
 function selectTpl(id){
+  fitNext = true;
   const t = TPL.find(x=>x.id===id); if (!t) return;
   if (S.type !== t.type){ Object.assign(S, TYPE_DIMS[t.type], {cornerR:0});
     S.mat = TYPE_MAT[t.type] || (MATS[S.mat] && BOX.has(t.type) && !['paper80','vinyl','kraftp','card350','cupb'].includes(S.mat) ? S.mat : 'carton05'); }
@@ -2658,7 +2665,7 @@ function bindInputs(){
     if (el.type==='checkbox') el.addEventListener('change',()=>{ S[k]=el.checked; custom(); syncUI(); refresh(true); });
     else el.addEventListener('input',()=>{ const v=parseFloat(el.value); if (!isFinite(v)) return; S[k]=clamp(v,+el.min,+el.max); custom(); refresh(true); }); }
   for (const id of ['topClose','topLid','botClose','botLid']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; custom(); syncUI(); refresh(true); });
-  for (const id of ['vessel','lshape','place','vglass','vcap','vfill','cupKind','fold']) $(id).addEventListener('input',()=>{ S[id]=$(id).value;
+  for (const id of ['vessel','lshape','place','vglass','vcap','vfill','cupKind','fold']) $(id).addEventListener('input',()=>{ S[id]=$(id).value; if (['vessel','cupKind','fold','place'].includes(id)) fitNext = true;
     if (id==='vessel'){ const V = VESSELS[S.vessel]; if (V.D) S.W = V.D; S.vBody = 0; S.vNeck = 100; if (S.vessel==='none'){ S.place='side'; S.wrap=false; } else S.lblY = S.vessel==='ptube' ? 0 : Math.round(V.zone[0] + (V.zone[1]-V.zone[0])*.12); }
     if (id==='fold' && ['neck','tag'].includes(S.fold)) S.holeD = S.fold==='neck' ? 31 : 5;
     custom(); syncUI(); refresh(true); });
@@ -2847,6 +2854,7 @@ async function saveProject(){
 function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Saving…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
 function newProject(name, pid){ S.pid = pid || uid()+Date.now().toString(36); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
 async function openProject(id){
+  fitNext = true;
   const rec = await idb.get(id).catch(()=>null); if (!rec){ toast('Project not found'); return; }
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
   Object.assign(S, DEFAULTS, rec.settings, {pid:rec.id, pname:rec.name}); lastThumb = rec.thumb || '';
@@ -2918,7 +2926,7 @@ $('newBtn').addEventListener('click', () => { nbSync(); $('newDlg').showModal();
 $('homeLogo').addEventListener('click', () => scrollTo(0,0));
 $('navProj').addEventListener('click', () => scrollTo(0,0));
 $('projGrid').addEventListener('click', e => { if (e.target.closest('#newCard')){ nbSync(); $('newDlg').showModal(); } });
-$('nbGo').addEventListener('click', () => {
+$('nbGo').addEventListener('click', () => { fitNext = true;
   $('newDlg').close();
   const t = $('nbType').value, v = id => clamp(parseFloat($(id).value)||0, +$(id).min, +$(id).max);
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k];
@@ -2936,7 +2944,7 @@ $('tplPopX').addEventListener('click', () => $('tplPop').close());
 $('tplPop').addEventListener('click', e => { if (e.target === $('tplPop')) $('tplPop').close(); });
 $('homeCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; homeCat = b.dataset.cat; renderHomeTpls(); });
 $('homeMine').addEventListener('click', e => { const b = e.target.closest('[data-mine]'); if (!b) return; const m = mine[+b.dataset.mine];
-  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = [];
+  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null; S.els = []; fitNext = true;
   Object.assign(S, m.s); newProject(m.name); syncUI(); syncEl(); renderEls(); refresh(true); openEditor(); });
 $('homeContinue').addEventListener('click', () => { const id = $('homeContinue').dataset.id; if (id) openProject(id); });
 const setPane = k => { document.querySelectorAll('.rail [data-pane]').forEach(b => b.setAttribute('aria-selected', b.dataset.pane===k));
@@ -2992,7 +3000,7 @@ function renderMine(){
 }
 $('mine').addEventListener('click',e=>{
   const b = e.target.closest('button'); if (!b) return; const i = +b.dataset.i;
-  if (b.classList.contains('ld')){ Object.assign(S, mine[i].s); syncUI(); refresh(true); toast('Template loaded: '+mine[i].name); }
+  if (b.classList.contains('ld')){ fitNext = true; Object.assign(S, mine[i].s); syncUI(); refresh(true); toast('Template loaded: '+mine[i].name); }
   else if (b.classList.contains('del')){
     if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='Delete?'; setTimeout(()=>{ if (b.isConnected){ b.classList.remove('arm'); b.textContent='×'; } },3000); return; }
     mine.splice(i,1); store.set('skladka-mine',mine); renderMine();
