@@ -1141,7 +1141,7 @@ function buildLidBase(P,B){
 }
 function buildMailer(P,B){
   const L=P.L, W=P.W, H=Math.min(P.H, W*.9), sh=1.5;
-  const e = Math.min(W*.42, 60), tw = Math.min(L*.18, 25), td = 4;
+  const e = Math.min(W*.42, 60, Math.max(3*H, 2*H+12, 20)), tw = Math.min(L*.18, 25), td = 4;   // ears: long enough to square the wall, no wider than they need
   // slots in the base for locking tabs
   const slot = (cx,cy,w,h) => rect(cx-w/2,cy-h/2,cx+w/2,cy+h/2);
   const swF = tw+1, swS = Math.min(W*.35,30)+1;
