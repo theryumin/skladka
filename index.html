@@ -571,6 +571,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         </div>
       </div>
       <div data-for="bakery" class="sub" style="padding-left:0">
+        <label class="f">Opening<select id="bkStyle"><option value="tuck">Lid with a tuck, fixed front wall</option><option value="front">Lid + front wall open together</option></select></label>
         <label class="chk"><input id="bkWin" type="checkbox"> Window in the lid</label>
         <label class="f">Window margin from the lid edges, mm<input id="bkWm" type="number" min="8" max="150" step="1"></label>
         <p class="note">One piece, no glue needed: the corner ears fold inside the side walls, the lid tuck slides behind the front wall (thumb notch), the lid side flaps tuck inside. Use food-safe board; for a window, glue clear film behind it.</p>
@@ -855,6 +856,11 @@ const TPL = [
   {id:'bk_cup6',  type:'bakery', cat:'box', name:'Cupcake box 6, window',    set:{L:250, W:170, H:80,  window:true,  bkWm:38, bg:'#f4cfcf', ink:'#1b1b1b', title:'your logo', sub:'food cake'}},
   {id:'bk_cup9',  type:'bakery', cat:'box', name:'Cupcake box 9',            set:{L:250, W:250, H:85,  window:false, bkWm:22, bg:'#bcd8e2', ink:'#ffffff', title:'YOUR LOGO', sub:'Cake box'}},
   {id:'bk_pastry',type:'bakery', cat:'box', name:'Pastry box with window',   set:{L:180, W:120, H:60,  window:true,  bkWm:28, bg:'#f6efe2', ink:'#6b4a2b', title:'BAKERY', sub:'fresh every morning'}},
+  {id:'bk_front', type:'bakery', cat:'box', name:'Front-opening cake box',   set:{L:180, W:180, H:130, bkStyle:'front', window:false, bkWm:22, bg:'#f6f0e3', ink:'#1d1d1b', showText:false, title:'cake box', sub:''},
+    els:[{kind:'icon', icon:'cake', face:'top', x:.5, y:.45, size:48}, {kind:'text', text:'cake box', font:'400|Montserrat', face:'front', x:.75, y:.78, size:13},
+         {kind:'icon', icon:'cake', face:'front', x:.5, y:.42, size:48}, {kind:'icon', icon:'food', face:'back', x:.5, y:.85, size:9, color:'#000000'}]},
+  {id:'bk_heart', type:'bakery', cat:'box', name:'Bento cake box, heart',    set:{L:150, W:150, H:110, bkStyle:'front', window:false, bkWm:22, bg:'#f6f0e3', ink:'#1d1d1b', showText:false, title:'cake box', sub:''},
+    els:[{kind:'text', text:'cake box', font:'400|Montserrat', face:'top', x:.5, y:.5, size:12}, {kind:'icon', icon:'heart', face:'front', x:.5, y:.45, size:40}]},
   {id:'bk_macaron',type:'bakery',cat:'box', name:'Macaron / cookie box',     set:{L:200, W:90,  H:45,  window:true,  bkWm:20, bg:'#e7dcf3', ink:'#4a3366', title:'macarons', sub:'handmade · 12 pcs'}},
   {id:'l_wine',  type:'label', cat:'label', name:'Wine bottle label',  set:{...LBL_BASE, vessel:'wine', L:90, W:75, H:100, lblY:55, cornerR:0}},
   {id:'l_beer',  type:'label', cat:'label', name:'Beer bottle wrap label', set:{...LBL_BASE, vessel:'beer', wrap:true, W:60, H:75, lblY:24}},
@@ -903,6 +909,8 @@ const TPL_DESC = {
   bk_cup6:'For 6 cupcakes or pastries, window in the lid. Add an insert with holes inside.',
   bk_cup9:'Square box for 9 cupcakes with a hinged tuck lid.',
   bk_pastry:'Small box for 2–4 pastries or a slice of cake, with a window.',
+  bk_front:'The lid and the whole front wall swing up — the cake slides in from the front, nothing to lift over. Line-art print.',
+  bk_heart:'Small front-opening box for a bento cake or a slice, with a heart.',
   bk_macaron:'Long low box for macarons or cookies, with a window.',
   drawer:'A tray slides out of a sleeve, like a matchbox.',
   pouch:'Flat-bottom bag with a zip lock. A 3D mockup for design.',
@@ -966,7 +974,7 @@ const VPRESETS = {
   ptube:[['Ø 50',50],['Ø 75',75],['Ø 100',100]],
 };
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
-  winW:40, winH:50, winY:55, bkWm:22, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
+  winW:40, winH:50, winY:55, bkWm:22, bkStyle:'tuck', hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
   ...LBL_BASE, ...CARD_BASE, cupKind:'cup', cupLid:false, ...CUP_BASE, base:'', tplOrig:'',
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'FOREST TEA', sub:'blend No.4 · 100 g',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
@@ -983,9 +991,9 @@ const FACE_NAMES = {drawer:'Drawer base', pull:'Drawer end', front:'Front', back
 const NUM = ['bkWm','gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow','hdr','overlap','lblY','holeD','vBody','vNeck','cupOv','cupRim','cupBot','tagC','envF'];
 const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl', holeD2:'holeD', bkWin:'window'};
 const DIM_LABELS = {pouch:['Width','Gusset depth','Height'], label:['Label width','Container Ø','Label height'], cup:['Rim Ø (top)','Base Ø','Height'], card:['Width (folded)',null,'Height']};
-const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern','vessel','lshape','place','vglass','vcap','vfill','cupKind','fold'];
+const SEL = ['bkStyle','topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern','vessel','lshape','place','vglass','vcap','vfill','cupKind','fold'];
 const CHK = ['notch','window','hang','showText','showLines','dbl','tear','wrap','cupLid'];
-const STRUCT = ['bkWm','type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl','hdr',...Object.keys(LBL_BASE),...Object.keys(CARD_BASE),'cupKind','cupLid',...Object.keys(CUP_BASE)];
+const STRUCT = ['bkStyle','bkWm','type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl','hdr',...Object.keys(LBL_BASE),...Object.keys(CARD_BASE),'cupKind','cupLid',...Object.keys(CUP_BASE)];
 
 const store = {
   get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -1162,6 +1170,7 @@ function buildLidBase(P,B){
 // bakery / cake box: one piece, single walls with corner ears, thumb notch on the front wall,
 // hinged lid with a rounded tuck and side flaps that tuck inside, optional window in the lid
 function buildBakery(P,B){
+  if (P.bkStyle==='front') return buildBakeryFront(P,B);
   const L=P.L, W=P.W, H=Math.min(P.H, W*1.2);
   const e = Math.min(W*.42, Math.max(H*.85, 20));                 // corner ears on the front/back walls, glued or tucked inside the sides
   B.add('base',null,[0,0],null,0,null,rect(0,0,L,W),{final:{p:[0,0,0],q:Q_UP}});
@@ -1183,6 +1192,27 @@ function buildBakery(P,B){
   B.add('lidDR','lid',[L,y1],'y',92*DEG,[.66,.82],sideTab(L,y1+1.5,y2-1.5,d,Math.min(d,W*.2)));
   B.face('bottom',[0,0,L,W]); B.face('front',[0,-H,L,0],PI); B.face('back',[0,W,L,W+H]);
   B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
+  return {};
+}
+// front-opening cake box: base = bottom + back + sides + low front lip; the lid (top + full front wall with a thumb notch)
+// swings up off the back wall, so a cake slides in from the front
+function buildBakeryFront(P,B){
+  const L=P.L, W=P.W, H=P.H, lp = clamp(H*.18, 8, 22), e = Math.min(W*.42, Math.max(H*.6, 20)), tp = Math.min(6, H*.2);
+  B.add('base',null,[0,0],null,0,null,rect(0,0,L,W),{final:{p:[0,0,0],q:Q_UP}});
+  B.add('lip','base',[0,0],'x',90*DEG,[0,.25],rect(0,-lp,L,0));
+  B.add('back','base',[0,W],'x',-90*DEG,[0,.25],rect(0,W,L,W+H));
+  B.add('earBL','back',[0,W],'y',-92*DEG,[.2,.38],sideTab(0,W,W+H,-e,tp));
+  B.add('earBR','back',[L,W],'y',92*DEG,[.2,.38],sideTab(L,W,W+H,e,tp));
+  B.add('sideL','base',[0,0],'y',-90*DEG,[.3,.5],rect(-H,0,0,W));
+  B.add('sideR','base',[L,0],'y',90*DEG,[.3,.5],rect(L,0,L+H,W));
+  const y1 = W+H, y2 = 2*W+H, y3 = y2+H, d = clamp(H*.55, 10, 45), nr = Math.min(12, L*.08, H*.25), m = clamp(+P.bkWm||22, 8, Math.min(L,W)/2-8);
+  const win = P.window ? [[[m,y1+m],[L-m,y1+m],[L-m,y2-m],[m,y2-m]]] : [];
+  B.add('lid','back',[0,y1],'x',-90*DEG,[.72,.97],rect(0,y1,L,y2),{holes:win});
+  B.add('lidDL','lid',[0,y1],'y',-92*DEG,[.6,.78],sideTab(0,y1+1.5,y2-1.5,-d,Math.min(d,W*.2)));
+  B.add('lidDR','lid',[L,y1],'y',92*DEG,[.6,.78],sideTab(L,y1+1.5,y2-1.5,d,Math.min(d,W*.2)));
+  B.add('lidFront','lid',[0,y2],'x',-90*DEG,[.6,.8],[[0,y2],[L,y2],[L,y3],[L/2+nr,y3], ...arc(L/2,y3,nr,0,-PI,16).slice(1,-1), [L/2-nr,y3],[0,y3]]);
+  B.face('bottom',[0,0,L,W]); B.face('back',[0,W,L,W+H]);
+  B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI); B.face('front',[0,y2,L,y3],PI);
   return {};
 }
 function buildMailer(P,B){
@@ -1497,6 +1527,9 @@ const ICONS = {
   pap:['Paperboard PAP 21','M13 3.5l4 6.9M17 10.4l.1-2.8M17 10.4l-2.5-1.3M15.5 14.5h-7M8.5 14.5l2.3-1.4M8.5 14.5l2.3 1.4M7 10.4l4-6.9M11 3.5l-2.6.2M11 3.5l.8 2.6'],
   food:['Food safe','M6 3h6l-.5 5.5a2.5 2.5 0 0 1-5 0zM9 11v8M6.5 19.5h5M17 3v17M15 3v4.5a2 2 0 0 0 4 0V3'],
   leaf:['Eco','M5 19c0-8.5 6-14 15-14 0 9-6 15-14.5 14.5M5 19l7.5-7.5'],
+  cake:['Cake slice','M3 19.5V12l12.5-5L21 12v7.5zM3 12h18M3 15.6h18M15.5 7V5.4M15.5 3.2a1.1 1.1 0 1 1-.1 0'],
+  cupcake:['Cupcake','M6 13h12l-1.6 7.5H7.6zM9.5 13l.6 7.5M14.5 13l-.6 7.5M5.5 13a3 3 0 0 1 1.7-5 4.8 4.8 0 0 1 9.6 0 3 3 0 0 1 1.7 5M12 3.2V5'],
+  heart:['Heart','M12 20s-8-5-8-10.5A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8 2.5C20 15 12 20 12 20z'],
   eac:['EAC',''],
 };
 function drawIcon(ctx, el, s){
@@ -2673,7 +2706,8 @@ function startFromTpl(id, pid){
   const keep = {}; for (const k of ['scBg','scBgColor','light','lInt','lAng','shadow','unit','bleed','safe','method','sheetFmt','sheetW','sheetH','grip','impGap']) keep[k] = S[k];
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
   Object.assign(S, DEFAULTS, keep, {els:[]}, TPL_LOOK[t.cat] || {});
-  selectTpl(id); newProject(t.name, pid); markBase(); syncEl(); renderEls();
+  selectTpl(id); if (t.els) S.els = t.els.map(e => ({id:uid(), side:'out', x:.5, y:.5, rot:0, color:S.ink, ...e}));
+  newProject(t.name, pid); markBase(); syncEl(); renderEls();
 }
 let tplCat = store.get('skladka-tplcat', 'all'), pendingTpl = null;
 const tplP = t => ({...DEFAULTS, ...TYPE_DIMS[t.type], type:t.type, ...t.set});
