@@ -266,6 +266,10 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 #view2d.panning{cursor:grabbing}
 #view2d.overel{cursor:move}
 .selov{pointer-events:none}
+.guides .gc{stroke:#f24822;stroke-width:1;stroke-dasharray:4 4;opacity:.45}
+.guides .gl{stroke:#f24822;stroke-width:1.2}.guides .gl.gs{stroke-dasharray:5 3}
+.guides .gd{stroke:#f24822;stroke-width:1;opacity:.85}
+.guides .gp{fill:#f24822}.guides .gt{fill:#fff;font-weight:600;font-family:var(--sans);text-anchor:middle}
 .selov *{vector-effect:non-scaling-stroke}
 .selov .sb{fill:none;stroke:#0d99ff;stroke-width:1.5}
 .selov.lk .sb{stroke:#8a8f98;stroke-dasharray:5 3}
@@ -283,7 +287,7 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 .selbar button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
 .selbar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .selbar i{width:1px;height:20px;background:var(--line);margin:0 3px}
-.elacts .btn{flex:1;text-align:center}
+.elacts{display:grid;grid-template-columns:1fr 1fr;gap:6px}.elacts .btn{text-align:center}
 @media (max-width:860px){
   .board-hint{display:none}
   main.board-mode #view3d{width:150px;height:120px}
@@ -647,7 +651,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
           <button class="btn" id="elDel" style="text-align:center">Delete</button>
         </div>
         <p class="warn" id="elWarn"></p>
-        <p class="note">On the “Dieline” tab work right on the sheet: click to select, drag to move (also onto another panel or the inside), corners — scale, sides — crop a logo or stretch a shape, round handle — rotate (Shift — 15° steps). Keys: arrows move 1 mm (Shift — 10 mm), Shift+H / Shift+V flip, ⌘/Ctrl+D duplicate, Delete removes, Esc deselects.</p>
+        <p class="note">On the “Dieline” tab work right on the sheet: click to select, drag to move (also onto another panel or the inside), corners — scale, sides — crop a logo or stretch a shape, round handle — rotate (Shift — 15° steps). While dragging, red guides show when it lines up with the panel centre, edges, safe zone or other elements, and red numbers show the gaps to the panel edges in mm (turn off with “Snap”). Keys: arrows move 1 mm (Shift — 10 mm), Shift+H / Shift+V flip, ⌘/Ctrl+D duplicate, Delete removes, Esc deselects.</p>
       </div>
       <p class="note" id="elHint">Logo: a PNG with a transparent background, or an SVG. Inside you can print, say, “Thank you for your order!” on the lid.</p>
     </section>
@@ -2293,9 +2297,49 @@ function setCenter(el, px, py, hop){
     const f = G.faces.find(f=>f.key===el.face && has(f)) || G.faces.find(has); if (f) r = onFace(f); }
   if (!r){ const f = G.faces.find(f=>f.key===el.face); if (!f) return; r = onFace(f); }
   let {lx, ly} = r;
-  if (hop && snapOn){ lx = Math.abs(lx) < 2 ? 0 : Math.round(lx); ly = Math.abs(ly) < 2 ? 0 : Math.round(ly); }
+  if (hop){ [lx, ly] = smartSnap(el, r, lx, ly); }
   const lo = hop ? 0 : -.5, hi = hop ? 1 : 1.5;
   Object.assign(el, {face: r.f.key, x: clamp(lx/r.fx.lw+.5, lo, hi), y: clamp(ly/r.fx.lh+.5, lo, hi)});
+}
+// smart guides (like Figma): while dragging, the element snaps to the panel centre, panel edges, the safe zone
+// and to the centres / edges of other elements on the same panel; red lines show what it snapped to, red numbers the gaps to the panel edges
+let GUIDES = null;
+function smartSnap(el, r, lx, ly){
+  const {lw, lh} = r.fx, sz = elSz(el) || [0,0], a = el.rot*DEG, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
+  const hw = sz[0]/2*c + sz[1]/2*s, hh = sz[0]/2*s + sz[1]/2*c, tol = 6/(BK*bz);
+  const box = (x, y) => ({x0:x-hw, x1:x+hw, y0:y-hh, y1:y+hh});
+  // targets per axis: [value, extent for the guide line [from,to] on the other axis, kind]
+  const tx = [[0,null,'c'], [-lw/2,null,'e'], [lw/2,null,'e'], [-lw/2+SAFE,null,'s'], [lw/2-SAFE,null,'s']];
+  const ty = [[0,null,'c'], [-lh/2,null,'e'], [lh/2,null,'e'], [-lh/2+SAFE,null,'s'], [lh/2-SAFE,null,'s']];
+  for (const o of S.els){ if (o===el || o.hidden || o.side!==el.side || o.face!==r.f.key) continue; const g = elSz(o); if (!g) continue;
+    const oa = o.rot*DEG, oc = Math.abs(Math.cos(oa)), os = Math.abs(Math.sin(oa)), ow = g[0]/2*oc + g[1]/2*os, oh = g[0]/2*os + g[1]/2*oc;
+    const cx = (o.x-.5)*lw, cy = (o.y-.5)*lh;
+    for (const v of [cx-ow, cx, cx+ow]) tx.push([v, [cy-oh, cy+oh], v===cx ? 'c' : 'e']);
+    for (const v of [cy-oh, cy, cy+oh]) ty.push([v, [cx-ow, cx+ow], v===cy ? 'c' : 'e']); }
+  const lines = [];
+  const pick = (pos, half, T) => { let best = null;
+    for (const [v, ext, kind] of T) for (const off of [-half, 0, half]){ const d = v - (pos + off); if (Math.abs(d) < tol && (!best || Math.abs(d) < Math.abs(best.d) - 1e-6)) best = {d, v, ext, kind}; }
+    return best; };
+  const bx = snapOn && pick(lx, hw, tx), by = snapOn && pick(ly, hh, ty);
+  if (bx) lx += bx.d; else if (snapOn) lx = Math.round(lx*2)/2;
+  if (by) ly += by.d; else if (snapOn) ly = Math.round(ly*2)/2;
+  const b = box(lx, ly);
+  if (bx){ const e = bx.ext ? [Math.min(bx.ext[0], b.y0), Math.max(bx.ext[1], b.y1)] : [-lh/2, lh/2]; lines.push([bx.v, e[0], bx.v, e[1], bx.kind]); }
+  if (by){ const e = by.ext ? [Math.min(by.ext[0], b.x0), Math.max(by.ext[1], b.x1)] : [-lw/2, lw/2]; lines.push([e[0], by.v, e[1], by.v, by.kind]); }
+  const gaps = [[-lw/2, ly, b.x0, ly], [b.x1, ly, lw/2, ly], [lx, -lh/2, lx, b.y0], [lx, b.y1, lx, lh/2]];
+  GUIDES = {el, face:r.f, side:el.side, lines, gaps, lw, lh};
+  return [lx, ly];
+}
+function guidesSvg(){
+  const Gd = GUIDES; if (!Gd || !act?.live || act.el !== Gd.el) return '';
+  const fx = faceX(G, Gd.face, 1, Gd.side), c = Math.cos(fx.rot), s = Math.sin(fx.rot), P = (x,y) => [fx.cx + x*c - y*s, fx.cy + x*s + y*c];
+  const k = 1/(BK*bz), n = v => +v.toFixed(3), L = (x1,y1,x2,y2,cls) => { const [a,b] = P(x1,y1), [d,e] = P(x2,y2); return `<line class="${cls}" x1="${n(a)}" y1="${n(b)}" x2="${n(d)}" y2="${n(e)}"/>`; };
+  let h = L(0, -Gd.lh/2, 0, Gd.lh/2, 'gc') + L(-Gd.lw/2, 0, Gd.lw/2, 0, 'gc');      // the panel's centre lines, always shown while dragging
+  for (const [x1,y1,x2,y2,kind] of Gd.lines) h += L(x1,y1,x2,y2, 'gl' + (kind==='s' ? ' gs' : ''));
+  for (const [x1,y1,x2,y2] of Gd.gaps){ const d = Math.hypot(x2-x1, y2-y1); if (d < .05 || x2 < x1 - 1e-6 || y2 < y1 - 1e-6) continue;
+    h += L(x1,y1,x2,y2,'gd'); const [mx,my] = P((x1+x2)/2, (y1+y2)/2), t = (+d.toFixed(1)).toString(), fs = 10.5*k, tw = (t.length*.62+.8)*fs;
+    h += `<rect class="gp" x="${n(mx-tw/2)}" y="${n(my-fs*.75)}" width="${n(tw)}" height="${n(fs*1.5)}" rx="${n(fs*.35)}"/><text class="gt" x="${n(mx)}" y="${n(my+fs*.36)}" font-size="${n(fs)}">${t}</text>`; }
+  return `<g class="selov guides">${h}</g>`;
 }
 const svgPt = (svg, e) => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
 function hitEl(e){
@@ -2329,6 +2373,7 @@ function drawSel(){
       for (const [x,y,id] of [[-hw,-hh,'nw'],[hw,-hh,'ne'],[hw,hh,'se'],[-hw,hh,'sw']]) h += `<rect class="sh" data-h="${id}" x="${n(x-hs)}" y="${n(y-hs)}" width="${n(2*hs)}" height="${n(2*hs)}"/>`;
       const ry = -hh - 24*k; h += `<line class="sl" x1="0" y1="${n(-hh)}" x2="0" y2="${n(ry)}"/><circle class="sr" data-h="rot" cx="0" cy="${n(ry)}" r="${n(5.5*k)}"/>`;
     }
+    svg.insertAdjacentHTML('beforeend', guidesSvg());
     svg.insertAdjacentHTML('beforeend', `<g class="selov${el.locked ? ' lk' : ''}" transform="translate(${n(g.cx)} ${n(g.cy)}) rotate(${n(g.a/DEG)})">${h}</g>`);
     // the floating toolbar above the selection
     if (act && act.live !== false && act.mode){ bar.hidden = true; return; }
@@ -2411,7 +2456,7 @@ $('view2d').addEventListener('pointermove', e => {
   if (pan){ bx = pan.bx + e.clientX - pan.x; by = pan.by + e.clientY - pan.y; applyBoard(); return; }
   if (e.pointerType === 'mouse'){ const over = !e.target.closest('.board-ov, .selov [data-h]') && !!hitEl(e)?.el; v.classList.toggle('overel', over); }
 });
-const endAct = () => { if (act && dragging) renderEls(); act = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
+const endAct = () => { if (act && dragging) renderEls(); act = null; GUIDES = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
 $('view2d').addEventListener('pointerup', endAct);
 $('view2d').addEventListener('pointercancel', endAct);
 $('view2d').addEventListener('dblclick', e => { const el = curEl(); if (!el || !['text','barcode','qr'].includes(el.kind) || e.target.closest('.board-ov')) return;
