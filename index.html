@@ -54,13 +54,18 @@ section{padding:16px 18px;border-bottom:1px solid var(--line);display:grid;gap:1
 section:last-child{border-bottom:0}
 h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--fg)}
 h3{margin:4px 0 0;font-size:12px;font-weight:600;color:var(--fg)}
-label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0;grid-template-rows:1fr auto;align-content:end}
 .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 input[type=number],input[type=text],select{width:100%;font:500 14px var(--mono);color:var(--fg);background:var(--field);
   border:1px solid var(--line);border-radius:8px;padding:8px 10px;transition:border-color .15s}
 input[type=number]:hover,input[type=text]:hover,select:hover{border-color:#c9c7d0}
 input[type=text],select{font-family:var(--sans);font-size:13.5px}
+select{appearance:none;-webkit-appearance:none;padding-right:30px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;cursor:pointer;line-height:1.25;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a8794' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:12px 12px}
+select:disabled{opacity:.55;cursor:default}
+select::-ms-expand{display:none}
 input:focus-visible,select:focus-visible,button:focus-visible,.slot:focus-within{outline:2px solid var(--accent);outline-offset:1px}
 input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:2px}
 .tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -287,7 +292,12 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 .selbar button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
 .selbar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .selbar i{width:1px;height:20px;background:var(--line);margin:0 3px}
-.elacts{display:grid;grid-template-columns:1fr 1fr;gap:6px}.elacts .btn{text-align:center}
+.elacts{display:flex;gap:6px}.elacts .btn{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 6px;white-space:nowrap}
+.elacts .btn[hidden]{display:none}.elacts .btn[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+svg.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#saveMenuBtn{display:inline-flex;align-items:center;gap:4px}#saveMenuBtn .chev{width:14px;height:14px;stroke-width:2.2;transition:transform .15s}
+#saveMenuBtn[aria-expanded=true] .chev{transform:rotate(180deg)}
+.chip .ic{width:13px;height:13px;vertical-align:-2px;margin-right:3px}
 @media (max-width:860px){
   .board-hint{display:none}
   main.board-mode #view3d{width:150px;height:120px}
@@ -393,10 +403,10 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
     <div class="sp"></div>
     <label class="btn ghost" style="position:relative;overflow:hidden">Open .json<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
     <div class="savewrap">
-      <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Export ▾</button>
+      <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Export<svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
         <button class="btn" role="menuitem" id="exZip"><b>Everything as one archive</b><small>ZIP — PDF, SVG, PNG and the project file</small></button>
-        <button class="btn" role="menuitem" id="exPdf"><b>Print-ready PDF</b><small>cover with 3D and specs, then 1:1 mm CMYK 300 dpi, CUT and CREASE layers</small></button>
+        <button class="btn" role="menuitem" id="exPdf"><b>Print-ready PDF</b><small>one A size, landscape: cover with 3D and specs, print pages 1:1 CMYK 300 dpi, technical drawing with dimensions</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Dieline with artwork, SVG</b><small>design + die lines as layers</small></button>
         <button class="btn" role="menuitem" id="exDxf"><b>Die for CAD / cutter, DXF</b><small>ArtiosCAD, Esko, AutoCAD, CorelDRAW, cutting tables — layers CUT, CREASE, BLEED…</small></button>
         <button class="btn" role="menuitem" id="exSvg"><b>Blank template, SVG</b><small>lines only — design in Illustrator / Figma</small></button>
@@ -636,10 +646,10 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         <label class="rng"><span>Up / down</span><input id="elY" type="range" min="0" max="100" step="0.5"><output id="elYO"></output></label>
         <label class="rng"><span>Rotation</span><input id="elRot" type="range" min="-180" max="180" step="1"><output id="elRotO"></output></label>
         <div class="btns elacts" id="elActs">
-          <button class="btn" type="button" data-a="fx" aria-pressed="false" title="Flip horizontally (Shift+H)">⇆ Flip</button>
-          <button class="btn" type="button" data-a="fy" aria-pressed="false" title="Flip vertically (Shift+V)">⇅ Flip</button>
-          <button class="btn" type="button" data-a="r90" title="Rotate 90°">↻ 90°</button>
-          <button class="btn" type="button" data-a="crop" id="elCropReset" title="Show the whole image again">Reset crop</button>
+          <button class="btn" type="button" data-a="fx" aria-pressed="false" title="Flip horizontally (Shift+H)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M9 6 3 18h6zM15 6l6 12h-6z"/></svg>Flip H</button>
+          <button class="btn" type="button" data-a="fy" aria-pressed="false" title="Flip vertically (Shift+V)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M6 9 18 3v6zM6 15l12 6v-6z"/></svg>Flip V</button>
+          <button class="btn" type="button" data-a="r90" title="Rotate 90°"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>90°</button>
+          <button class="btn" type="button" data-a="crop" id="elCropReset" title="Show the whole image again"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v16h16M2 6h16v16"/></svg>Crop</button>
         </div>
         <div class="row2">
           <label class="f">Finish<select id="elFin"><option value="">No finish</option><option value="varnish">Spot varnish</option><option value="foil_gold">Foil — gold</option><option value="foil_silver">Foil — silver</option><option value="emboss">Emboss (raised)</option><option value="deboss">Deboss (pressed in)</option></select></label>
@@ -2507,7 +2517,7 @@ function tplOrig(){ const t = TPL.find(x => x.id===S.tplOrig); if (!t || t.type!
 const sameVals = o => Object.entries(o).every(([k,v]) => String(S[k])===String(v));
 function renderPresets(){
   const orig = tplOrig(), mine = (myPresets()[S.type]||[]);
-  $('presets').innerHTML = (orig ? `<button type="button" class="chip orig" data-orig="1" aria-pressed="${sameVals(orig.o)}" title="Back to the sizes of “${esc(orig.t.name)}”">↺ Original</button>` : '') +
+  $('presets').innerHTML = (orig ? `<button type="button" class="chip orig" data-orig="1" aria-pressed="${sameVals(orig.o)}" title="Back to the sizes of “${esc(orig.t.name)}”"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/></svg>Original</button>` : '') +
     sizeChips().map(([n,d]) => `<button type="button" class="chip" data-d="${d}" aria-pressed="${hitDims(d)}">${n}${/\d×\d/.test(n) ? '' : ' · '+dimTxt(d, S.type)}</button>`).join('');
   $('myPresets').innerHTML = mine.map((p,i) => `<span class="uchip"><button type="button" class="chip" data-u="${i}" aria-pressed="${sameVals(p.v)}">★ ${esc(p.n)}</button><button type="button" class="chip" data-ux="${i}" aria-label="Delete size ${esc(p.n)}">×</button></span>`).join('') +
     `<button type="button" class="chip" id="savePreset">+ Save this size</button>`;
@@ -2705,8 +2715,11 @@ function renderEls(){
     b.addEventListener('click',()=>{ selId = el.id===selId ? null : el.id; renderEls(); syncEl(); refresh(); });
     const row = document.createElement('div'); row.className = 'elrow' + (el.hidden ? ' off' : ''); row.append(b);
     const i = S.els.indexOf(el);
-    for (const [act, txt, lbl, on] of [['up','↑','Bring forward',false],['down','↓','Send backward',false],['hide',el.hidden?'◌':'●',el.hidden?'Show':'Hide',!!el.hidden],['lock',el.locked?'🔒':'🔓',el.locked?'Unlock':'Lock position',!!el.locked]]){
-      const m = document.createElement('button'); m.className = 'btn mini'; m.textContent = txt; m.title = lbl; m.setAttribute('aria-label', lbl); if (act==='hide'||act==='lock') m.setAttribute('aria-pressed', on);
+    const ICN = {up:'M6 15l6-6 6 6', down:'M6 9l6 6 6-6', show:'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+      hide:'M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.9 8.3 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2',
+      lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', unlock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 7.7-1.5'};
+    for (const [act, txt, lbl, on] of [['up',ICN.up,'Bring forward',false],['down',ICN.down,'Send backward',false],['hide',el.hidden?ICN.hide:ICN.show,el.hidden?'Show':'Hide',!!el.hidden],['lock',el.locked?ICN.lock:ICN.unlock,el.locked?'Unlock':'Lock position',!!el.locked]]){
+      const m = document.createElement('button'); m.className = 'btn mini'; m.innerHTML = `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="${txt}"/></svg>`; m.title = lbl; m.setAttribute('aria-label', lbl); if (act==='hide'||act==='lock') m.setAttribute('aria-pressed', on);
       if ((act==='up' && i===S.els.length-1) || (act==='down' && i===0)) m.disabled = true;
       m.addEventListener('click', () => { if (act==='up'||act==='down'){ const j = act==='up' ? i+1 : i-1; [S.els[i], S.els[j]] = [S.els[j], S.els[i]]; }
         else if (act==='hide') el.hidden = !el.hidden; else el.locked = !el.locked; renderEls(); refresh(); });
