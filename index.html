@@ -264,6 +264,26 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 #view2d:not(.grid) .gridl{display:none}
 .zoom output{font:12px var(--mono);width:46px;text-align:center;color:var(--muted)}
 #view2d.panning{cursor:grabbing}
+#view2d.overel{cursor:move}
+.selov{pointer-events:none}
+.selov *{vector-effect:non-scaling-stroke}
+.selov .sb{fill:none;stroke:#0d99ff;stroke-width:1.5}
+.selov.lk .sb{stroke:#8a8f98;stroke-dasharray:5 3}
+.selov .sf{fill:rgba(13,153,255,.06);stroke:#0d99ff;stroke-width:1;stroke-dasharray:4 3;opacity:.8}
+.selov .sl{stroke:#0d99ff;stroke-width:1.2}
+.selov [data-h]{pointer-events:all}
+.selov .sh,.selov .sr{fill:#fff;stroke:#0d99ff;stroke-width:1.5}
+.selov .se{fill:transparent}
+.selov .sk{fill:#0d99ff;pointer-events:none}
+.selov [data-h=nw],.selov [data-h=se]{cursor:nwse-resize}.selov [data-h=ne],.selov [data-h=sw]{cursor:nesw-resize}
+.selov [data-h=n],.selov [data-h=s]{cursor:ns-resize}.selov [data-h=e],.selov [data-h=w]{cursor:ew-resize}.selov [data-h=rot]{cursor:alias}
+.selbar{display:flex;align-items:center;gap:2px;padding:3px;background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:0 4px 16px rgba(0,0,0,.16)}
+.selbar button{width:30px;height:30px;display:grid;place-items:center;border:0;background:none;color:var(--fg);border-radius:6px;cursor:pointer}
+.selbar button:hover{background:var(--accent-soft)}
+.selbar button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
+.selbar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.selbar i{width:1px;height:20px;background:var(--line);margin:0 3px}
+.elacts .btn{flex:1;text-align:center}
 @media (max-width:860px){
   .board-hint{display:none}
   main.board-mode #view3d{width:150px;height:120px}
@@ -610,6 +630,12 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         <label class="rng"><span>Left / right</span><input id="elX" type="range" min="0" max="100" step="0.5"><output id="elXO"></output></label>
         <label class="rng"><span>Up / down</span><input id="elY" type="range" min="0" max="100" step="0.5"><output id="elYO"></output></label>
         <label class="rng"><span>Rotation</span><input id="elRot" type="range" min="-180" max="180" step="1"><output id="elRotO"></output></label>
+        <div class="btns elacts" id="elActs">
+          <button class="btn" type="button" data-a="fx" aria-pressed="false" title="Flip horizontally (Shift+H)">⇆ Flip</button>
+          <button class="btn" type="button" data-a="fy" aria-pressed="false" title="Flip vertically (Shift+V)">⇅ Flip</button>
+          <button class="btn" type="button" data-a="r90" title="Rotate 90°">↻ 90°</button>
+          <button class="btn" type="button" data-a="crop" id="elCropReset" title="Show the whole image again">Reset crop</button>
+        </div>
         <div class="row2">
           <label class="f">Finish<select id="elFin"><option value="">No finish</option><option value="varnish">Spot varnish</option><option value="foil_gold">Foil — gold</option><option value="foil_silver">Foil — silver</option><option value="emboss">Emboss (raised)</option><option value="deboss">Deboss (pressed in)</option></select></label>
           <label class="f">Pantone spot<input id="elSpot" type="text" placeholder="e.g. 186 C" autocomplete="off"></label>
@@ -620,7 +646,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
           <button class="btn" id="elDel" style="text-align:center">Delete</button>
         </div>
         <p class="warn" id="elWarn"></p>
-        <p class="note">On the “Dieline” tab you can drag the selected element with the mouse, outside and inside. To pan the sheet, deselect the element.</p>
+        <p class="note">On the “Dieline” tab work right on the sheet: click to select, drag to move (also onto another panel or the inside), corners — scale, sides — crop a logo or stretch a shape, round handle — rotate (Shift — 15° steps). Keys: arrows move 1 mm (Shift — 10 mm), Shift+H / Shift+V flip, ⌘/Ctrl+D duplicate, Delete removes, Esc deselects.</p>
       </div>
       <p class="note" id="elHint">Logo: a PNG with a transparent background, or an SVG. Inside you can print, say, “Thank you for your order!” on the lid.</p>
     </section>
@@ -719,7 +745,17 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         <button id="zFit" class="wide">Fit</button><button id="z11" class="wide" title="Actual size on screen">1:1</button>
         <button id="gridBtn" class="wide" aria-pressed="false" title="10 mm grid">Grid</button><button id="snapBtn" class="wide" aria-pressed="true" title="Snap to panel centre and whole millimetres while dragging">Snap</button>
       </div>
-      <p class="board-hint board-ov">Wheel or drag — pan · Ctrl/⌘ + wheel or pinch — zoom</p>
+      <p class="board-hint board-ov">Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom</p>
+      <div class="selbar board-ov" id="selBar" hidden>
+        <button type="button" data-a="fx" title="Flip horizontally (Shift+H)" aria-label="Flip horizontally"><svg viewBox="0 0 24 24"><path d="M12 3v18M9 6 3 18h6zM15 6l6 12h-6z"/></svg></button>
+        <button type="button" data-a="fy" title="Flip vertically (Shift+V)" aria-label="Flip vertically"><svg viewBox="0 0 24 24"><path d="M3 12h18M6 9 18 3v6zM6 15l12 6v-6z"/></svg></button>
+        <button type="button" data-a="r90" title="Rotate 90°" aria-label="Rotate 90 degrees"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
+        <button type="button" data-a="crop" title="Reset crop" aria-label="Reset crop"><svg viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></svg></button>
+        <i></i>
+        <button type="button" data-a="lock" title="Lock position" aria-label="Lock position"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+        <button type="button" data-a="dup" title="Duplicate (⌘/Ctrl+D)" aria-label="Duplicate"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button>
+        <button type="button" data-a="del" title="Delete (Delete)" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+      </div>
     </div>
     <div class="fold">
       <button class="play" id="play" aria-label="Fold or unfold the box">
@@ -1411,7 +1447,8 @@ function drawIcon(ctx, el, s){
 }
 function drawEl(ctx, el, s){
   if (el.kind==='image'){ const im = ELIMG[el.id]?.img; if (!im) return null;
-    const w = el.size*s, h = w*im.naturalHeight/im.naturalWidth; ctx.drawImage(im,-w/2,-h/2,w,h); return [w,h]; }
+    const c = el.crop || [0,0,0,0], nw = im.naturalWidth, nh = im.naturalHeight, sw = nw*(1-c[0]-c[2]), sh = nh*(1-c[1]-c[3]);
+    const w = el.size*s, h = w*sh/sw; ctx.drawImage(im, c[0]*nw, c[1]*nh, sw, sh, -w/2,-h/2,w,h); return [w,h]; }
   if (el.kind==='shape') return drawShape(ctx, el, s);
   if (el.kind==='barcode') return drawEAN(ctx, el, s);
   if (el.kind==='qr') return drawQR(ctx, el, s);
@@ -1492,6 +1529,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
     const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
     ctx.save(); clipFace(ctx,G,f,s,side);
     ctx.translate(cx,cy); ctx.rotate(rot); ctx.translate((el.x-.5)*lw,(el.y-.5)*lh); ctx.rotate(el.rot*DEG);
+    if (el.fx || el.fy) ctx.scale(el.fx ? -1 : 1, el.fy ? -1 : 1);
     curElId = el.id; const m0 = o.els && ctx.getTransform();
     const bb = o.print || !(el.fin && el.fin!=='varnish') ? drawEl(ctx,el,s) : drawElFx(ctx,el,s);
     curElId = null; if (o.els && bb) o.els.push({el, m:m0, bb});
@@ -2148,50 +2186,176 @@ function doRefresh(){
 let gen = 0, sig2d = '';
 function render2D(){
   const sp = Math.min(4, 1600/Math.max(G.b.w,G.b.h)), inside = hasInside();
-  const out = drawArt(document.createElement('canvas'), G, sp, false, 'out', selId).toDataURL('image/jpeg',.85);
-  const inn = inside ? drawArt(document.createElement('canvas'), G, sp, false, 'in', selId).toDataURL('image/jpeg',.85) : null;
+  const out = drawArt(document.createElement('canvas'), G, sp, false, 'out').toDataURL('image/jpeg',.85);
+  const inn = inside ? drawArt(document.createElement('canvas'), G, sp, false, 'in').toDataURL('image/jpeg',.85) : null;
   const v = $('view2d'), sig = gen+'|'+inside;
-  v.classList.toggle('placing', !!selId);
   if (sig === sig2d && v.querySelector('[data-side=out] image')){
     v.querySelector('[data-side=out] image').setAttribute('href', out);
     if (inn) v.querySelector('[data-side=in] image').setAttribute('href', inn);
-    return;
+    drawSel(); return;
   }
   sig2d = sig;
   const grid = `<g class="gridl" stroke="#7d5cff" stroke-opacity=".5" stroke-width="0.3">${Array.from({length:Math.floor(G.b.w/10)+1},(_,i)=>`<line x1="${i*10+BLEED}" y1="0" x2="${i*10+BLEED}" y2="${f2(G.b.h)}"/>`).join('')}${Array.from({length:Math.floor(G.b.h/10)+1},(_,i)=>`<line x1="0" y1="${i*10+BLEED}" x2="${f2(G.b.w)}" y2="${i*10+BLEED}"/>`).join('')}</g>`;
   const sz = svg => svg.replace('<svg ', `<svg style="width:${(G.b.w*BK).toFixed(1)}px;height:${(G.b.h*BK).toFixed(1)}px" `).replace('</svg>', grid+'</svg>');
   $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Outside · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm</p>${sz(svgDoc(G, out, false, true))}</div>` +
     (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Reverse, inside of the box · mirrored, as printed</p>${sz(svgDoc(G, inn, true, true))}</div>` : '');
-  fitBoard();
+  fitBoard(); drawSel();
 }
-// drag the selected logo/text on the flat sheet
-let dragging = false, dragWrap = null;
-function placeAt(e){
-  const el = curEl(); if (el?.locked){ toast('This element is locked — unlock it in the list.'); return; } const hit = document.elementFromPoint(e.clientX, e.clientY); const wrap = hit?.closest('[data-side]') || (dragWrap ??= null);
-  const svg = wrap?.querySelector('svg'); if (!el || !svg) return; dragWrap = wrap;
-  const side = wrap.dataset.side, pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
-  const x = side==='in' ? G.b.maxX - p.x : G.b.minX + p.x, y = G.b.maxY - p.y;
-  const inside = f => x>=f.r[0] && x<=f.r[2] && y>=f.r[1] && y<=f.r[3];
-  const f = G.faces.find(f=>f.key===el.face && inside(f)) || G.faces.find(inside); if (!f) return;
-  const fx = faceX(G,f,1,side), dx = x-(f.r[0]+f.r[2])/2, dy = y-(f.r[1]+f.r[3])/2;
-  const ux = side==='in' ? -dx : dx, uy = -dy, r = fx.rot;
-  let lx = ux*Math.cos(r) + uy*Math.sin(r), ly = -ux*Math.sin(r) + uy*Math.cos(r);
-  if (snapOn){ lx = Math.abs(lx) < 2 ? 0 : Math.round(lx); ly = Math.abs(ly) < 2 ? 0 : Math.round(ly); }
-  Object.assign(el, {side, face:f.key, x:clamp(lx/fx.lw+.5,0,1), y:clamp(ly/fx.lh+.5,0,1)});
-  syncEl(); refresh();
+// ---------- board: select, move, scale, crop, rotate and flip elements right on the sheet
+// sheet coordinates = the board SVG's user units (mm, y down, the inside sheet already mirrored)
+const SZC = document.createElement('canvas').getContext('2d');
+const elSz = el => { const b = drawEl(SZC, el, 10); return b ? [b[0]/10, b[1]/10] : null; };
+function elGeo(el){
+  if (!el || el.hidden || !G) return null; const f = G.faces.find(f=>f.key===el.face); if (!f) return null; const sz = elSz(el); if (!sz) return null;
+  const fx = faceX(G,f,1,el.side), ox = (el.x-.5)*fx.lw, oy = (el.y-.5)*fx.lh, c = Math.cos(fx.rot), s = Math.sin(fx.rot);
+  return {cx: fx.cx + ox*c - oy*s, cy: fx.cy + ox*s + oy*c, a: fx.rot + el.rot*DEG, w: sz[0], h: sz[1], fx};
 }
+const toLocal = (g, px, py) => { const dx = px-g.cx, dy = py-g.cy, c = Math.cos(g.a), s = Math.sin(g.a); return [dx*c + dy*s, -dx*s + dy*c]; };
+const toSheet = (g, lx, ly) => { const c = Math.cos(g.a), s = Math.sin(g.a); return [g.cx + lx*c - ly*s, g.cy + lx*s + ly*c]; };
+// put the element's centre at a sheet point; hop: it may move onto the panel under the point
+function setCenter(el, px, py, hop){
+  const onFace = f => { const fx = faceX(G,f,1,el.side), dx = px-fx.cx, dy = py-fx.cy, c = Math.cos(fx.rot), s = Math.sin(fx.rot);
+    return {f, fx, lx: dx*c + dy*s, ly: -dx*s + dy*c}; };
+  let r = null;
+  if (hop){ const x = el.side==='in' ? G.b.maxX - px : G.b.minX + px, y = G.b.maxY - py, has = f => x>=f.r[0] && x<=f.r[2] && y>=f.r[1] && y<=f.r[3];
+    const f = G.faces.find(f=>f.key===el.face && has(f)) || G.faces.find(has); if (f) r = onFace(f); }
+  if (!r){ const f = G.faces.find(f=>f.key===el.face); if (!f) return; r = onFace(f); }
+  let {lx, ly} = r;
+  if (hop && snapOn){ lx = Math.abs(lx) < 2 ? 0 : Math.round(lx); ly = Math.abs(ly) < 2 ? 0 : Math.round(ly); }
+  const lo = hop ? 0 : -.5, hi = hop ? 1 : 1.5;
+  Object.assign(el, {face: r.f.key, x: clamp(lx/r.fx.lw+.5, lo, hi), y: clamp(ly/r.fx.lh+.5, lo, hi)});
+}
+const svgPt = (svg, e) => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
+function hitEl(e){
+  const wrap = document.elementFromPoint(e.clientX, e.clientY)?.closest('#boardInner [data-side]'); if (!wrap) return null;
+  const side = wrap.dataset.side, svg = wrap.querySelector('svg'); if (!svg) return null;
+  const p = svgPt(svg, e), tol = 3/(BK*bz);
+  for (let i = S.els.length-1; i >= 0; i--){ const el = S.els[i]; if (el.side!==side) continue; const g = elGeo(el); if (!g) continue;
+    const [lx,ly] = toLocal(g, p.x, p.y); if (Math.abs(lx) <= g.w/2+tol && Math.abs(ly) <= g.h/2+tol) return {el, svg, p, side}; }
+  return {el:null, svg, p, side};
+}
+const canCrop = el => el.kind==='image' && !!ELIMG[el.id];
+const canStretch = el => el.kind==='shape';
+function drawSel(){
+  try {
+    document.querySelectorAll('#boardInner .selov').forEach(n => n.remove());
+    const el = curEl(), bar = $('selBar'), svg = el && document.querySelector(`#boardInner [data-side=${el.side}] svg`), g = svg && elGeo(el);
+    if (!g || $('view2d').hidden){ bar.hidden = true; return; }
+    const k = 1/(BK*bz), hw = g.w/2, hh = g.h/2, hs = 4.5*k, n = v => +v.toFixed(3);
+    let h = '';
+    if (canCrop(el) && (el.crop || act?.mode && act.mode.length===1)){ const c = el.crop || [0,0,0,0], im = ELIMG[el.id].img, kk = g.w/(im.naturalWidth*(1-c[0]-c[2]));
+      const L = (el.fx ? c[2] : c[0])*im.naturalWidth*kk, R = (el.fx ? c[0] : c[2])*im.naturalWidth*kk, T = (el.fy ? c[3] : c[1])*im.naturalHeight*kk, B = (el.fy ? c[1] : c[3])*im.naturalHeight*kk;
+      h += `<rect class="sf" x="${n(-hw-L)}" y="${n(-hh-T)}" width="${n(g.w+L+R)}" height="${n(g.h+T+B)}"/>`; }
+    h += `<rect class="sb" x="${n(-hw)}" y="${n(-hh)}" width="${n(g.w)}" height="${n(g.h)}"/>`;
+    if (!el.locked){
+      if (canCrop(el) || canStretch(el)){ const t = 7*k;
+        h += `<rect class="se" data-h="n" x="${n(-hw)}" y="${n(-hh-t/2)}" width="${n(g.w)}" height="${n(t)}"/><rect class="se" data-h="s" x="${n(-hw)}" y="${n(hh-t/2)}" width="${n(g.w)}" height="${n(t)}"/>`;
+        h += `<rect class="se" data-h="w" x="${n(-hw-t/2)}" y="${n(-hh)}" width="${n(t)}" height="${n(g.h)}"/><rect class="se" data-h="e" x="${n(hw-t/2)}" y="${n(-hh)}" width="${n(t)}" height="${n(g.h)}"/>`;
+        const bl = 14*k, bt = 3.5*k;   // little grips in the middle of each side
+        if (g.w*BK*bz > 40) h += `<rect class="sk" x="${n(-bl/2)}" y="${n(-hh-bt/2)}" width="${n(bl)}" height="${n(bt)}" rx="${n(bt/2)}"/><rect class="sk" x="${n(-bl/2)}" y="${n(hh-bt/2)}" width="${n(bl)}" height="${n(bt)}" rx="${n(bt/2)}"/>`;
+        if (g.h*BK*bz > 40) h += `<rect class="sk" x="${n(-hw-bt/2)}" y="${n(-bl/2)}" width="${n(bt)}" height="${n(bl)}" rx="${n(bt/2)}"/><rect class="sk" x="${n(hw-bt/2)}" y="${n(-bl/2)}" width="${n(bt)}" height="${n(bl)}" rx="${n(bt/2)}"/>`; }
+      for (const [x,y,id] of [[-hw,-hh,'nw'],[hw,-hh,'ne'],[hw,hh,'se'],[-hw,hh,'sw']]) h += `<rect class="sh" data-h="${id}" x="${n(x-hs)}" y="${n(y-hs)}" width="${n(2*hs)}" height="${n(2*hs)}"/>`;
+      const ry = -hh - 24*k; h += `<line class="sl" x1="0" y1="${n(-hh)}" x2="0" y2="${n(ry)}"/><circle class="sr" data-h="rot" cx="0" cy="${n(ry)}" r="${n(5.5*k)}"/>`;
+    }
+    svg.insertAdjacentHTML('beforeend', `<g class="selov${el.locked ? ' lk' : ''}" transform="translate(${n(g.cx)} ${n(g.cy)}) rotate(${n(g.a/DEG)})">${h}</g>`);
+    // the floating toolbar above the selection
+    if (act && act.live !== false && act.mode){ bar.hidden = true; return; }
+    const m = svg.getScreenCTM(), vr = $('view2d').getBoundingClientRect(), pts = [[-hw,-hh-24*k],[hw,-hh],[hw,hh],[-hw,hh],[-hw,-hh]].map(([x,y]) => { const [sx,sy] = toSheet(g,x,y);
+      return [m.a*sx + m.c*sy + m.e - vr.left, m.b*sx + m.d*sy + m.f - vr.top]; });
+    const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]); bar.hidden = false;
+    const bw = bar.offsetWidth, bh = bar.offsetHeight; let top = Math.min(...ys) - bh - 10; if (top < 30) top = Math.max(...ys) + 12;
+    bar.style.left = clamp((Math.min(...xs)+Math.max(...xs))/2 - bw/2, 28, vr.width - bw - 8) + 'px'; bar.style.top = clamp(top, 28, vr.height - bh - 8) + 'px';
+  } catch {}
+}
+let act = null, dragging = false;
+function transformEl(p, e){
+  const {el, g, s0} = act, [lx,ly] = toLocal(g, p.x, p.y), m = act.mode, hw = g.w/2, hh = g.h/2;
+  if (m==='rot'){ let d = (Math.atan2(p.y-g.cy, p.x-g.cx) + PI/2 - g.fx.rot)/DEG; d = ((d+180)%360+360)%360-180;
+    if (e.shiftKey) d = Math.round(d/15)*15; else { d = Math.round(d); if (snapOn){ const r = Math.round(d/45)*45; if (Math.abs(d-r) < 3) d = r; } }
+    el.rot = d === -180 ? 180 : d; return; }
+  let cl = [0,0];
+  if (m.length===2){   // corner: scale, the opposite corner stays put (shapes stretch freely, Shift keeps proportions)
+    const sx = m[1]==='e' ? 1 : -1, sy = m[0]==='s' ? 1 : -1, ax = -sx*hw, ay = -sy*hh;
+    if (canStretch(el) && !e.shiftKey){ const W = clamp(sx*(lx-ax), 1, 600), H = clamp(sy*(ly-ay), .3, 400);
+      el.size = +W.toFixed(1); el.h = +H.toFixed(1); cl = [ax + sx*el.size/2, ay + sy*el.h/2]; }
+    else { const dx = 2*sx*hw, dy = 2*sy*hh, min = el.kind==='text' ? .8 : 2;
+      const kf = Math.max(min/s0.size, ((lx-ax)*dx + (ly-ay)*dy)/(dx*dx + dy*dy));
+      el.size = +(s0.size*kf).toFixed(1); if (canStretch(el)) el.h = +((s0.h || s0.size)*kf).toFixed(1);
+      const f = el.size/s0.size; cl = [ax + dx*f/2, ay + dy*f/2]; }
+  } else if (canCrop(el)){   // side of a logo: crop (drag in) or uncrop (drag out, up to the whole image)
+    const im = ELIMG[el.id].img, NW = im.naturalWidth, NH = im.naturalHeight, c0 = s0.crop, c = [...c0], kk = g.w/(NW*(1-c0[0]-c0[2]));
+    if (m==='e' || m==='w'){ const sx = m==='e' ? 1 : -1, ax = -sx*hw, i = (sx > 0) !== !!el.fx ? 2 : 0;
+      const W = clamp(sx*(lx-ax), 2, g.w + c0[i]*NW*kk); c[i] = Math.max(0, c0[i] - (W - g.w)/(NW*kk)); el.size = +W.toFixed(2); cl = [ax + sx*W/2, 0]; }
+    else { const sy = m==='s' ? 1 : -1, ay = -sy*hh, i = (sy > 0) !== !!el.fy ? 3 : 1;
+      const H = clamp(sy*(ly-ay), 2, g.h + c0[i]*NH*kk); c[i] = Math.max(0, c0[i] - (H - g.h)/(NH*kk)); cl = [0, ay + sy*H/2]; }
+    if (c.some(v => v > 1e-4)) el.crop = c.map(v => +v.toFixed(5)); else delete el.crop;
+  } else if (canStretch(el)){
+    if (m==='e' || m==='w'){ const sx = m==='e' ? 1 : -1, ax = -sx*hw; el.size = +clamp(sx*(lx-ax), 1, 600).toFixed(1); cl = [ax + sx*el.size/2, 0]; }
+    else { const sy = m==='s' ? 1 : -1, ay = -sy*hh; el.h = +clamp(sy*(ly-ay), .3, 400).toFixed(1); cl = [0, ay + sy*el.h/2]; }
+  } else return;
+  const [px,py] = toSheet(g, cl[0], cl[1]); setCenter(el, px, py, false);
+}
+function elAct(a){
+  const el = curEl(); if (!el) return;
+  if (a==='dup') return $('elDup').click();
+  if (a==='del') return $('elDel').click();
+  if (a==='lock') el.locked = !el.locked;
+  else if (el.locked){ toast('This element is locked — unlock it first.'); return; }
+  else if (a==='fx' || a==='fy') el[a] = !el[a];
+  else if (a==='r90'){ const d = (+el.rot||0) + 90; el.rot = ((d+180)%360+360)%360-180; }
+  else if (a==='crop' && el.crop){ el.size = +(el.size/(1-el.crop[0]-el.crop[2])).toFixed(1); delete el.crop; }
+  syncEl(); renderEls(); refresh();
+}
+$('selBar').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b) elAct(b.dataset.a); });
+$('elActs').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b) elAct(b.dataset.a); });
+const selectEl = id => { if (selId === id) return; selId = id; renderEls(); syncEl(); refresh(); };
 $('view2d').addEventListener('pointerdown', e => {
   if (e.target.closest('.board-ov')) return;
   const v = $('view2d');
-  if (e.button === 0 && curEl() && e.target.closest('svg')){ dragging = true; v.setPointerCapture(e.pointerId); placeAt(e); return; }
+  if (e.button === 0){
+    const hd = e.target.closest('.selov [data-h]'), cur = curEl();
+    if (hd && cur && !cur.locked){ const svg = hd.ownerSVGElement, g = elGeo(cur); if (g){
+      act = {mode:hd.dataset.h, el:cur, svg, g, s0:{size:+cur.size, h:+cur.h || 0, crop:[...(cur.crop || [0,0,0,0])]}, live:true};
+      v.setPointerCapture(e.pointerId); e.preventDefault(); return; } }
+    const hit = hitEl(e);
+    if (hit?.el){ if (selId !== hit.el.id) setPane('elements'); selectEl(hit.el.id); const g = elGeo(hit.el);
+      act = {mode:'move', el:hit.el, svg:hit.svg, off:[hit.p.x-g.cx, hit.p.y-g.cy], sx:e.clientX, sy:e.clientY, live:false};
+      v.setPointerCapture(e.pointerId); return; }
+    if (selId) selectEl(null);
+  }
   pan = {x:e.clientX, y:e.clientY, bx, by}; v.classList.add('panning'); v.setPointerCapture(e.pointerId);
 });
 $('view2d').addEventListener('pointermove', e => {
-  if (dragging) placeAt(e);
-  else if (pan){ bx = pan.bx + e.clientX - pan.x; by = pan.by + e.clientY - pan.y; applyBoard(); } });
-$('view2d').addEventListener('pointerup', () => { if (dragging) renderEls(); dragging = false; pan = null; $('view2d').classList.remove('panning'); });
-$('view2d').addEventListener('pointercancel', () => { dragging = false; pan = null; $('view2d').classList.remove('panning'); });
+  const v = $('view2d');
+  if (act){ const el = act.el;
+    if (act.mode==='move'){
+      if (!act.live){ if (Math.hypot(e.clientX-act.sx, e.clientY-act.sy) < 3) return;
+        if (el.locked){ toast('This element is locked — unlock it to move.'); act = null; return; } act.live = true; dragging = true; }
+      const wrap = document.elementFromPoint(e.clientX, e.clientY)?.closest('#boardInner [data-side]');
+      if (wrap && wrap.dataset.side !== el.side && wrap.querySelector('svg')){ el.side = wrap.dataset.side; act.svg = wrap.querySelector('svg'); }
+      const p = svgPt(act.svg, e); setCenter(el, p.x-act.off[0], p.y-act.off[1], true);
+    } else { dragging = true; transformEl(svgPt(act.svg, e), e); }
+    syncEl(); drawSel(); refresh(); return; }
+  if (pan){ bx = pan.bx + e.clientX - pan.x; by = pan.by + e.clientY - pan.y; applyBoard(); return; }
+  if (e.pointerType === 'mouse'){ const over = !e.target.closest('.board-ov, .selov [data-h]') && !!hitEl(e)?.el; v.classList.toggle('overel', over); }
+});
+const endAct = () => { if (act && dragging) renderEls(); act = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
+$('view2d').addEventListener('pointerup', endAct);
+$('view2d').addEventListener('pointercancel', endAct);
+$('view2d').addEventListener('dblclick', e => { const el = curEl(); if (!el || !['text','barcode','qr'].includes(el.kind) || e.target.closest('.board-ov')) return;
+  setPane('elements'); $('elText').focus(); $('elText').select(); });
+document.addEventListener('keydown', e => {
+  if (document.querySelector('.app').hidden || document.querySelector('dialog[open]') || e.target.closest?.('input,textarea,select,[contenteditable]')) return;
+  const el = curEl(); if (!el) return; const k = e.key, mod = e.metaKey || e.ctrlKey, kl = k.toLowerCase();
+  if (k === 'Escape') selectEl(null);
+  else if (k === 'Delete' || k === 'Backspace') $('elDel').click();
+  else if (mod && kl === 'd') $('elDup').click();
+  else if (e.shiftKey && !mod && (kl === 'h' || kl === 'v')) elAct(kl === 'h' ? 'fx' : 'fy');
+  else if (k.startsWith('Arrow') && !mod){ if (el.locked) return; const g = elGeo(el); if (!g) return; const d = e.shiftKey ? 10 : 1;
+    const [dx,dy] = {ArrowLeft:[-d,0], ArrowRight:[d,0], ArrowUp:[0,-d], ArrowDown:[0,d]}[k] || [0,0]; setCenter(el, g.cx+dx, g.cy+dy, false); syncEl(); refresh(); }
+  else return;
+  e.preventDefault();
+});
 
 /* ---------- UI ---------- */
 function syncUI(){
@@ -2453,6 +2617,9 @@ function syncEl(){
   $('elX').value = (el.x*100).toFixed(1); $('elXO').textContent = Math.round(el.x*100)+'%';
   $('elY').value = (el.y*100).toFixed(1); $('elYO').textContent = Math.round(el.y*100)+'%';
   $('elRot').value = el.rot; $('elRotO').textContent = el.rot+'°';
+  for (const b of document.querySelectorAll('#elActs [data-a], #selBar [data-a]')){ const a = b.dataset.a;
+    if (a==='fx' || a==='fy') b.setAttribute('aria-pressed', !!el[a]); if (a==='lock') b.setAttribute('aria-pressed', !!el.locked);
+    if (a==='crop') b.hidden = !el.crop; }
   if (document.activeElement !== $('elSpot')) $('elSpot').value = el.spot || '';
   $('elFin').value = el.fin || '';
   $('elFinNote').textContent = { varnish:'Varnish goes over the print on a separate VARNISH layer.', foil_gold:'Foil replaces print: in the PDF the element goes to the FOIL layer, no CMYK underneath.',
@@ -2464,7 +2631,7 @@ function updWarn(){
   const el = curEl(), box = $('elWarn'); if (!el || !box) return;
   const msgs = []; let bad = false;
   if (WARN[el.id]){ msgs.push(`Within ${SAFE} mm of a cut or crease — the edge may be trimmed or land on a fold.`); bad = true; }
-  if (el.kind==='image' && ELIMG[el.id]){ const dpi = Math.round(ELIMG[el.id].img.naturalWidth/(el.size/25.4));
+  if (el.kind==='image' && ELIMG[el.id]){ const c = el.crop || [0,0,0,0], dpi = Math.round(ELIMG[el.id].img.naturalWidth*(1-c[0]-c[2])/(el.size/25.4));
     if (ELIMG[el.id].src.startsWith('data:image/svg')) msgs.push('Vector logo — no quality loss.');
     else if (dpi < 150){ msgs.push(`Resolution ${dpi} dpi — it will print blurry. Print needs 300 dpi: upload a larger image or make the logo smaller.`); bad = true; }
     else if (dpi < 300) msgs.push(`Resolution ${dpi} dpi — acceptable, 300 dpi is better.`);
@@ -2648,7 +2815,7 @@ window.addEventListener('hashchange', showView);
 /* ---------- board: zoom & pan ---------- */
 const BK = 2;                 // px per mm at 100 %
 let bz = 1, bx = 0, by = 0, pan = null;
-function applyBoard(){ $('boardInner').style.transform = `translate(${bx}px,${by}px) scale(${bz})`; $('zVal').textContent = Math.round(bz*100)+'%'; drawRulers(); }
+function applyBoard(){ $('boardInner').style.transform = `translate(${bx}px,${by}px) scale(${bz})`; $('zVal').textContent = Math.round(bz*100)+'%'; drawRulers(); drawSel(); }
 function drawRulers(){
   const v = $('view2d'), svg = v.querySelector('[data-side=out] svg'); if (!svg || v.hidden || !G) return;
   const vr = v.getBoundingClientRect(), sr = svg.getBoundingClientRect(), ppm = sr.width / G.b.w, dpr = devicePixelRatio || 1;
