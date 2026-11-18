@@ -570,6 +570,11 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         </div>
         </div>
       </div>
+      <div data-for="bakery" class="sub" style="padding-left:0">
+        <label class="chk"><input id="bkWin" type="checkbox"> Window in the lid</label>
+        <label class="f">Window margin from the lid edges, mm<input id="bkWm" type="number" min="8" max="150" step="1"></label>
+        <p class="note">One piece, no glue needed: the corner ears fold inside the side walls, the lid tuck slides behind the front wall (thumb notch), the lid side flaps tuck inside. Use food-safe board; for a window, glue clear film behind it.</p>
+      </div>
       <div data-for="mailer" class="sub" style="padding-left:0">
         <p class="note">Double side walls, dust ears and locking tabs, no glue. Usually made from E-flute corrugated. Keep the height below the width.</p>
       </div>
@@ -622,6 +627,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         <button class="btn" id="addInfo" style="text-align:center">+ Product info</button>
         <button class="btn" id="addEan" style="text-align:center">+ EAN-13 barcode</button>
         <button class="btn" id="addQr" style="text-align:center">+ QR code</button>
+        <button class="btn" id="addPerf" style="text-align:center" title="A perforation, extra crease or slit — goes into the die, not printed">+ Perforation</button>
       </div>
       <div class="f">Symbols</div>
       <div class="icons" id="iconBar"></div>
@@ -640,6 +646,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
             <label class="f" id="elShapeWrap">Shape<select id="elShape"><option value="rect">Rectangle</option><option value="round">Rounded</option><option value="circle">Circle / ellipse</option><option value="frame">Frame</option></select></label>
             <label class="f" id="elHWrap">Height, mm<input id="elH" type="number" min="0.3" max="400" step="0.5"></label>
             <label class="f" id="elIconWrap">Symbol<select id="elIcon"></select></label>
+            <label class="f" id="elLineWrap" style="grid-column:1/-1">Line type (goes into the die, not printed)<select id="elLine"><option value="perf">Perforation (tear)</option><option value="crease">Crease (extra fold)</option><option value="cut">Cut (slit)</option></select></label>
           </div>
         </div>
         <label class="rng"><span id="elSizeLbl">Size, mm</span><input id="elSize" type="range" min="2" max="300" step="1"><output id="elSizeO"></output></label>
@@ -815,10 +822,10 @@ let WARN = {};
 
 /* ---------- settings & templates ---------- */
 const TYPE_DIMS = {
-  tube:{L:70,W:70,H:110}, tray:{L:160,W:110,H:40}, lidbase:{L:150,W:150,H:50,lidH:30}, mailer:{L:220,W:160,H:70},
+  tube:{L:70,W:70,H:110}, tray:{L:160,W:110,H:40}, lidbase:{L:150,W:150,H:50,lidH:30}, mailer:{L:220,W:160,H:70}, bakery:{L:200,W:200,H:110},
   drawer:{L:200,W:100,H:50}, pouch:{L:140,W:80,H:220}, label:{L:90,W:75,H:100}, cup:{L:80,W:55,H:95}, card:{L:148,W:10,H:105}
 };
-const BOX = new Set(['tube','tray','lidbase','mailer','drawer']);
+const BOX = new Set(['tube','tray','lidbase','mailer','drawer','bakery']);
 const TYPE_MAT = {label:'paper80', card:'card350', cup:'cupb', pouch:'carton05'};
 const TUBE_BASE = {topClose:'tuck',topLid:'back',botClose:'tuck',botLid:'front',window:false,hang:false,notch:true};
 const LBL_BASE = {vessel:'wine', lshape:'rect', wrap:false, place:'side', overlap:8, lblY:55, cornerR:0, vglass:'auto', vcap:'auto', vfill:'auto', vBody:0, vNeck:100};
@@ -843,6 +850,12 @@ const TPL = [
   {id:'lidbase',type:'lidbase', cat:'box', name:'Lid and base',          set:{}},
   {id:'mailer',type:'mailer', cat:'box', name:'Mailer box', set:{}},
   {id:'drawer',type:'drawer', cat:'box', name:'Drawer box with sleeve', set:{dbl:true}},
+  {id:'bk_cake',  type:'bakery', cat:'box', name:'Cake box',                 set:{L:200, W:200, H:110, window:false, bkWm:22, bg:'#bcd8e2', ink:'#ffffff', title:'YOUR LOGO', sub:'Cake box'}},
+  {id:'bk_cakew', type:'bakery', cat:'box', name:'Cake box with window',     set:{L:250, W:250, H:120, window:true,  bkWm:55, bg:'#f3d6d3', ink:'#2b2320', title:'your logo', sub:'patisserie'}},
+  {id:'bk_cup6',  type:'bakery', cat:'box', name:'Cupcake box 6, window',    set:{L:250, W:170, H:80,  window:true,  bkWm:38, bg:'#f4cfcf', ink:'#1b1b1b', title:'your logo', sub:'food cake'}},
+  {id:'bk_cup9',  type:'bakery', cat:'box', name:'Cupcake box 9',            set:{L:250, W:250, H:85,  window:false, bkWm:22, bg:'#bcd8e2', ink:'#ffffff', title:'YOUR LOGO', sub:'Cake box'}},
+  {id:'bk_pastry',type:'bakery', cat:'box', name:'Pastry box with window',   set:{L:180, W:120, H:60,  window:true,  bkWm:28, bg:'#f6efe2', ink:'#6b4a2b', title:'BAKERY', sub:'fresh every morning'}},
+  {id:'bk_macaron',type:'bakery',cat:'box', name:'Macaron / cookie box',     set:{L:200, W:90,  H:45,  window:true,  bkWm:20, bg:'#e7dcf3', ink:'#4a3366', title:'macarons', sub:'handmade · 12 pcs'}},
   {id:'l_wine',  type:'label', cat:'label', name:'Wine bottle label',  set:{...LBL_BASE, vessel:'wine', L:90, W:75, H:100, lblY:55, cornerR:0}},
   {id:'l_beer',  type:'label', cat:'label', name:'Beer bottle wrap label', set:{...LBL_BASE, vessel:'beer', wrap:true, W:60, H:75, lblY:24}},
   {id:'l_jar',   type:'label', cat:'label', name:'Jar wrap label',     set:{...LBL_BASE, vessel:'jar', wrap:true, W:80, H:60, lblY:12}},
@@ -885,6 +898,12 @@ const TPL_DESC = {
   display:'Counter display (PDQ) with a tall printed header on the back wall.',
   lidbase:'Two parts: base and lid. Gift packaging.',
   mailer:'Self-locking with a hinged lid, no glue. For shipping and subscriptions.',
+  bk_cake:'One-piece cake box: hinged lid with a tuck, thumb notch, corner ears. Food-safe board.',
+  bk_cakew:'Cake box with a window in the lid — glue a clear film behind it.',
+  bk_cup6:'For 6 cupcakes or pastries, window in the lid. Add an insert with holes inside.',
+  bk_cup9:'Square box for 9 cupcakes with a hinged tuck lid.',
+  bk_pastry:'Small box for 2–4 pastries or a slice of cake, with a window.',
+  bk_macaron:'Long low box for macarons or cookies, with a window.',
   drawer:'A tray slides out of a sleeve, like a matchbox.',
   pouch:'Flat-bottom bag with a zip lock. A 3D mockup for design.',
   l_wine:'Front label 90×100 mm on a 750 ml Bordeaux bottle (Ø 75 mm). Keep it under half the circumference.',
@@ -912,12 +931,13 @@ const TPL_DESC = {
   c_top:'Folds over the top of a plastic bag and is stapled, with a euro hole for hanging.',
   c_env:'C6 envelope 162×114 mm for A6 cards, with side flaps and a curved seal flap.'
 };
-const TYPE_NAMES = {tube:'Folding carton', tray:'Tray', lidbase:'Lid and base', mailer:'Mailer box', drawer:'Drawer box', pouch:'Stand-up pouch', label:'Label / sticker', cup:'Paper cup', card:'Card / leaflet'};
+const TYPE_NAMES = {tube:'Folding carton', tray:'Tray', lidbase:'Lid and base', mailer:'Mailer box', bakery:'Bakery box', drawer:'Drawer box', pouch:'Stand-up pouch', label:'Label / sticker', cup:'Paper cup', card:'Card / leaflet'};
 const SIZE_CHIPS = {
   tube:[['Tea','70,70,110'],['Cream','50,50,130'],['Bottle','60,40,160'],['Soap','90,30,60'],['Candle','85,85,95'],['Wine','90,90,330']],
   tray:[['Sweets','160,110,40'],['Cookies','200,140,50'],['Gift','250,200,60']],
   lidbase:[['Gift','150,150,50'],['Candle','100,100,80'],['Shoes','300,180,110'],['Gingerbread','220,160,40']],
   mailer:[['S','220,160,70'],['M','300,220,100'],['L','400,300,120']],
+  bakery:[['Cake 6″','170,170,100'],['Cake 8″','220,220,110'],['Cake 10″','270,270,120'],['Cupcakes 4','170,170,85'],['Cupcakes 6','250,170,85'],['Cupcakes 12','330,250,85'],['Pastry','180,120,60']],
   drawer:[['Sweets','200,100,50'],['Tea','150,100,40'],['Jewellery','100,100,35']],
   pouch:[['250 g','130,70,200'],['500 g','160,90,250'],['1 kg','190,110,300']],
   label:[['Front 90×100','90,0,100'],['Back 70×90','70,0,90'],['Neck 60×25','60,0,25'],['Square 60×60','60,0,60'],['Small 50×30','50,0,30'],['Wide 120×80','120,0,80']],
@@ -946,7 +966,7 @@ const VPRESETS = {
   ptube:[['Ø 50',50],['Ø 75',75],['Ø 100',100]],
 };
 const DEFAULTS = { type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
-  winW:40, winH:50, winY:55, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
+  winW:40, winH:50, winY:55, bkWm:22, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
   ...LBL_BASE, ...CARD_BASE, cupKind:'cup', cupLid:false, ...CUP_BASE, base:'', tplOrig:'',
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'FOREST TEA', sub:'blend No.4 · 100 g',
   inside:'kraft', insideBg:'#f4efe6', finish:'matte', showLines:false, els:[], pid:null, pname:'',
@@ -960,12 +980,12 @@ const FONTS = [['600|IBM Plex Sans','Plex Sans'],['400|IBM Plex Sans','Plex Sans
   ['400|Playfair Display','Playfair'],['700|Playfair Display','Playfair bold'],['500|Oswald','Oswald'],['500|Caveat','Caveat, handwritten']];
 const uid = () => Math.random().toString(36).slice(2,9);
 const FACE_NAMES = {drawer:'Drawer base', pull:'Drawer end', front:'Front', back:'Back', side1:'Right side', side2:'Left side', top:'Top', bottom:'Bottom', mid:'Middle panel', flap:'Fold-in flap', layout:'Whole dieline (PNG on the template)'};
-const NUM = ['gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow','hdr','overlap','lblY','holeD','vBody','vNeck','cupOv','cupRim','cupBot','tagC','envF'];
-const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl', holeD2:'holeD'};
+const NUM = ['bkWm','gradAng','patScale','cornerR','vents','ventD','tearY','tearW','thick','sheetW','sheetH','grip','impGap','qty','L','W','H','tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','lidOpen','lInt','lAng','shadow','hdr','overlap','lblY','holeD','vBody','vNeck','cupOv','cupRim','cupBot','tagC','envF'];
+const ALIAS = {tab2:'tab', tab3:'tab', dgap:'gap', dbl2:'dbl', holeD2:'holeD', bkWin:'window'};
 const DIM_LABELS = {pouch:['Width','Gusset depth','Height'], label:['Label width','Container Ø','Label height'], cup:['Rim Ø (top)','Base Ø','Height'], card:['Width (folded)',null,'Height']};
 const SEL = ['topClose','topLid','botClose','botLid','bg','ink','title','sub','inside','insideBg','finish','light','scBgColor','mat','dimMode','unit','bleed','safe','method','sides','sheetFmt','white','grain','bgMode','bg2','pattern','vessel','lshape','place','vglass','vcap','vfill','cupKind','fold'];
 const CHK = ['notch','window','hang','showText','showLines','dbl','tear','wrap','cupLid'];
-const STRUCT = ['type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl','hdr',...Object.keys(LBL_BASE),...Object.keys(CARD_BASE),'cupKind','cupLid',...Object.keys(CUP_BASE)];
+const STRUCT = ['bkWm','type','tpl','L','W','H','mat','thick','dimMode','cornerR','vents','ventD','tear','tearY','tearW',...Object.keys(TUBE_BASE),'tuck','glue','dust','winW','winH','winY','hangH','tab','lidH','gap','pull','dbl','hdr',...Object.keys(LBL_BASE),...Object.keys(CARD_BASE),'cupKind','cupLid',...Object.keys(CUP_BASE)];
 
 const store = {
   get(k,d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -1137,6 +1157,32 @@ function buildLidBase(P,B){
   const lift = clamp(P.lidOpen,0,100)/100 * (Hl + H*.8 + 15);   // lid raised above the base to show the inside
   addTray(B,'l',ox,Ll,Wl,Hl,P.tab,true,{p:[-L/2-Ll/2, H+.6+lift, -W/2+Wl/2], q:Q_LID},true,false);
   B.N.find(n=>n.id==='lbase').flat = {p:[-L/2-Ll/2 - (L+2*H)/2 - (Ll+2*Hl)/2 - 20, Hl+.6, -W/2+Wl/2], q:Q_LID};
+  return {};
+}
+// bakery / cake box: one piece, single walls with corner ears, thumb notch on the front wall,
+// hinged lid with a rounded tuck and side flaps that tuck inside, optional window in the lid
+function buildBakery(P,B){
+  const L=P.L, W=P.W, H=Math.min(P.H, W*1.2);
+  const e = Math.min(W*.42, Math.max(H*.85, 20));                 // corner ears on the front/back walls, glued or tucked inside the sides
+  B.add('base',null,[0,0],null,0,null,rect(0,0,L,W),{final:{p:[0,0,0],q:Q_UP}});
+  const nr = Math.min(12, L*.08, H*.3), front = [[0,0],[0,-H],[L/2-nr,-H], ...arc(L/2,-H,nr,PI,0,16).slice(1,-1), [L/2+nr,-H],[L,-H],[L,0]];
+  B.add('front','base',[0,0],'x',90*DEG,[0,.25],front);
+  B.add('earFL','front',[0,0],'y',-92*DEG,[.2,.38],sideTab(0,0,-H,-e,Math.min(6,H*.25)));
+  B.add('earFR','front',[L,0],'y',92*DEG,[.2,.38],sideTab(L,0,-H,e,Math.min(6,H*.25)));
+  B.add('back','base',[0,W],'x',-90*DEG,[0,.25],rect(0,W,L,W+H));
+  B.add('earBL','back',[0,W],'y',-92*DEG,[.2,.38],sideTab(0,W,W+H,-e,Math.min(6,H*.25)));
+  B.add('earBR','back',[L,W],'y',92*DEG,[.2,.38],sideTab(L,W,W+H,e,Math.min(6,H*.25)));
+  B.add('sideL','base',[0,0],'y',-90*DEG,[.3,.5],rect(-H,0,0,W));
+  B.add('sideR','base',[L,0],'y',90*DEG,[.3,.5],rect(L,0,L+H,W));
+  // lid: hinged on the back wall, rounded tuck behind the front wall, side flaps inside the side walls
+  const y1 = W+H, y2 = 2*W+H, d = clamp(H-6, 8, 40), tk = clamp(H*.45, 12, 35), m = clamp(+P.bkWm||22, 8, Math.min(L,W)/2-8);
+  const win = P.window ? [[[m,y1+m],[L-m,y1+m],[L-m,y2-m],[m,y2-m]]] : [];
+  B.add('lid','back',[0,y1],'x',-90*DEG,[.72,.97],rect(0,y1,L,y2),{holes:win});
+  B.add('lidTuck','lid',[0,y2],'x',-92*DEG,[.66,.84],tuckPoly(0,y2,L,tk,1));
+  B.add('lidDL','lid',[0,y1],'y',-92*DEG,[.66,.82],sideTab(0,y1+1.5,y2-1.5,-d,Math.min(d,W*.2)));
+  B.add('lidDR','lid',[L,y1],'y',92*DEG,[.66,.82],sideTab(L,y1+1.5,y2-1.5,d,Math.min(d,W*.2)));
+  B.face('bottom',[0,0,L,W]); B.face('front',[0,-H,L,0],PI); B.face('back',[0,W,L,W+H]);
+  B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
   return {};
 }
 function buildMailer(P,B){
@@ -1337,7 +1383,7 @@ function build(P){
   P = {...P}; for (const k of NUM) P[k] = +P[k];
   const Pin = {...P}; Object.assign(P, prodDims(P));
   const B = maker();
-  const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, drawer:buildDrawer, pouch:buildPouch, label:buildLabel, cup:buildCup, card:buildCard}[P.type] || buildTube)(P,B) || {};
+  const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, bakery:buildBakery, drawer:buildDrawer, pouch:buildPouch, label:buildLabel, cup:buildCup, card:buildCard}[P.type] || buildTube)(P,B) || {};
   const perfs = BOX.has(P.type) ? constructionExtras(P, B) : ['label','card'].includes(P.type) ? constructionExtras({cornerR:P.cornerR}, B) : [];
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   for (const n of B.N) for (const [x,y] of n.poly){ minX=Math.min(minX,x); minY=Math.min(minY,y); maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); }
@@ -1462,6 +1508,7 @@ function drawIcon(ctx, el, s){
   ctx.restore(); return [W,W];
 }
 function drawEl(ctx, el, s){
+  if (el.kind==='dieline') return [el.size*s, 2.4*s];
   if (el.kind==='image'){ const im = ELIMG[el.id]?.img; if (!im) return null;
     const c = el.crop || [0,0,0,0], nw = im.naturalWidth, nh = im.naturalHeight, sw = nw*(1-c[0]-c[2]), sh = nh*(1-c[1]-c[3]);
     const w = el.size*s, h = w*sh/sw; ctx.drawImage(im, c[0]*nw, c[1]*nh, sw, sh, -w/2,-h/2,w,h); return [w,h]; }
@@ -1530,7 +1577,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
       const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
       ctx.save(); clipFace(ctx,G,f,s,side); ctx.translate(cx,cy); ctx.rotate(rot);
       if (IMGS[f.key]){ const img=IMGS[f.key].img, iw=img.naturalWidth, ih=img.naturalHeight, k=Math.max((lw+2*BLEED*s)/iw,(lh+2*BLEED*s)/ih); ctx.drawImage(img,-iw*k/2,-ih*k/2,iw*k,ih*k); }
-      else placeholder(ctx,f.key,lw,lh,s);
+      else if (!(f.key==='top' && S.type==='bakery' && S.window)) placeholder(ctx,f.key,lw,lh,s);   // the window takes the lid centre
       ctx.restore();
     }
     if (G.pouch){ const {W,D,H,seal} = G.pouch;
@@ -1540,7 +1587,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
     }
   }
   for (const el of S.els){
-    if (el.side!==side || el.hidden) continue; const f = G.faces.find(f=>f.key===el.face); if (!f) continue;
+    if (el.side!==side || el.hidden || el.kind==='dieline') continue; const f = G.faces.find(f=>f.key===el.face); if (!f) continue;
     if (o.print && elSpecial(el) && !o.rec && !o.els) continue;      // foil / emboss / Pantone are not part of the CMYK image
     const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
     ctx.save(); clipFace(ctx,G,f,s,side);
@@ -1569,7 +1616,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
     ctx.lineWidth = Math.max(1,.35*s);
     const seg = (list,color,dash) => { ctx.strokeStyle=color; ctx.setLineDash(dash); ctx.beginPath();
       for (const [a,b] of list){ ctx.moveTo(X(a[0]),Y(a[1])); ctx.lineTo(X(b[0]),Y(b[1])); } ctx.stroke(); };
-    seg(G.creases,'#2f6fdb',[3*s,1.5*s]); seg(G.cuts,'#d7263d',[]); ctx.setLineDash([]);
+    seg(G.creases,'#2f6fdb',[3*s,1.5*s]); seg(G.cuts,'#d7263d',[]); if (G.perfs?.length) seg(G.perfs,'#ff8a00',[1.2*s,1*s]); ctx.setLineDash([]);
   }
   return canvas;
 }
@@ -1957,6 +2004,7 @@ function edgeGeo(n, cutSet, t, corr){
   if (!pos.length) return null;
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2)); g.computeVertexNormals(); return g;
 }
+const filmMat = new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:.38, roughness:.04, metalness:0, clearcoat:1, side:THREE.DoubleSide, depthWrite:false});
 function rebuild3D(){
   wrapper.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   for (const m of vMats) m.dispose(); vMats = []; bgTint = [];
@@ -1993,6 +2041,10 @@ function rebuild3D(){
       const a = new THREE.Mesh(geo,outMat), b = new THREE.Mesh(geo,inMat);
       a.castShadow = b.castShadow = true; grp.add(a,b);
       if (eMat){ const eg = edgeGeo(n, cutSet, tk, tk >= 1.2); if (eg){ const e = new THREE.Mesh(eg, eMat); e.castShadow = true; grp.add(e); } }
+      // clear film glued behind a window
+      if (S.window && ((S.type==='bakery' && n.id==='lid') || (S.type==='tube' && n.id==='front')))
+        for (const hl of n.holes){ const fg = new THREE.ShapeGeometry(new THREE.Shape(hl.map(([x,y])=>new THREE.Vector2(x-ox,y-oy))));
+          const fm = new THREE.Mesh(fg, filmMat); fm.renderOrder = 2; grp.add(fm); }
     }
     if (S.type==='card') cardExtras(by);
   }
@@ -2251,6 +2303,18 @@ $('exRender').addEventListener('click', () => { if (location.hash==='#editor' &&
 /* ---------- refresh ---------- */
 let pending = 0, geomDirty = true;
 function refresh(geom){ if (geom) geomDirty = true; persist(); if (!pending) pending = requestAnimationFrame(doRefresh); }
+// perforations, extra creases and slits placed as elements: added to the die (PERF / CREASE / CUT), never printed
+let dieSig = '';
+function applyDieEls(){
+  G._die ??= {cuts:G.cuts.slice(), creases:G.creases.slice(), perfs:(G.perfs||[]).slice()};
+  G.cuts = G._die.cuts.slice(); G.creases = G._die.creases.slice(); G.perfs = G._die.perfs.slice();
+  for (const el of S.els){ if (el.kind!=='dieline') continue; const g = elGeo(el); if (!g) continue;
+    const c = Math.cos(g.a), s = Math.sin(g.a), h = el.size/2, toD = (sx, sy) => [el.side==='in' ? G.b.maxX - sx : G.b.minX + sx, G.b.maxY - sy];
+    const seg = [toD(g.cx - h*c, g.cy - h*s), toD(g.cx + h*c, g.cy + h*s)];
+    (el.line==='crease' ? G.creases : el.line==='cut' ? G.cuts : G.perfs).push(seg); }
+  const sig = JSON.stringify(S.els.filter(e => e.kind==='dieline' && !e.hidden).map(e => [e.side,e.face,e.x,e.y,e.size,e.rot,e.line]));
+  if (sig !== dieSig){ dieSig = sig; gen++; }
+}
 function doRefresh(){
   pending = 0;
   if (geomDirty){
@@ -2260,6 +2324,7 @@ function doRefresh(){
     renderProd(); renderImp();
     gen++; renderSlots(); renderEls();
   }
+  applyDieEls();
   const sTex = Math.min(10, 4096/Math.max(G.b.w,G.b.h));
   const wn = {};
   drawArt(texCanvas, G, sTex, S.showLines, 'out', null, wn); updTex(outMat, texCanvas, false);
@@ -2719,7 +2784,7 @@ function renderEls(){
   const box = $('els'); box.innerHTML = '';
   S.els.forEach(el => {
     const b = document.createElement('button'); b.className='btn'; b.setAttribute('aria-pressed', el.id===selId);
-    const name = {image:'Logo', shape:'Shape', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR · '+String(el.text||'').slice(0,24), icon:'Symbol · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || (String(el.text).split('\n')[0] || 'Text');
+    const name = {dieline:{perf:'Perforation', crease:'Extra crease', cut:'Slit (cut)'}[el.line||'perf'], image:'Logo', shape:'Shape', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR · '+String(el.text||'').slice(0,24), icon:'Symbol · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || (String(el.text).split('\n')[0] || 'Text');
     const where = (el.side==='in'?'inside · ':'')+(FACE_NAMES[el.face]||el.face)+(G.faces.some(f=>f.key===el.face)?'':' — not in this template');
     b.append(name); const em=document.createElement('em'); em.textContent=where; b.append(em);
     b.addEventListener('click',()=>{ selId = el.id===selId ? null : el.id; renderEls(); syncEl(); refresh(); });
@@ -2746,8 +2811,10 @@ function syncEl(){
   $('elTextOpts').hidden = k==='image';
   $('elText').closest('label').hidden = !['text','barcode','qr'].includes(k);
   $('elTextLbl').textContent = k==='barcode' ? 'Code (12–13 digits, check digit is computed)' : k==='qr' ? 'Link or text' : 'Text';
+  show('elLineWrap', k==='dieline'); $('elColor').closest('label').hidden = k==='dieline'; $('elFin').closest('.row2').hidden = k==='dieline';
+  if (k==='dieline') $('elLine').value = el.line || 'perf';
   show('elFontWrap', k==='text'); show('elAlignWrap', k==='text'); show('elShapeWrap', k==='shape'); show('elHWrap', k==='shape'); show('elIconWrap', k==='icon');
-  $('elSizeLbl').textContent = k==='text' ? 'Font size, mm' : 'Width, mm';
+  $('elSizeLbl').textContent = k==='text' ? 'Font size, mm' : k==='dieline' ? 'Length, mm' : 'Width, mm';
   if (document.activeElement !== $('elText')) $('elText').value = el.text || '';
   if (k==='text'){ $('elFont').value = el.font; $('elAlign').value = el.align || 'center'; }
   if (el.color) $('elColor').value = el.color;
@@ -2807,6 +2874,8 @@ onEl('elAlign', (el,v)=>{ el.align=v; });
 onEl('elShape', (el,v)=>{ el.shape=v; });
 onEl('elH', (el,v)=>{ el.h=clamp(+v||1,.3,400); });
 onEl('elIcon', (el,v)=>{ el.icon=v; });
+onEl('elLine', (el,v)=>{ el.line=v; });
+$('addPerf').addEventListener('click', () => { const face = defaultFace(); addEl({id:uid(), kind:'dieline', line:'perf', side:'out', face, x:.5, y:.5, size:Math.round(faceWidthMM(face)), rot:0}); });
 $('elIcon').innerHTML = Object.entries(ICONS).map(([k,v]) => `<option value="${k}">${v[0]}</option>`).join('');
 $('iconBar').innerHTML = Object.entries(ICONS).map(([k,v]) => `<button type="button" data-icon="${k}" title="${v[0]}" aria-label="${v[0]}">${k==='eac' ? 'EAC' : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${v[1]}"/></svg>`}</button>`).join('');
 $('iconBar').addEventListener('click', e => { const b = e.target.closest('[data-icon]'); if (!b) return;
@@ -3250,7 +3319,7 @@ async function makePdf(){
       ['Text', `${hex(S.ink)} · ${cmykTxt(S.ink)}`, S.ink], S.inside==='color' && ['Inside', `${hex(S.insideBg)} · ${cmykTxt(S.insideBg)}`, S.insideBg],
       ...spotSet.map(sp => ['Spot ink', 'PANTONE ' + sp.replace(/^pantone\s*/i,''), S.els.find(e => e.spot===sp).color])]);
     const FINN = {varnish:'spot varnish', foil_gold:'gold foil', foil_silver:'silver foil', emboss:'emboss', deboss:'deboss'};
-    const elName = el => ({image:'Logo', shape:'Shape', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR code', icon:'Symbol · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || ('“' + (String(el.text).split('\n')[0] || 'Text').slice(0,28) + '”'));
+    const elName = el => ({dieline:{perf:'Perforation', crease:'Extra crease', cut:'Slit (cut)'}[el.line||'perf'], image:'Logo', shape:'Shape', barcode:'EAN-13 '+eanDigits(el.text), qr:'QR code', icon:'Symbol · '+(ICONS[el.icon]?.[0]||'')}[el.kind] || ('“' + (String(el.text).split('\n')[0] || 'Text').slice(0,28) + '”'));
     const vis = S.els.filter(e => !e.hidden);
     add('Elements', [S.showText && (S.title||S.sub) && ['Panel text', [S.title, S.sub].filter(Boolean).join(' / ')], ...vis.slice(0,10).map(e => [elName(e), [(e.side==='in' ? 'inside, ' : '') + (FACE_NAMES[e.face]||e.face).toLowerCase(), FINN[e.fin], e.spot && 'Pantone '+e.spot].filter(Boolean).join(' · ')]),
       vis.length > 10 && ['…', `${vis.length-10} more`], !vis.length && !(S.showText && (S.title||S.sub)) && ['—', 'no elements']]);
