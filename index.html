@@ -487,6 +487,8 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
           <button type="button" class="lockc" data-k="bkLid" data-v="tongue"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 14h26v15H6zM32 14l6-5v15l-6 5M6 14l6-5h26"/><path d="M6 14v6h26v-6"/><path d="M16 20h6l-1 3h-4z"/><path d="M15 23.5h8" stroke-width="2"/></svg><b>Tongue lock</b><span>Front flap outside, tongue in a slot</span></button>
           <button type="button" class="lockc" data-k="bkLid" data-v="zip"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 14h26v15H6zM32 14l6-5v15l-6 5M6 14l6-5h26"/><path d="M6 17h26M6 20.5h26" stroke-dasharray="2 1.6"/></svg><b>Tear strip</b><span>Glued flap, opens by a strip</span></button>
           <button type="button" class="lockc" data-k="bkLid" data-v="hood"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 20h26v9H6zM32 20l6-5v9l-6 5"/><path d="M12 15l26 0M12 15l-6 5M12 15V3h26v12"/><path d="M6 20v-4M32 20v-4"/></svg><b>Front-opening</b><span>Lid + front + sides swing up</span></button>
+          <button type="button" class="lockc" data-k="bkLid" data-v="slot"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 16h26v13H6zM32 16l6-5v13l-6 5"/><path d="M6 16l6-5h26"/><rect x="14" y="12" width="14" height="3" rx="1"/><path d="M18 16l1 3h4l1-3"/><path d="M6 23h26" stroke-dasharray="2 1.6"/></svg><b>Tab-lock window</b><span>Tab into a rim slot, raised platform</span></button>
+          <button type="button" class="lockc" data-k="bkLid" data-v="mailer"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M4 18h28v11H4zM32 18l8-5v11l-8 5"/><path d="M4 18l8-5h28"/><rect x="16" y="14" width="12" height="3" rx="1"/><path d="M8 29v2M28 29v2"/></svg><b>Window mailer</b><span>Double ends locked in the base</span></button>
         </div>
         <div id="bkCornerWrap"><div class="f" style="margin:12px 0 6px">Corners</div>
         <div class="lockgrid" id="bkCornerCards">
@@ -883,6 +885,8 @@ const TPL = [
          {kind:'icon', icon:'cake', face:'front', x:.5, y:.42, size:48}, {kind:'icon', icon:'food', face:'back', x:.5, y:.85, size:9, color:'#000000'}]},
   {id:'bk_heart', type:'bakery', cat:'box', name:'Bento cake box, heart',    set:{L:150, W:150, H:110, bkLid:'hood', window:false, bkWm:22, bg:'#f6f0e3', ink:'#1d1d1b', showText:false, title:'cake box', sub:''},
     els:[{kind:'text', text:'cake box', font:'400|Montserrat', face:'top', x:.5, y:.5, size:12}, {kind:'icon', icon:'heart', face:'front', x:.5, y:.45, size:40}]},
+  {id:'bk_slot',  type:'bakery', cat:'box', name:'Window box, tab lock',      set:{L:200, W:150, H:51,  bkLid:'slot', window:true, bkWm:24, bg:'#fbf3e8', ink:'#7a4b2a', title:'patisserie', sub:'handmade with love'}},
+  {id:'bk_roll',  type:'bakery', cat:'box', name:'Long window mailer',        set:{L:313, W:202, H:62,  bkLid:'mailer', window:true, bkWm:24, bg:'#eaf2e3', ink:'#2f4a2a', title:'SWISS ROLL', sub:'bakery · since 1998'}},
   {id:'bk_macaron',type:'bakery',cat:'box', name:'Macaron / cookie box',     set:{L:200, W:90,  H:45,  bkLid:'tuck', bkCorner:'ears', window:true,  bkWm:20, bg:'#e7dcf3', ink:'#4a3366', title:'macarons', sub:'handmade · 12 pcs'}},
   {id:'l_wine',  type:'label', cat:'label', name:'Wine bottle label',  set:{...LBL_BASE, vessel:'wine', L:90, W:75, H:100, lblY:55, cornerR:0}},
   {id:'l_beer',  type:'label', cat:'label', name:'Beer bottle wrap label', set:{...LBL_BASE, vessel:'beer', wrap:true, W:60, H:75, lblY:24}},
@@ -933,6 +937,8 @@ const TPL_DESC = {
   bk_pastry:'2–4 pastries, window. Tongue lock on the front — tamper-evident for takeaway.',
   bk_front:'Hood lid (top, front and sides) swings up — the cake slides in from the front. No glue: tab-and-slit corners, front lip with wings.',
   bk_heart:'Small front-opening box for a bento cake or a slice, with a heart.',
+  bk_slot:'Window lid with a film liner, tab-into-slot lock, raised platform inside. No glue.',
+  bk_roll:'Long box for rolls and loaf cakes: double ends locked into the base, window lid on the long side.',
   bk_macaron:'Long low box for macarons or cookies, with a window.',
   drawer:'A tray slides out of a sleeve, like a matchbox.',
   pouch:'Flat-bottom bag with a zip lock. A 3D mockup for design.',
@@ -1204,6 +1210,8 @@ function bkNorm(P){
 function buildBakery(P,B){
   const K = bkNorm(P), lid = K.lid, corner = K.corner;
   if (lid==='hood') return buildBakeryFront(P,B);
+  if (lid==='slot') return buildBakerySlot(P,B);
+  if (lid==='mailer') return buildBakeryMailer(P,B);
   const L=P.L, W=P.W, H=Math.min(P.H, W*1.2), slitV = (xc,yc,len) => [[xc-.6,yc-len/2],[xc+.6,yc-len/2],[xc+.6,yc+len/2],[xc-.6,yc+len/2]], slitH = (xc,yc,len) => [[xc-len/2,yc-.6],[xc+len/2,yc-.6],[xc+len/2,yc+.6],[xc-len/2,yc+.6]];
   const outFlap = lid==='tongue' || lid==='zip', dbl = corner==='double', glued = corner==='glued', sideLock = K.side && !dbl, rib = K.rib && lid==='tuck', fric = K.fric && lid==='tuck';
   const e = glued ? clamp(H*.3, 12, 22) : Math.min(W*.42, Math.max(H*.85, 20)), tp = Math.min(6, H*.25), g = outFlap ? 1.5 : 0;
@@ -1276,6 +1284,75 @@ function buildBakery(P,B){
   B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,rib ? y2-28 : y2],PI);
   if (outFlap) B.face('flap',[0,y2,L,y2+fh],PI);
   return {perfs};
+}
+// rounded rectangle (window)
+function rrPoly(x0,y0,x1,y1,r){ r = Math.min(r, (x1-x0)/2, (y1-y0)/2); const p = [];
+  for (const [cx,cy,a] of [[x1-r,y0+r,-PI/2],[x1-r,y1-r,0],[x0+r,y1-r,PI/2],[x0+r,y0+r,PI]]) for (let i=0;i<=5;i++){ const t=a+i/5*PI/2; p.push([cx+r*Math.cos(t), cy+r*Math.sin(t)]); }
+  return p; }
+// corner ear hinged on a wall end (x=hx, from ya up/down H): rounded outer corner, optional V hook on the rim edge, optional L-slit
+function earHook(hx, ya, dy, s, e, H, o={}){
+  const r = o.r ?? Math.min(10, H*.3), cx = hx+s*(e-r), cy = ya+dy*(H-r), top = ya+dy*H;
+  const p = [[hx,ya],[hx+s*2, ya+dy*1.5],[hx+s*e, ya+dy*1.5]];
+  for (let i=0;i<=6;i++){ const t = i/6*PI/2; p.push([cx+s*r*Math.cos(t), cy+dy*r*Math.sin(t)]); }
+  if (o.hook) p.push([hx+s*e*.8, top],[hx+s*e*.74, top-dy*H*.4],[hx+s*e*.68, top]);
+  p.push([hx, top]); return p; }
+// window box with a tab lock (Pacdora-style): lid with a window and a liner that sandwiches the film, a tab on the lid edge
+// goes into a slot on the front-wall rim; double side walls lock the hooked ears; a raised platform (half height) on legs
+function buildBakerySlot(P,B){
+  const L=P.L, W=P.W, H=P.H, d = Math.round(H/2), e = Math.min(W*.7, 2*H), m = clamp(+P.bkWm||22, 12, Math.min(L,W)/2-8);
+  const tw = clamp(L*.27, 20, 70), th = m - 2, a = L/2-tw/2, b = L/2+tw/2;
+  B.add('base',null,[0,0],null,0,null,rect(0,0,L,W),{final:{p:[0,0,0],q:Q_UP}});
+  B.add('front','base',[0,0],'x',90*DEG,[0,.2],rect(0,-H,L,0),{holes:[[[a+3,-H+.4],[b-3,-H+.4],[b-3,-H+1.6],[a+3,-H+1.6]]]});
+  B.add('back','base',[0,W],'x',-90*DEG,[0,.2],rect(0,W,L,W+H));
+  B.add('earFL','front',[0,0],'y',-92*DEG,[.15,.3],earHook(0,0,-1,-1,e,H,{hook:true}));
+  B.add('earFR','front',[L,0],'y',92*DEG,[.15,.3],earHook(L,0,-1,1,e,H,{hook:true}));
+  B.add('earBL','back',[0,W],'y',-92*DEG,[.15,.3],earHook(0,W,1,-1,e,H,{hook:true}));
+  B.add('earBR','back',[L,W],'y',92*DEG,[.15,.3],earHook(L,W,1,1,e,H,{hook:true}));
+  B.add('sideL','base',[0,0],'y',-90*DEG,[.28,.4],rect(-H,0,0,W));
+  B.add('sideR','base',[L,0],'y',90*DEG,[.28,.4],rect(L,0,L+H,W));
+  B.add('sideLIn','sideL',[-H,0],'y',-176*DEG,[.38,.48],[[-H,0],[-H,W],[-2*H+.8,W-1.5],[-2*H+.8,1.5]]);
+  B.add('sideRIn','sideR',[L+H,0],'y',176*DEG,[.38,.48],[[L+H,0],[L+H,W],[L+2*H-.8,W-1.5],[L+2*H-.8,1.5]]);
+  // raised platform: rim strip folds down inside the front, platform at half height, legs on the sides and the back
+  const yD = -H-d, Wp = W-2, yE = yD-Wp;
+  B.add('rim','front',[0,-H],'x',176*DEG,[.48,.58],rect(0,yD,L,-H));
+  B.add('plat','rim',[0,yD],'x',-90*DEG,[.56,.68],rect(0,yE,L,yD));
+  B.add('legL','plat',[0,yD],'y',-90*DEG,[.44,.54],[[0,yD],[0,yE],[-d+.5,yE+d*.6],[-d+.5,yD-d*.6]]);
+  B.add('legR','plat',[L,yD],'y',90*DEG,[.44,.54],[[L,yD],[L+d-.5,yD-d*.6],[L+d-.5,yE+d*.6],[L,yE]]);
+  B.add('legB','plat',[0,yE],'x',90*DEG,[.44,.54],[[0,yE],[L,yE],[L-d*.4,yE-d+.5],[d*.4,yE-d+.5]]);
+  // lid + liner (the film sits between them) + the tab
+  const y1 = W+H, y2 = y1+W, win = P.window ? [rrPoly(m,y1+m,L-m,y2-m,8)] : [], winA = P.window ? [rect(m,y2+m,L-m,y2+W-m)] : [];
+  B.add('lid','back',[0,y1],'x',-90*DEG,[.78,.98],[[0,y1],[L,y1],[L,y2],[b,y2],[b-.6,y2],[a+.6,y2],[a,y2],[0,y2]],{holes:win});
+  B.add('liner','lid',[0,y2],'x',-176*DEG,[.6,.72],[[0,y2],[a,y2],[a+3,y2+th],[b-3,y2+th],[b,y2],[L,y2],[L,y2+W-1],[0,y2+W-1]],{holes:winA});
+  B.add('tab','lid',[0,y2],'x',-90*DEG,[.72,.8],[[a+.6,y2],[b-.6,y2],[b-3.4,y2+th-.6],[a+3.4,y2+th-.6]]);
+  B.face('bottom',[0,0,L,W]); B.face('front',[0,-H,L,0],PI); B.face('back',[0,W,L,W+H]);
+  B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
+  return {};
+}
+// long mailer tray with a window lid (Pacdora-style): double end walls with tabs locked into base slots, ears on the long
+// walls with an L-slit hook, lid hinged on the long back wall with dust flaps and a rounded tuck
+function buildBakeryMailer(P,B){
+  const L=P.L, W=P.W, H=P.H, e = Math.min(W*.65, 2.2*H), Hi = H-.8, TL = 5, m = clamp(+P.bkWm||22, 12, Math.min(L,W)/2-8);
+  const tabs = [[W*.2,W*.4],[W*.6,W*.8]], slits = [];
+  const holes = []; for (const [a,b] of tabs) holes.push([[.5,a+1],[1.7,a+1],[1.7,b-1],[.5,b-1]], [[L-1.7,a+1],[L-.5,a+1],[L-.5,b-1],[L-1.7,b-1]]);
+  B.add('base',null,[0,0],null,0,null,rect(0,0,L,W),{final:{p:[0,0,0],q:Q_UP}, holes});
+  B.add('front','base',[0,0],'x',90*DEG,[0,.2],rect(0,-H,L,0));
+  B.add('back','base',[0,W],'x',-90*DEG,[0,.2],rect(0,W,L,W+H));
+  const ear = (id,par,hx,ya,dy,s) => { B.add(id,par,[hx,ya],'y',(s<0?-92:92)*DEG,[.15,.3],earHook(hx,ya,dy,s,e,H,{r:3}));
+    const x = hx+s*e*.77, y0 = ya+dy*H; slits.push([[x,y0],[x,y0-dy*H*.5]], [[x,y0-dy*H*.5],[x-s*3,y0-dy*H*.5]]); };
+  ear('earFL','front',0,0,-1,-1); ear('earFR','front',L,0,-1,1); ear('earBL','back',0,W,1,-1); ear('earBR','back',L,W,1,1);
+  B.add('sideL','base',[0,0],'y',-90*DEG,[.28,.4],rect(-H,0,0,W));
+  B.add('sideR','base',[L,0],'y',90*DEG,[.28,.4],rect(L,0,L+H,W));
+  const sp = (hx, s) => { const x1 = hx + s*Hi, p = [[hx,0],[hx,W],[x1,W-1.5]]; for (const [a,b] of [...tabs].reverse()) p.push([x1,b],[x1+s*TL,b-1],[x1+s*TL,a+1],[x1,a]); p.push([x1,1.5]); return p; };
+  B.add('sideLIn','sideL',[-H,0],'y',-176*DEG,[.4,.52],sp(-H,-1));
+  B.add('sideRIn','sideR',[L+H,0],'y',176*DEG,[.4,.52],sp(L+H,1));
+  const y1 = W+H, y2 = y1+W, dd = H-3, win = P.window ? [rrPoly(L/2-L*.25, y1+W*.25, L/2+L*.25, y2-W*.25, 10)] : [];
+  B.add('lid','back',[0,y1],'x',-90*DEG,[.72,.97],rect(0,y1,L,y2),{holes:win});
+  B.add('lidTuck','lid',[0,y2],'x',-92*DEG,[.66,.84],tuckPoly(0,y2,L,H-4,1));
+  B.add('lidDL','lid',[0,y1],'y',-92*DEG,[.62,.8],sideTab(0,y1+1.5,y2-1.5,-dd,Math.min(dd*.9,W*.2)));
+  B.add('lidDR','lid',[L,y1],'y',92*DEG,[.62,.8],sideTab(L,y1+1.5,y2-1.5,dd,Math.min(dd*.9,W*.2)));
+  B.face('bottom',[0,0,L,W]); B.face('front',[0,-H,L,0],PI); B.face('back',[0,W,L,W+H]);
+  B.face('side1',[-H,0,0,W],-PI/2); B.face('side2',[L,0,L+H,W],PI/2); B.face('top',[0,y1,L,y2],PI);
+  return {slits};
 }
 // front-opening cake box (hood lid): base = bottom + back + sides + a front lip with wings; corners lock without glue —
 // the back-wall ears end in a tongue that pushes through a slit in the side wall. The lid is a hood: top + front wall
@@ -2748,13 +2825,15 @@ const BK_NOTES = {
   tuck:'Tuck lid: the tuck slides behind the front wall, thumb notch to open. Cheapest; on 250 g board add the friction lock.',
   tongue:'Tongue lock: the lid front flap closes over the outside of the front wall and its tongue pushes into a slot. Holds firmly.',
   zip:'Tear strip: the lid flap is glued over the front wall and opened by a strip between two perforations — shows if it was opened.',
+  slot:'Tab-lock window box: the lid has a window and a liner that holds the film between two layers (no tape); a tab on the lid edge pushes into a slot on the front rim. Double side walls lock the hooked ears; a platform on legs lifts the product to half height. No glue.',
+  mailer:'Window mailer: end walls fold double and their tabs lock into slots in the base, the long-wall ears hook into the doubled ends (L-slits). Lid on the long side with dust flaps and a rounded tuck. No glue, strong for long cakes and rolls.',
   hood:'Front-opening: lid, front and sides swing up so a tall cake slides in from the front. Base corners: ears with tongues in side-wall slits.',
   ears:'Folded ears: corner flaps fold inside the side walls, no glue.',
   glued:'Pre-glued: short corner flaps are glued at the factory (glue areas stay unprinted); ships flat, pops up in one move. The usual choice for 250–350 g board.',
   gusset:'Gusset web: each corner is a folded web, no gaps — cream and crumbs stay in.',
   double:'Double walls: front and sides fold double, tabs lock into slots in the base — stiff walls from thin board, no glue.'};
 function syncTypeUI(){
-  if ($('bkLidCards')){ const K = bkNorm(S), hood = K.lid==='hood';
+  if ($('bkLidCards')){ const K = bkNorm(S), hood = ['hood','slot','mailer'].includes(K.lid);
     document.querySelectorAll('#bkLidCards [data-v], #bkCornerCards [data-v]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v===(b.dataset.k==='bkLid' ? K.lid : K.corner)));
     $('bkCornerWrap').hidden = hood;
     const ex = [['bkFric', K.fric, K.lid==='tuck'], ['bkSide', K.side, !hood && K.corner!=='double'], ['bkRib', K.rib, K.lid==='tuck']];
