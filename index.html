@@ -2074,6 +2074,7 @@ const ANGLES = { current:['Current view',null], three:['3/4 front',[.62,.42,1]],
 let rSel = store.get('skladka-angles', ['current','three','front']);
 $('rAngles').innerHTML = Object.entries(ANGLES).map(([k,v]) => `<label><input type="checkbox" value="${k}" ${rSel.includes(k)?'checked':''}> ${v[0]}</label>`).join('');
 $('rAngles').addEventListener('change', () => { rSel = [...$('rAngles').querySelectorAll('input:checked')].map(i => i.value); store.set('skladka-angles', rSel); });
+const foldNow = () => T;
 async function shootAngles(W, H, keys, raw=false){
   const keepPos = camera.position.clone(), tgt = controls.target.clone(), keepAspect = camera.aspect;
   const keepSize = renderer.getSize(new THREE.Vector2()), pr = renderer.getPixelRatio(), dist = keepPos.distanceTo(tgt) * Math.max(1, (H/W) / (keepSize.y/keepSize.x) * .8);
@@ -3045,10 +3046,11 @@ async function makePdf(){
   const head = `${nameStr}${typeName} ${BOX.has(S.type) ? `${S.L}×${S.W}×${S.H} mm (inside)` : tplSize(S)} · sheet ${w.toFixed(1)}×${h.toFixed(1)} mm incl. ${BLEED} mm bleed · trim at crop marks · safe zone ${SAFE} mm · CMYK ${dpi} dpi · text outlined`;
   const foot = 'Layers: Artwork — print · WHITE / VARNISH / FOIL / EMBOSS — finishing spots (overprint) · CUT — cut (CutContour, 100% M) · CREASE — crease (Crease, 100% C, dashed) · Info — do not print';
   const pages = [], pagesId = pdf.id();
-  // print pages are A4 portrait; a dieline that does not fit 1:1 goes on A3…A0 portrait (turned 90° when that fits a smaller sheet)
+  // print pages are A4 portrait, or A3 when the dieline needs it (turned 90° when that fits); larger dielines get a page cut to size
   const ASZ = [['A4',210,297],['A3',297,420],['A2',420,594],['A1',594,841],['A0',841,1189]];
-  let PG = null; for (const [n,a,b] of ASZ){ if (PW <= a && PH <= b){ PG = {n, W:a, H:b, rot:false}; break; } if (PH <= a && PW <= b){ PG = {n, W:a, H:b, rot:true}; break; } }
-  PG ||= {n:'custom', W:PW, H:PH, rot:false};
+  let PG = null; for (const [n,a,b] of ASZ.slice(0,2)){ if (PW <= a && PH <= b){ PG = {n, W:a, H:b, rot:false}; break; } if (PH <= a && PW <= b){ PG = {n, W:a, H:b, rot:true}; break; } }
+  // bigger than A3: the page is cut to the dieline (+ marks) instead of a mostly empty A2/A1
+  PG ||= {n:`${Math.round(PW)}×${Math.round(PH)} mm`, W:PW, H:PH, rot:false};
   const ox = (PG.W - (PG.rot ? h : w))/2, oy = (PG.H - (PG.rot ? w : h))/2, bb = PG.rot ? [ox, PG.H-oy-w, ox+h, PG.H-oy] : [ox, PG.H-oy-h, ox+w, PG.H-oy];
   const ctm = PG.rot ? `0 ${pn(K)} ${pn(K)} 0 ${pn(ox*K)} ${pn((PG.H-oy-w)*K)} cm` : `${pn(K)} 0 0 ${pn(-K)} ${pn(ox*K)} ${pn((PG.H-oy)*K)} cm`;
   const page = async (title, body) => {
@@ -3066,7 +3068,13 @@ async function makePdf(){
       const c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0,0,c.width,c.height); x.drawImage(bm,0,0);
       const b = await new Promise(r => c.toBlob(r, 'image/jpeg', .9)); return {w:c.width, h:c.height, bytes:new Uint8Array(await b.arrayBuffer())}; };
     const jpg = async j => { const id = pdf.id(); pdf.stream(id, `/Type /XObject /Subtype /Image /Width ${j.w} /Height ${j.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, j.bytes); return {id, ...j}; };
-    let shot = null; try { const [[,b]] = await shootAngles(1600, 1200, ['three'], true); shot = await jpg(await toJpeg(b, (bgColors()||['#f4f4f6'])[0])); } catch(e){ console.warn('cover render', e); }
+    // the 3D view on the cover: always the assembled box, framed whole, whatever the editor camera shows
+    let shot = null; const kp = camera.position.clone(), kt = controls.target.clone(), kT = foldNow();
+    try { applyFold(1,false); const d = foldedSize.length(), tanH = Math.tan(camera.fov*DEG/2), A = 182/92;
+      controls.target.set(0,0,0); camera.position.set(.55,.38,1).normalize().multiplyScalar(Math.max(d, d/A)/(2*tanH)*1.18);
+      const [[,b]] = await shootAngles(1820, 920, ['three'], true); shot = await jpg(await toJpeg(b, (bgColors()||['#f4f4f6'])[0])); }
+    catch(e){ console.warn('cover render', e); }
+    finally { camera.position.copy(kp); controls.target.copy(kt); applyFold(kT,false); controls.update(); }
     const ds = Math.min(6, 1800/Math.max(w,h)), flat = await jpg(await toJpeg(drawArt(document.createElement('canvas'), G, ds, true, 'out', null, null, {print:true})));
     const ot = id => ($(id)?.selectedOptions?.[0]?.text || '').replace(/≈/g,'~'), mm = v => `${+(+v).toFixed(1)} mm`, hex = c => String(c||'').toUpperCase();
     const cmykTxt = c => 'C' + rgb2cmyk(parseColor(c)).map(v => Math.round(v*100)).join(' M').replace(/ M(\d+) M(\d+)$/, ' Y$1 K$2');
