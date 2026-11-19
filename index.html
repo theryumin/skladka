@@ -4264,8 +4264,11 @@ $('shCopy').addEventListener('click', async () => {
     try { await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, role:$('shLinkRole').value})}); await shareRefresh(); }
     catch (x){ shErr(x); $('shCopy').disabled = false; $('shCopy').textContent = 'Create link'; return; }
     if (!$('shLink').value){ shErr(new Error('The link was created but can’t be read back — check the “owner manages shares” policy.')); return; } }
-  try { await navigator.clipboard.writeText($('shLink').value); } catch { $('shLink').select(); try { document.execCommand('copy'); } catch {} }
-  $('shLink').select(); toast('Link copied — send it to the print house.'); });
+  // Safari refuses clipboard writes after a network wait — never claim "copied" when it didn't happen
+  let ok = false; const v = $('shLink').value;
+  try { await navigator.clipboard.writeText(v); ok = true; } catch { $('shLink').focus(); $('shLink').select(); try { ok = document.execCommand('copy'); } catch {} }
+  $('shLink').focus(); $('shLink').select();
+  toast(ok ? 'Link copied — send it to the print house.' : 'Link is ready — press “Copy link” (or select it and press ⌘C).'); });
 $('shOff').addEventListener('click', async e => { if (!e.target.dataset.id) return;
   try { await SB.req(`/rest/v1/shares?id=eq.${e.target.dataset.id}`, {method:'DELETE'}); await shareRefresh(); toast('The link is off — it no longer opens the project.'); } catch (x){ shErr(x); } });
 $('shInvite').addEventListener('click', async () => { const em = $('shEmail').value.trim().toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(em)){ $('shEmail').focus(); return; }
