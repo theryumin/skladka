@@ -383,6 +383,9 @@ svg.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-wid
 #auth{display:none}
 html.locked #auth{display:grid;place-items:center;position:fixed;inset:0;z-index:1000;background:var(--bg,#f5f5f7);padding:16px}
 html.locked body>*:not(#auth):not(script){visibility:hidden}
+#auth .authnote{font-size:12.5px;color:var(--mut,#86868b);margin:10px 0 0;text-align:center}
+.hside .who{font-size:12px;color:var(--mut,#86868b);padding:4px 12px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card.proj .cloud{position:absolute;top:8px;left:8px;font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.9);color:#b25b00}
 #authForm{display:grid;gap:14px;width:min(360px,100%);background:var(--panel,#fff);border:1px solid var(--line,#e5e5e5);border-radius:14px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.08)}
 #authForm h1{font-size:22px;margin:0}
 #authForm input{width:100%;font:500 14px var(--sans);color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
@@ -398,24 +401,61 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
   <form id="authForm" autocomplete="on">
     <div class="authlogo"><span class="mk"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Skladka</div>
     <h1 id="authH">Sign in</h1>
-    <label class="f">Login<input id="authLogin" type="text" name="username" autocomplete="username" required autofocus></label>
+    <label class="f">Email<input id="authLogin" type="email" name="email" autocomplete="username" required autofocus></label>
     <label class="f">Password<input id="authPass" name="password" type="password" autocomplete="current-password" required></label>
     <p class="autherr" id="authErr" role="alert"></p>
-    <button class="btn pri" type="submit">Sign in</button>
+    <button class="btn pri" type="submit" id="authGo">Sign in</button>
+    <p class="authnote">Your projects are stored in the cloud and open on any computer.</p>
   </form>
 </div>
 <script>
-// simple login gate (the page is static, so this only keeps casual visitors out)
-(() => { const H = '3ee8c27c17d75cdbcf61394552cc2566f8b7c723d8154ee41a494d4412d58c7c', K = 'skladka-auth', ok = () => { try { return localStorage.getItem(K) === H; } catch { return false; } };
-  const show = () => { document.documentElement.classList.toggle('locked', !ok()); };
-  show();
-  document.getElementById('authForm').addEventListener('submit', async e => { e.preventDefault();
-    const t = document.getElementById('authLogin').value.trim() + ':' + document.getElementById('authPass').value;
-    const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)), h = [...new Uint8Array(d)].map(b => b.toString(16).padStart(2,'0')).join('');
-    if (h === H){ try { localStorage.setItem(K, H); } catch {} document.getElementById('authErr').textContent = ''; document.getElementById('authPass').value = ''; show(); }
-    else { document.getElementById('authErr').textContent = 'Wrong login or password.'; document.getElementById('authPass').select(); } });
-  window.skladkaLogout = () => { try { localStorage.removeItem(K); } catch {} show(); document.getElementById('authLogin').focus(); };
+// Supabase: sign-in, projects table, assets bucket (plain fetch, no SDK). The publishable key is public by design;
+// every row and file is protected by row-level security (owner = auth.uid()).
+window.SB = (() => {
+  const URL = 'https://ftemkscqwyazwiggnflj.supabase.co', KEY = 'sb_publishable_swXb5CVXJJ-4o8whevZEzg_AgVHPrmc', SK = 'skladka-sb';
+  let ses = null; try { ses = JSON.parse(localStorage.getItem(SK)); } catch {}
+  const keep = v => { ses = v; try { v ? localStorage.setItem(SK, JSON.stringify(v)) : localStorage.removeItem(SK); } catch {} };
+  const show = () => document.documentElement.classList.toggle('locked', !ses);
+  const fail = (j, r) => { const e = new Error(j.error_description || j.msg || j.message || j.error || r.statusText || 'Network error'); e.code = j.code || j.error_code; e.status = r.status; return e; };
+  const grant = async (type, body) => { const r = await fetch(`${URL}/auth/v1/token?grant_type=${type}`, {method:'POST', headers:{apikey:KEY, 'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw fail(j, r);
+    keep({at:j.access_token, rt:j.refresh_token, exp:Math.floor(Date.now()/1000) + (j.expires_in || 3600), user:{id:j.user.id, email:j.user.email}}); return ses; };
+  let refreshing = null;
+  const token = async () => { if (!ses) throw Object.assign(new Error('Not signed in'), {status:401});
+    if (ses.exp - 90 < Date.now()/1000){ refreshing ??= grant('refresh_token', {refresh_token:ses.rt}).finally(() => refreshing = null);
+      try { await refreshing; } catch (e){ if (e.status >= 400 && e.status < 500){ keep(null); show(); } throw e; } }
+    return ses.at; };
+  const req = async (path, o = {}) => { const t = await token(), r = await fetch(URL + path, {...o, headers:{apikey:KEY, Authorization:'Bearer ' + t, ...(o.headers || {})}});
+    if (!r.ok) throw fail(await r.json().catch(() => ({})), r);
+    return r.status === 204 || r.status === 201 && !r.headers.get('content-type')?.includes('json') ? null : (r.headers.get('content-type') || '').includes('json') ? r.json() : r.text(); };
+  const isId = id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
+  const sha = async buf => [...new Uint8Array(await crypto.subtle.digest('SHA-256', buf))].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
+  const upCache = new Map();
+  return {
+    URL, isId, show,
+    get user(){ return ses?.user || null; },
+    signIn: async (email, password) => { await grant('password', {email, password}); show(); return ses.user; },
+    signOut: async () => { try { await req('/auth/v1/logout', {method:'POST'}); } catch {} keep(null); show(); },
+    list: () => req('/rest/v1/projects?select=id,name,thumb,updated_at,type:data->settings->>type,L:data->settings->>L,W:data->settings->>W,H:data->settings->>H&order=updated_at.desc'),
+    get: id => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}&select=*`).then(a => a?.[0] || null),
+    put: rec => req('/rest/v1/projects?on_conflict=id', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(rec)}),
+    del: id => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}`, {method:'DELETE'}),
+    // a data: URL → a public file in assets/<user>/<content hash>.<ext> (same logo = same file)
+    upload: async src => { if (!src?.startsWith('data:')) return src; if (upCache.has(src)) return upCache.get(src);
+      const blob = await (await fetch(src)).blob(), ext = ({'image/svg+xml':'svg', 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif'})[blob.type] || 'bin';
+      const name = `${ses.user.id}/${await sha(await blob.arrayBuffer())}.${ext}`;
+      await req(`/storage/v1/object/assets/${name}`, {method:'POST', headers:{'Content-Type':blob.type || 'application/octet-stream', 'x-upsert':'true', 'cache-control':'31536000'}, body:blob});
+      const url = `${URL}/storage/v1/object/public/assets/${name}`; upCache.set(src, url); return url; },
+  };
 })();
+SB.show();
+document.getElementById('authForm').addEventListener('submit', async e => { e.preventDefault();
+  const err = document.getElementById('authErr'), go = document.getElementById('authGo'), pw = document.getElementById('authPass');
+  go.disabled = true; go.textContent = 'Signing in…'; err.textContent = '';
+  try { await SB.signIn(document.getElementById('authLogin').value.trim(), pw.value); pw.value = ''; window.dispatchEvent(new Event('sb-auth')); }
+  catch (x){ err.textContent = /invalid/i.test(x.message) ? 'Wrong email or password.' : /confirm/i.test(x.message) ? 'Confirm your email first — check the inbox.' : 'Could not sign in: ' + x.message; pw.select(); }
+  go.disabled = false; go.textContent = 'Sign in'; });
+window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(new Event('sb-auth')); document.getElementById('authLogin').focus(); };
 </script>
 <div id="home" hidden>
   <nav class="hside" aria-label="Sections">
@@ -424,6 +464,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
     <button class="nav on" type="button" id="navProj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>My projects</span><em id="projCount"></em></button>
     <h2>Templates</h2>
     <div class="navlist" id="homeTpls"></div>
+    <div class="who" id="whoAmI"></div>
     <button class="nav logout" type="button" onclick="skladkaLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg><span>Log out</span></button>
     <div id="homeMineSec" hidden><h2>My templates</h2><div class="navlist" id="homeMine"></div></div>
   </nav>
@@ -3705,7 +3746,7 @@ function renderSlots(){
 }
 function loadImg(k, src){
   return new Promise(res=>{ const img=new Image(); img.onload=()=>{ IMGS[k]={img,src}; if (G) renderSlots(); refresh(); res(); };
-    img.onerror=()=>{ toast('Could not open the image. Use PNG, JPG or WebP.'); res(); }; img.src=src; });
+    img.onerror=()=>{ toast('Could not open the image. Use PNG, JPG or WebP.'); res(); }; if (/^https?:/.test(src)) img.crossOrigin = 'anonymous'; img.src=src; });
 }
 
 /* ---------- logos & text ---------- */
@@ -3777,7 +3818,7 @@ function updWarn(){
   const msgs = []; let bad = false;
   if (WARN[el.id]){ msgs.push(`Within ${SAFE} mm of a cut or crease — the edge may be trimmed or land on a fold.`); bad = true; }
   if (el.kind==='image' && ELIMG[el.id]){ const c = el.crop || [0,0,0,0], dpi = Math.round(ELIMG[el.id].img.naturalWidth*(1-c[0]-c[2])/(el.size/25.4));
-    if (ELIMG[el.id].src.startsWith('data:image/svg')) msgs.push('Vector logo — no quality loss.');
+    if (/^data:image\/svg|\.svg$/.test(ELIMG[el.id].src)) msgs.push('Vector logo — no quality loss.');
     else if (dpi < 150){ msgs.push(`Resolution ${dpi} dpi — it will print blurry. Print needs 300 dpi: upload a larger image or make the logo smaller.`); bad = true; }
     else if (dpi < 300) msgs.push(`Resolution ${dpi} dpi — acceptable, 300 dpi is better.`);
     else msgs.push(`Resolution ${dpi} dpi — good for print.`); }
@@ -3853,19 +3894,38 @@ function snapThumb(){
     lastThumb = c.toDataURL('image/jpeg',.75); renderer.render(scene,camera); } catch {}
   return lastThumb;
 }
+// one cloud record ← a local one (images go to the assets bucket first)
+async function cloudPut(rec){
+  const up = async o => { const r = {}; for (const k in o || {}) r[k] = await SB.upload(o[k]); return r; };
+  const imgs = await up(rec.imgs), elimgs = await up(rec.elimgs);
+  await SB.put({id:rec.id, name:rec.name || 'Untitled', data:{settings:rec.settings, imgs, elimgs}, thumb:rec.thumb || null, updated_at:new Date(rec.updated || Date.now()).toISOString()});
+  return {...rec, imgs, elimgs, cloud:true};
+}
+const cloudErr = e => e.code === '42501' ? 'the database refuses access (run the GRANT line from the setup)' : e.status === 401 ? 'signed out' : e.message;
+let saveSeq = 0;
 async function saveProject(){
   if (!S.pid) return;
   if (pending){ cancelAnimationFrame(pending); doRefresh(); }   // make sure the 3D model matches the settings
-  const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
-  try { await idb.put({id:S.pid, name:S.pname || 'Untitled', updated:Date.now(), settings:{...S}, imgs, elimgs, thumb:snapThumb()});
-    $('savedState').textContent = 'Saved'; }
-  catch { $('savedState').textContent = 'Not saving: the browser blocked storage. Use “Export → Project file .json”.'; }
+  if (SB.user && !SB.isId(S.pid)){ const old = S.pid; S.pid = crypto.randomUUID(); idb.del(old).catch(() => {}); }   // cloud ids are uuids
+  const seq = ++saveSeq, imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
+  const rec = {id:S.pid, name:S.pname || 'Untitled', updated:Date.now(), settings:{...S}, imgs, elimgs, thumb:snapThumb(), cloud:false};
+  let local = true; try { await idb.put(rec); } catch { local = false; }
+  if (!SB.user){ $('savedState').textContent = local ? 'Saved on this computer' : 'Not saving: the browser blocked storage. Use “Export → Project file .json”.'; return; }
+  $('savedState').textContent = 'Saving to cloud…';
+  try { const done = await cloudPut(rec);
+    for (const k in IMGS) if (done.imgs[k] && IMGS[k].src === imgs[k]) IMGS[k].src = done.imgs[k];       // next saves skip the upload
+    for (const id in ELIMG) if (done.elimgs[id] && ELIMG[id].src === elimgs[id]) ELIMG[id].src = done.elimgs[id];
+    await idb.put(done).catch(() => {}); if (seq === saveSeq) $('savedState').textContent = 'Saved to cloud'; }
+  catch (e){ if (seq === saveSeq) $('savedState').textContent = local ? `Saved on this computer — cloud: ${cloudErr(e)}` : `Not saved — cloud: ${cloudErr(e)}`; }
 }
 function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Saving…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
-function newProject(name, pid){ S.pid = pid || uid()+Date.now().toString(36); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
+function newProject(name, pid){ S.pid = pid || (crypto.randomUUID ? crypto.randomUUID() : uid()+Date.now().toString(36)); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
 async function openProject(id){
   fitNext = true;
-  const rec = await idb.get(id).catch(()=>null); if (!rec){ toast('Project not found'); return; }
+  let rec = null;
+  if (SB.user && SB.isId(id)) try { const c = await SB.get(id); if (c) rec = {id:c.id, name:c.name, settings:c.data?.settings || {}, imgs:c.data?.imgs || {}, elimgs:c.data?.elimgs || {}, thumb:c.thumb, updated:Date.parse(c.updated_at), cloud:true}; }
+    catch (e){ toast('Cloud unavailable — opening the copy on this computer.'); }
+  rec ??= await idb.get(id).catch(()=>null); if (!rec){ toast('Project not found'); return; }
   for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
   Object.assign(S, DEFAULTS, rec.settings, {pid:rec.id, pname:rec.name}); lastThumb = rec.thumb || '';
   await Promise.all(Object.entries(rec.elimgs||{}).map(([i,src])=>loadElImg(i,src)));
@@ -3878,22 +3938,38 @@ const NEWCARD = '<button class="card newc" id="newCard" type="button"><i>+</i>Ne
 async function renderProjects(){
   if (!$('projGrid').children.length) $('projGrid').innerHTML = NEWCARD;
   let list = []; try { list = (await idb.all()) || []; } catch {}
+  if (SB.user){ $('whoAmI').textContent = SB.user.email;
+    try { const cl = await SB.list(), ids = new Set(cl.map(r => r.id)), mine = new Map(list.map(r => [r.id, r]));
+      // local copies that never reached the cloud get uploaded; synced copies deleted elsewhere are dropped
+      const todo = list.filter(r => !r.cloud && !ids.has(r.id));
+      for (const r of list) if (r.cloud && !ids.has(r.id)) idb.del(r.id).catch(() => {});
+      list = cl.map(r => ({id:r.id, name:r.name, thumb:r.thumb, updated:Date.parse(r.updated_at), settings:mine.get(r.id)?.settings || {type:r.type, L:+r.L, W:+r.W, H:+r.H}}))
+        .concat(todo.map(r => ({...r, pendingUp:true})));
+      if (todo.length && !renderProjects.busy){ renderProjects.busy = true;
+        (async () => { for (const r of todo){ try { let x = r; if (!SB.isId(x.id)){ x = {...r, id:crypto.randomUUID()}; await idb.del(r.id).catch(() => {}); if (S.pid === r.id) S.pid = x.id; }
+          await idb.put(await cloudPut(x)); } catch (e){ console.warn('upload', e); } } renderProjects.busy = false; renderProjects(); })(); } }
+    catch (e){ toast('Cloud unavailable — showing projects on this computer (' + cloudErr(e) + ').'); } }
   list.sort((a,b)=>b.updated-a.updated);
   $('projEmpty').hidden = !!list.length; $('homeContinue').hidden = !list.length; $('projCount').textContent = list.length || '';
   $('homeContinue').dataset.id = list[0]?.id || '';
   $('projGrid').innerHTML = NEWCARD + list.map(r => { const st = r.settings || {};
     const pic = r.thumb ? `<img src="${r.thumb}" alt="">` : thumbSvg(build({...DEFAULTS, ...st}));
-    return `<div class="card proj"><button class="open" data-pid="${r.id}"><div class="pic">${pic}</div><div class="txt"><b>${esc(r.name)}</b><span>${TYPE_NAMES[st.type]||''}</span><span class="mm">${st.L}×${st.W}×${st.H} mm · ${fmtDate(r.updated)}</span></div></button><button class="del" data-del="${r.id}" aria-label="Delete project ${esc(r.name)}">Delete</button></div>`; }).join('');
+    return `<div class="card proj"><button class="open" data-pid="${r.id}"><div class="pic">${pic}${r.pendingUp ? '<span class="cloud">uploading…</span>' : ''}</div><div class="txt"><b>${esc(r.name)}</b><span>${TYPE_NAMES[st.type]||''}</span><span class="mm">${st.L}×${st.W}×${st.H} mm · ${fmtDate(r.updated)}</span></div></button><button class="del" data-del="${r.id}" aria-label="Delete project ${esc(r.name)}">Delete</button></div>`; }).join('');
 }
 $('projGrid').addEventListener('click', async e => {
   const d = e.target.closest('[data-del]');
   if (d){ if (!d.classList.contains('arm')){ d.classList.add('arm'); d.textContent = 'Really delete?'; setTimeout(()=>{ if (d.isConnected){ d.classList.remove('arm'); d.textContent='Delete'; } },3000); return; }
+    if (SB.user && SB.isId(d.dataset.del)) try { await SB.del(d.dataset.del); } catch (x){ toast('Could not delete in the cloud: ' + cloudErr(x)); return; }
     await idb.del(d.dataset.del).catch(()=>{}); if (S.pid === d.dataset.del) S.pid = null; renderProjects(); return; }
   const o = e.target.closest('[data-pid]'); if (o) openProject(o.dataset.pid);
 });
 const setDocTitle = () => { document.title = location.hash === '#editor' && S.pname ? S.pname + ' — Skladka' : 'Skladka'; };
 $('pname').addEventListener('input', () => { S.pname = $('pname').value; setDocTitle(); persist(); autosave(); });
 
+window.addEventListener('sb-auth', async () => {
+  if (!SB.user){ try { for (const r of (await idb.all()) || []) if (r.cloud) await idb.del(r.id); } catch {} $('whoAmI').textContent = ''; S.pid = null; if (location.hash === '#editor') location.hash = ''; }
+  if (!$('home').hidden) renderProjects();
+});
 /* ---------- home page ---------- */
 function showView(){
   const ed = location.hash === '#editor';
@@ -4453,7 +4529,7 @@ $('exPng').addEventListener('click', async () => saveFile(fname('-mockup.png'), 
 $('saveProj').addEventListener('click',()=>{ const imgs={}, elimgs={}; for (const k in IMGS) imgs[k]=IMGS[k].src;
   for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id]=ELIMG[e.id].src;
   saveFile(fname('.json'), new Blob([JSON.stringify({app:'skladka',v:3,settings:S,imgs,elimgs,mine})],{type:'application/json'})); });
-const loadElImg = (id, src) => new Promise(res => { const img = new Image(); img.onload = () => { ELIMG[id] = {img, src}; res(); }; img.onerror = res; img.src = src; });
+const loadElImg = (id, src) => new Promise(res => { const img = new Image(); img.onload = () => { ELIMG[id] = {img, src}; res(); }; img.onerror = res; if (/^https?:/.test(src)) img.crossOrigin = 'anonymous'; img.src = src; });
 const importProject = e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader();
   r.onload=async()=>{ try{ const d=JSON.parse(r.result); if (d.app!=='skladka') throw 0;
       Object.assign(S,{type:'tube',els:[]},d.settings||{}); for (const k in IMGS) delete IMGS[k];
