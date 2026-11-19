@@ -162,6 +162,40 @@ main.board-mode .dimlbl{display:none}
   padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1}
 .savewrap{position:relative}
+html.shared #auth{display:none!important}
+html.shared #goHome{visibility:hidden}
+.btn.shbtn{display:inline-flex;align-items:center;gap:7px}
+.btn.shbtn em{font-style:normal;font-size:11px;font-weight:700;background:var(--accent);color:#fff;border-radius:9px;padding:0 6px;line-height:17px}
+.btn.shbtn em:empty{display:none}
+.shbar{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:var(--hover);border-radius:10px;padding:4px 6px 4px 12px}
+.shbar .btn.mini{height:28px;padding:0 10px;font-size:12.5px;width:auto;white-space:nowrap}
+.shbar #shWho{white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+html.viewing #savedState,html.viewing #undoBtn,html.viewing #redoBtn,html.viewing header label.btn.ghost{display:none}
+.dlg.rv{padding:22px}
+.shbar .btn.ok{background:#1f9d55;border-color:#1f9d55;color:#fff}
+@media (max-width:900px){.shbar #shWho{display:none}}
+.dlg.share{width:min(560px,calc(100vw - 32px))}
+.dlg.share section{border-top:1px solid var(--line);padding:14px 0 4px}
+.dlg.share .pophead{display:flex;align-items:center;justify-content:space-between;padding:0 0 12px}
+.dlg.share .pophead h2,.dlg.rv h2{margin:0}
+.dlg.share .chk{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.4}
+.shlink,.shinv{display:flex;gap:8px;margin-top:10px}
+.shlink input{flex:1;font-family:var(--mono);font-size:12px}
+.shinv input{flex:1}.shinv select{width:120px;flex:none}
+.shp{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.shp span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.shp select{width:110px;flex:none;padding:4px 26px 4px 8px}
+.shp button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px}
+.rvi{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.rvi b.ok{color:#1f9d55}.rvi b.no{color:#c2410c}
+.rvi small{color:var(--muted);margin-left:6px}
+.rvi p{margin:3px 0 0;white-space:pre-wrap}
+.dlg.rv form{display:flex;flex-direction:column;gap:10px;width:min(440px,calc(100vw - 64px))}
+.dlg.rv textarea,.dlg.share textarea{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg)}
+.shh{font-size:17px;margin:26px 0 12px}
+.card .shtag{position:absolute;top:8px;left:8px;font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.92);color:#333}
+.ordstat{margin:8px 0 0;font-size:13px;font-weight:600;min-height:1em}
+.ordstat.bad{color:var(--cut)}
 .angs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
 .angs label{display:flex;gap:8px;align-items:center;font-size:13px}
 .icons{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
@@ -442,10 +476,14 @@ window.SB = (() => {
     get user(){ return ses?.user || null; },
     signIn: async (email, password) => { await grant('password', {email, password}); show(); return ses.user; },
     signOut: async () => { try { await req('/auth/v1/logout', {method:'POST'}); } catch {} keep(null); show(); },
-    list: () => req('/rest/v1/projects?select=id,name,thumb,updated_at,type:data->settings->>type,L:data->settings->>L,W:data->settings->>W,H:data->settings->>H&order=updated_at.desc'),
+    list: () => req(`/rest/v1/projects?owner=eq.${ses.user.id}&select=id,name,thumb,updated_at,type:data->settings->>type,L:data->settings->>L,W:data->settings->>W,H:data->settings->>H&order=updated_at.desc`),
     get: id => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}&select=*`).then(a => a?.[0] || null),
     put: rec => req('/rest/v1/projects?on_conflict=id', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(rec)}),
     del: id => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}`, {method:'DELETE'}),
+    // security-definer functions; a link viewer has no session, so only the apikey goes along
+    rpc: async (fn, args) => { const h = {apikey:KEY, 'Content-Type':'application/json'}; if (ses) try { h.Authorization = 'Bearer ' + await token(); } catch {}
+      const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, {method:'POST', headers:h, body:JSON.stringify(args)}); const j = await r.json().catch(() => null); if (!r.ok) throw fail(j || {}, r); return j; },
+    patch: (id, rec) => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}`, {method:'PATCH', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify(rec)}),
     // a data: URL → a public file in assets/<user>/<content hash>.<ext> (same logo = same file)
     upload: async src => { if (!src?.startsWith('data:')) return src; if (upCache.has(src)) return upCache.get(src);
       const blob = await (await fetch(src)).blob(), ext = ({'image/svg+xml':'svg', 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif'})[blob.type] || 'bin';
@@ -454,7 +492,8 @@ window.SB = (() => {
       const url = `${URL}/storage/v1/object/public/assets/${name}`; upCache.set(src, url); return url; },
   };
 })();
-SB.show();
+window.SHARE_T = new URLSearchParams(location.search).get('share');
+if (window.SHARE_T) document.documentElement.classList.add('shared'); else SB.show();
 document.getElementById('authForm').addEventListener('submit', async e => { e.preventDefault();
   const err = document.getElementById('authErr'), go = document.getElementById('authGo'), pw = document.getElementById('authPass');
   go.disabled = true; go.textContent = 'Signing in…'; err.textContent = '';
@@ -487,6 +526,7 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
       <div class="home-sec" id="projSec">
         <div class="home-grid" id="projGrid"></div>
         <p class="empty" id="projEmpty">No projects yet. Click “+ New project” or pick a template — it will be saved here automatically.</p>
+        <div id="sharedSec" hidden><h2 class="shh">Shared with me</h2><div class="home-grid" id="sharedGrid"></div></div>
         <p class="note" id="projNote">Projects are saved automatically in this browser, logos included. To move one to another computer, use “Export → Project file .json”.</p>
       </div>
     </div>
@@ -516,6 +556,8 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
     <button class="ibtn" id="redoBtn" title="Redo (⇧⌘Z)" aria-label="Redo" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <div class="sp"></div>
     <label class="btn ghost" style="position:relative;overflow:hidden">Open .json<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+    <span class="shbar" id="shBar" hidden><span id="shWho"></span><button class="btn mini ok" type="button" id="rvOk">✓ Looks good</button><button class="btn mini" type="button" id="rvNo">✎ Needs changes</button></span>
+    <button class="btn shbtn" type="button" id="shareBtn" title="Share this project — a link to view and download the print files, or invite people by email"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>Share<em id="rvBadge"></em></button>
     <div class="savewrap">
       <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Export<svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
@@ -966,6 +1008,33 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
     <h2>Switch to “<span id="tplDlgName"></span>”?</h2>
     <p class="note">You have already customised “<b id="tplDlgCur"></b>”. Keep it in My projects and start a new project from this template — or apply the template's structure to this project (your colours, images and elements stay).</p>
     <div class="acts" style="flex-wrap:wrap"><button class="btn" value="cancel">Cancel</button><button class="btn" id="tplHere" type="button">Apply to this project</button><button class="btn pri" id="tplNew" type="button">Save it &amp; start new</button></div>
+  </form>
+</dialog>
+<dialog class="dlg share" id="shareDlg" aria-labelledby="shareH">
+  <div class="pophead"><h2 id="shareH">Share “<span id="shName"></span>”</h2><button class="btn icon" type="button" id="shX" aria-label="Close">✕</button></div>
+  <section>
+    <label class="chk"><input type="checkbox" id="shLinkOn"><span><b>Anyone with the link</b> can view the 3D and the dieline, download the print files and say “looks good / needs changes”</span></label>
+    <div class="shlink" id="shLinkRow" hidden><input type="text" id="shLink" readonly aria-label="Share link"><button class="btn pri" type="button" id="shCopy">Copy link</button></div>
+    <p class="note">They don’t need an account. Nothing they change is saved to your project.</p>
+  </section>
+  <section>
+    <div class="f">Invite people</div>
+    <div class="shinv"><input type="email" id="shEmail" placeholder="name@printhouse.com" aria-label="Email"><select id="shRole" aria-label="Access"><option value="view">Can view</option><option value="edit">Can edit</option></select><button class="btn" type="button" id="shInvite">Invite</button></div>
+    <p class="note">They sign in with this email and find the project under “Shared with me”. “Can edit” lets them change the design with you.</p>
+    <div id="shPeople"></div>
+  </section>
+  <section>
+    <div class="f">Feedback</div>
+    <div id="shReviews"><p class="note">No feedback yet.</p></div>
+  </section>
+  <p class="ordstat" id="shStat" role="status"></p>
+</dialog>
+<dialog class="dlg rv" id="rvDlg" aria-labelledby="rvH">
+  <form id="rvForm">
+    <h2 id="rvH">Needs changes</h2>
+    <label class="f">Your name / company<input type="text" id="rvWho" autocomplete="organization" required></label>
+    <label class="f">What should change?<textarea id="rvText" rows="4" placeholder="e.g. move the logo 5 mm up, bleed on the lid is missing, use PANTONE 186 C…"></textarea></label>
+    <div class="acts"><button class="btn" type="button" id="rvCancel">Cancel</button><button class="btn pri" type="submit" id="rvSend">Send</button></div>
   </form>
 </dialog>
 <div class="toast" id="toast" role="status"></div>
@@ -4011,6 +4080,13 @@ const cloudErr = e => e.code === '42501' ? 'the database refuses access (run the
 let saveSeq = 0;
 async function saveProject(){
   if (!S.pid) return;
+  if (viewOnly){ $('savedState').textContent = 'View only — changes aren’t saved'; return; }
+  if (sharedEdit){ const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
+    $('savedState').textContent = 'Saving to cloud…';
+    try { const up = async o => { const r = {}; for (const k in o) r[k] = await SB.upload(o[k]); return r; };
+      await SB.patch(S.pid, {name:S.pname || 'Untitled', data:{settings:{...S}, imgs:await up(imgs), elimgs:await up(elimgs)}, thumb:snapThumb() || null, updated_at:new Date().toISOString()});
+      $('savedState').textContent = 'Saved to cloud'; } catch (e){ $('savedState').textContent = 'Not saved — ' + cloudErr(e); }
+    return; }
   if (pending){ cancelAnimationFrame(pending); doRefresh(); }   // make sure the 3D model matches the settings
   if (SB.user && !SB.isId(S.pid)){ const old = S.pid; S.pid = crypto.randomUUID(); idb.del(old).catch(() => {}); }   // cloud ids are uuids
   const seq = ++saveSeq, imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
@@ -4025,9 +4101,9 @@ async function saveProject(){
   catch (e){ if (seq === saveSeq) $('savedState').textContent = local ? `Saved on this computer — cloud: ${cloudErr(e)}` : `Not saved — cloud: ${cloudErr(e)}`; }
 }
 function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Saving…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
-function newProject(name, pid){ S.pid = pid || (crypto.randomUUID ? crypto.randomUUID() : uid()+Date.now().toString(36)); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
-async function openProject(id){
-  fitNext = true;
+function newProject(name, pid){ viewOnly = false; shareCtx = null; sharedEdit = false; if (typeof shareBar === 'function'){ $('pname').readOnly = false; shareBar(); } S.pid = pid || (crypto.randomUUID ? crypto.randomUUID() : uid()+Date.now().toString(36)); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
+async function openProject(id, opt = {}){
+  fitNext = true; viewOnly = false; shareCtx = null; sharedEdit = !!opt.sharedEdit; $('pname').readOnly = false;
   let rec = null;
   if (SB.user && SB.isId(id)) try { const c = await SB.get(id); if (c) rec = {id:c.id, name:c.name, settings:c.data?.settings || {}, imgs:c.data?.imgs || {}, elimgs:c.data?.elimgs || {}, thumb:c.thumb, updated:Date.parse(c.updated_at), cloud:true}; }
     catch (e){ toast('Cloud unavailable — opening the copy on this computer.'); }
@@ -4037,7 +4113,7 @@ async function openProject(id){
   await Promise.all(Object.entries(rec.elimgs||{}).map(([i,src])=>loadElImg(i,src)));
   await Promise.all(Object.entries(rec.imgs||{}).map(([k,src])=>loadImg(k,src)));
   S.els = (S.els||[]).filter(e => e.kind!=='image' || ELIMG[e.id]);
-  $('pname').value = S.pname; syncUI(); syncEl(); refresh(true); openEditor();
+  $('pname').value = S.pname; syncUI(); syncEl(); refresh(true); openEditor(); shareBar(); reviewBadge();
 }
 const fmtDate = t => new Date(t).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 const NEWCARD = '<button class="card newc" id="newCard" type="button"><i>+</i>New project</button>';
@@ -4047,7 +4123,7 @@ async function renderProjects(){
   if (SB.user){ $('whoAmI').textContent = SB.user.email;
     try { const cl = await SB.list(), ids = new Set(cl.map(r => r.id)), mine = new Map(list.map(r => [r.id, r]));
       // local copies that never reached the cloud get uploaded; synced copies deleted elsewhere are dropped
-      const todo = list.filter(r => !r.cloud && !ids.has(r.id));
+      const todo = list.filter(r => !r.cloud && !ids.has(r.id) && !r.foreign);
       for (const r of list) if (r.cloud && !ids.has(r.id)) idb.del(r.id).catch(() => {});
       list = cl.map(r => ({id:r.id, name:r.name, thumb:r.thumb, updated:Date.parse(r.updated_at), settings:mine.get(r.id)?.settings || {type:r.type, L:+r.L, W:+r.W, H:+r.H}}))
         .concat(todo.map(r => ({...r, pendingUp:true})));
@@ -4072,10 +4148,90 @@ $('projGrid').addEventListener('click', async e => {
 const setDocTitle = () => { document.title = location.hash === '#editor' && S.pname ? S.pname + ' — Skladka' : 'Skladka'; };
 $('pname').addEventListener('input', () => { S.pname = $('pname').value; setDocTitle(); persist(); autosave(); });
 
-window.addEventListener('sb-auth', async () => {
+window.addEventListener('sb-auth', async () => { viewOnly = false; shareCtx = null; sharedEdit = false;
   if (!SB.user){ try { for (const r of (await idb.all()) || []) if (r.cloud) await idb.del(r.id); } catch {} $('whoAmI').textContent = ''; S.pid = null; if (location.hash === '#editor') location.hash = ''; }
   if (!$('home').hidden) renderProjects();
 });
+/* ---------- sharing: a view link (no account needed) or email invites (view / edit), feedback from the viewers ---------- */
+let viewOnly = false, shareCtx = null, sharedEdit = false;
+const shareUrl = t => `${location.origin}${location.pathname}?share=${t}#editor`;
+const fdt = t => new Date(t).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+async function shareRefresh(){
+  if (!S.pid || !SB.isId(S.pid)) return;
+  const [sh, rv] = await Promise.all([SB.req(`/rest/v1/shares?project_id=eq.${S.pid}&select=*&order=created_at`), SB.req(`/rest/v1/reviews?project_id=eq.${S.pid}&select=*&order=created_at.desc`)]);
+  const link = sh.find(x => !x.email), ppl = sh.filter(x => x.email);
+  $('shLinkOn').checked = !!link; $('shLinkRow').hidden = !link; $('shLink').value = link ? shareUrl(link.token) : ''; $('shLinkOn').dataset.id = link?.id || '';
+  $('shPeople').innerHTML = ppl.map(p => `<div class="shp" data-sid="${p.id}"><span>${esc(p.email)}</span><select data-role aria-label="Access"><option value="view"${p.role === 'view' ? ' selected' : ''}>Can view</option><option value="edit"${p.role === 'edit' ? ' selected' : ''}>Can edit</option></select><button type="button" data-unshare title="Remove access" aria-label="Remove access for ${esc(p.email)}">✕</button></div>`).join('');
+  $('shReviews').innerHTML = rv.length ? rv.map(r => `<div class="rvi"><b class="${r.verdict === 'ok' ? 'ok' : 'no'}">${r.verdict === 'ok' ? '✓ Looks good' : '✎ Needs changes'}</b> — ${esc(r.who || 'someone')}<small>${fdt(r.created_at)}</small>${r.comment ? `<p>${esc(r.comment)}</p>` : ''}</div>`).join('') : '<p class="note">No feedback yet. People with the link can press “Looks good” or “Needs changes”.</p>';
+  store.set('skladka-rvseen-' + S.pid, rv.length); $('rvBadge').textContent = '';
+}
+async function openShare(){
+  if (!SB.user){ toast('Sign in to share.'); return; }
+  if (viewOnly){ toast('Only the owner can share this project.'); return; }
+  $('shName').textContent = S.pname || 'Untitled'; $('shStat').textContent = ''; $('shareDlg').showModal();
+  clearTimeout(saveT); await saveProject();   // a share needs the project in the cloud
+  if (!/cloud$/i.test($('savedState').textContent)){ $('shStat').textContent = 'The project is not in the cloud yet: ' + $('savedState').textContent; $('shStat').className = 'ordstat bad'; return; }
+  try { await shareRefresh(); } catch (e){ $('shStat').textContent = /relation|42P01|schema cache/i.test(e.message + e.code) ? 'Sharing is not set up in the database yet — run the sharing SQL.' : 'Error: ' + e.message; $('shStat').className = 'ordstat bad'; }
+}
+$('shareBtn').addEventListener('click', openShare);
+$('shX').addEventListener('click', () => $('shareDlg').close());
+const shErr = e => { $('shStat').textContent = 'Error: ' + e.message; $('shStat').className = 'ordstat bad'; };
+$('shLinkOn').addEventListener('change', async e => { try {
+    if (e.target.checked) await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, role:'view'})});
+    else if (e.target.dataset.id) await SB.req(`/rest/v1/shares?id=eq.${e.target.dataset.id}`, {method:'DELETE'});
+    await shareRefresh(); if (e.target.checked){ $('shLink').select(); } } catch (x){ shErr(x); } });
+$('shCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('shLink').value); } catch { $('shLink').select(); document.execCommand('copy'); } toast('Link copied — send it to the print house.'); });
+$('shInvite').addEventListener('click', async () => { const em = $('shEmail').value.trim().toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(em)){ $('shEmail').focus(); return; }
+  if (em === SB.user.email?.toLowerCase()){ toast('That’s you.'); return; }
+  try { await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, email:em, role:$('shRole').value})});
+    $('shEmail').value = ''; await shareRefresh(); toast(`Shared with ${em}. They sign in with that email and open it under “Shared with me”.`); } catch (x){ shErr(x); } });
+$('shEmail').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); $('shInvite').click(); } });
+$('shPeople').addEventListener('change', async e => { const r = e.target.closest('[data-sid]'); if (!r || !e.target.matches('[data-role]')) return;
+  try { await SB.req(`/rest/v1/shares?id=eq.${r.dataset.sid}`, {method:'PATCH', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({role:e.target.value})}); toast('Access changed.'); } catch (x){ shErr(x); } });
+$('shPeople').addEventListener('click', async e => { const r = e.target.closest('[data-sid]'); if (!r || !e.target.closest('[data-unshare]')) return;
+  try { await SB.req(`/rest/v1/shares?id=eq.${r.dataset.sid}`, {method:'DELETE'}); await shareRefresh(); } catch (x){ shErr(x); } });
+// new feedback since the owner last looked → a badge on the Share button
+async function reviewBadge(){ $('rvBadge').textContent = ''; if (!SB.user || viewOnly || !SB.isId(S.pid)) return;
+  try { const rv = await SB.req(`/rest/v1/reviews?project_id=eq.${S.pid}&select=id`), n = rv.length - store.get('skladka-rvseen-' + S.pid, 0); $('rvBadge').textContent = n > 0 ? n : ''; } catch {} }
+// ---- the viewer side
+function shareBar(){
+  const on = !!shareCtx && viewOnly; $('shBar').hidden = !on; $('shareBtn').hidden = on || sharedEdit;
+  document.documentElement.classList.toggle('viewing', on); if (on){ $('shWho').textContent = `${shareCtx.by || 'Shared'} · view only`; $('shWho').title = 'You can look around, change sizes to check and export files — nothing is saved to the owner’s project.'; }
+}
+async function openShared(tok){
+  let r; try { r = await SB.rpc('shared_project', {t:tok}); } catch (e){ r = null; }
+  if (!r){ document.documentElement.classList.remove('shared'); SB.show(); toast('This share link is no longer valid.'); history.replaceState(null, '', location.pathname); return; }
+  fitNext = true; for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
+  const d = r.data || {}; Object.assign(S, DEFAULTS, d.settings || {}, {pid:r.id, pname:r.name});
+  await Promise.all(Object.entries(d.elimgs || {}).map(([i, src]) => loadElImg(i, src)));
+  await Promise.all(Object.entries(d.imgs || {}).map(([k, src]) => loadImg(k, src)));
+  S.els = (S.els || []).filter(e => e.kind !== 'image' || ELIMG[e.id]);
+  viewOnly = true; sharedEdit = false; shareCtx = {token:tok, by:r.by, name:r.name}; lastThumb = r.thumb || '';
+  $('pname').value = S.pname; $('pname').readOnly = true; syncUI(); syncEl(); renderEls(); refresh(true); shareBar(); openEditor();
+  $('savedState').textContent = 'View only';
+}
+$('rvOk').addEventListener('click', () => sendReview('ok'));
+$('rvNo').addEventListener('click', () => { $('rvWho').value ||= store.get('skladka-rvwho', SB.user?.email || ''); $('rvDlg').showModal(); $('rvText').focus(); });
+$('rvCancel').addEventListener('click', () => $('rvDlg').close());
+$('rvForm').addEventListener('submit', e => { e.preventDefault(); sendReview('changes'); });
+async function sendReview(v){
+  let who = $('rvWho').value.trim() || store.get('skladka-rvwho', '') || SB.user?.email || '';
+  if (v === 'ok' && !who){ who = (prompt('Your name or company — so the owner knows who approved it:') || '').trim(); if (!who) return; }
+  store.set('skladka-rvwho', who);
+  try { await SB.rpc('add_review', {t:shareCtx.token, who, verdict:v, comment:v === 'ok' ? null : $('rvText').value.trim() || null});
+    $('rvDlg').close(); $('rvText').value = ''; toast(v === 'ok' ? '✓ Sent: looks good. The owner sees it in Share.' : 'Sent to the owner — thanks!'); }
+  catch (x){ toast('Not sent: ' + x.message); }
+}
+// ---- “Shared with me” on the home page
+async function renderShared(){
+  $('sharedSec').hidden = true; if (!SB.user) return;
+  let rows = []; try { rows = await SB.req(`/rest/v1/shares?email=eq.${encodeURIComponent(SB.user.email.toLowerCase())}&select=role,token,project:projects(id,name,thumb,updated_at,type:data->settings->>type,L:data->settings->>L,W:data->settings->>W,H:data->settings->>H)`) || []; } catch { return; }
+  rows = rows.filter(r => r.project); $('sharedSec').hidden = !rows.length;
+  $('sharedGrid').innerHTML = rows.map(r => { const p = r.project, pic = p.thumb ? `<img src="${p.thumb}" alt="">` : thumbSvg(build({...DEFAULTS, type:p.type, L:+p.L, W:+p.W, H:+p.H}));
+    return `<div class="card proj"><button class="open" data-sh="${r.role === 'edit' ? 'e:' + p.id : 'v:' + r.token}"><div class="pic">${pic}<span class="shtag">${r.role === 'edit' ? 'Can edit' : 'View only'}</span></div><div class="txt"><b>${esc(p.name)}</b><span>${TYPE_NAMES[p.type] || ''}</span><span class="mm">${p.L}×${p.W}×${p.H} mm · ${fdt(p.updated_at)}</span></div></button></div>`; }).join('');
+}
+$('sharedGrid').addEventListener('click', e => { const b = e.target.closest('[data-sh]'); if (!b) return; const [m, v] = b.dataset.sh.split(':');
+  if (m === 'v') openShared(v); else openProject(v, {sharedEdit:true}); });
 /* ---------- home page ---------- */
 function showView(){
   const ed = location.hash === '#editor';
@@ -4105,7 +4261,7 @@ function cardHTML(svg, name, desc, mm, attrs){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const navItem = (svg, name, title, attrs) => `<button class="nav" type="button" ${attrs} title="${title}">${svg}<span>${name}</span></button>`;
 function renderHome(){
-  renderHomeTpls();
+  renderHomeTpls(); renderShared();
   $('homeMineSec').hidden = !mine.length;
   $('homeMine').innerHTML = mine.map((m,i) => navItem(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), `${TYPE_NAMES[m.s.type]||''} · ${m.s.L}×${m.s.W}×${m.s.H} mm`, `data-mine="${i}"`)).join('');
   renderProjects();
@@ -4666,7 +4822,8 @@ $('sheet').textContent = `${S.L}×${S.W}×${S.H} mm · sheet ${G.b.w.toFixed(0)}
 renderProd(); renderImp();
 document.fonts?.ready.then(()=>refresh());
 $('pname').value = S.pname || '';
-if (S.pid && location.hash === '#editor') openProject(S.pid);
+if (window.SHARE_T) openShared(window.SHARE_T);
+else if (S.pid && location.hash === '#editor') openProject(S.pid);
 showView();
 requestAnimationFrame(loop);
 </script>
