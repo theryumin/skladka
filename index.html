@@ -292,30 +292,44 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 .selov .sk{fill:#0d99ff;pointer-events:none}
 .selov [data-h=nw],.selov [data-h=se]{cursor:nwse-resize}.selov [data-h=ne],.selov [data-h=sw]{cursor:nesw-resize}
 .selov [data-h=n],.selov [data-h=s]{cursor:ns-resize}.selov [data-h=e],.selov [data-h=w]{cursor:ew-resize}.selov [data-h=rot]{cursor:alias}
-.diebar{left:12px;right:12px;bottom:58px;margin:0 auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;width:fit-content;max-width:calc(100% - 24px);padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.14);font-size:12.5px;color:var(--fg)}
-.diebar b{font-weight:600;margin-right:2px}
-.diebar span.h{color:var(--muted)}
-.diebar label{display:flex;align-items:center;gap:4px;color:var(--muted)}
-.diebar input[type=number]{width:56px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
-.diebar button{height:28px;min-width:28px;padding:0 9px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;cursor:pointer;font:500 12.5px var(--sans);display:inline-grid;place-items:center}
-.diebar button:disabled{opacity:.45;cursor:default}
-.diebar button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
-.diebar button svg{width:20px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
-.diebar .sep{width:1px;height:20px;background:var(--line);margin:0 2px}
-.diebar .warn{color:#e5484d}
-.dieov .de{stroke:transparent;stroke-width:9;cursor:grab;pointer-events:stroke}
-.dieov .de:hover{stroke:rgba(13,153,255,.35)}
-.dieov .de.on{stroke:rgba(13,153,255,.7)}
-.dieov .dv{fill:#fff;stroke:#0d99ff;stroke-width:1.3;cursor:pointer;pointer-events:all}
-.dieov .dv:hover{stroke-width:2.2}
-.dieov .dv.on{fill:#0d99ff}
-.dieov .dv.rd{fill:#cfe8ff}
-.dieov .dl{fill:transparent;stroke:none;cursor:pointer;pointer-events:all}
-.dieov .dl:hover{fill:rgba(13,153,255,.1)}
-.dieov .dl.on{fill:rgba(13,153,255,.12);stroke:#0d99ff;stroke-width:1;stroke-dasharray:4 3}
-.dieov .dl.bad{stroke:#e5484d;stroke-width:1.3;fill:rgba(229,72,77,.12)}
-.dieov .dh{fill:#fff;stroke:#0d99ff;stroke-width:1.6;pointer-events:all}
-.dieov .dh.mv{fill:#0d99ff;stroke:#fff}
+#view2d.vmode .legend,#view2d.vmode #gridBtn{display:none}
+#view2d.vmode.vdraw{cursor:crosshair}
+#vsvg{background:transparent!important;box-shadow:none!important;overflow:visible;touch-action:none}
+#vsvg .vparts path{fill:#fff;fill-rule:evenodd;stroke:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.08))}
+#vsvg .vcut{fill:none;stroke:#1d1d1f;stroke-width:1.2;vector-effect:non-scaling-stroke;pointer-events:none}
+#vsvg .vcr{fill:none;stroke:#1e88e5;stroke-width:1.1;stroke-dasharray:6 4;vector-effect:non-scaling-stroke;pointer-events:none}
+#vsvg .vpf{fill:none;stroke:#f08c00;stroke-width:1.1;stroke-dasharray:2 3;vector-effect:non-scaling-stroke;pointer-events:none}
+#vsvg .vhole{fill:transparent;stroke:none;pointer-events:all}
+#vov *{vector-effect:non-scaling-stroke}
+#vov .hov{fill:none;stroke:#0d99ff;stroke-width:1.2;opacity:.55;pointer-events:none}
+#vov .sel{fill:rgba(13,153,255,.05);stroke:#0d99ff;stroke-width:1.6;pointer-events:none}
+#vov .seg{stroke:transparent;stroke-width:9;fill:none;pointer-events:stroke;cursor:move}
+#vov .seg:hover{stroke:rgba(13,153,255,.35)}
+#vov .nd{fill:#fff;stroke:#0d99ff;stroke-width:1.3;cursor:move;pointer-events:all}
+#vov .nd.tw{stroke:#e5484d}
+#vov .nd.on{fill:#0d99ff}
+#vov .nd.tw.on{fill:#e5484d}
+#vov .hl{stroke:#0d99ff;stroke-width:1;pointer-events:none}
+#vov .hd{fill:#fff;stroke:#0d99ff;stroke-width:1.3;cursor:move;pointer-events:all}
+#vov .lk{fill:rgba(13,153,255,.08);stroke:#0d99ff;stroke-width:1;stroke-dasharray:4 3;cursor:pointer;pointer-events:all}
+#vov .lk:hover{fill:rgba(13,153,255,.16)}
+#vov .lk.on{fill:rgba(13,153,255,.18);stroke-dasharray:none;stroke-width:1.4}
+#vov .lk.bad{stroke:#e5484d;fill:rgba(229,72,77,.12)}
+#vov .lh{fill:#fff;stroke:#0d99ff;stroke-width:1.6;pointer-events:all}
+#vov .lh.mv{fill:#0d99ff;stroke:#fff}
+#vov .ghost{fill:rgba(13,153,255,.15);stroke:#0d99ff;stroke-width:1.4;stroke-dasharray:3 2;pointer-events:none}
+#vov .gslot{fill:#0d99ff;stroke:#0d99ff;stroke-width:1.5;pointer-events:none}
+#vov .edge{stroke:#0d99ff;stroke-width:4;opacity:.45;pointer-events:none}
+#vov .mq{fill:rgba(13,153,255,.08);stroke:#0d99ff;stroke-width:1;pointer-events:none}
+.vtools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.vtools button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);font:500 12px var(--sans);cursor:pointer}
+.vtools button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.vtools svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.vinsp{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0 12px;display:grid;gap:10px}
+.vinsp .vhead{display:flex;align-items:baseline;gap:8px}.vinsp .vhead span{color:var(--muted);font-size:12.5px}
+.vinsp .note{margin:0}.vinsp .note.ok{color:#2e7d4f}.vinsp .note.bad{color:#d0353b}
+.vheads{display:flex;gap:6px}.vheads button{width:34px;height:30px;padding:0;display:grid;place-items:center}
+.vheads svg{width:20px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
 .selbar{display:flex;align-items:center;gap:2px;padding:3px;background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:0 4px 16px rgba(0,0,0,.16)}
 .selbar button{width:30px;height:30px;display:grid;place-items:center;border:0;background:none;color:var(--fg);border-radius:6px;cursor:pointer}
 .selbar button:hover{background:var(--accent-soft)}
@@ -504,7 +518,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
 
     <section data-pane="build">
       <h2>Structure</h2>
-      <button class="btn" type="button" id="dieGo" style="width:100%;margin-bottom:12px" title="Open the dieline and edit it by hand">✎ Edit the dieline by hand — edges, corners, locks</button>
+      <button class="btn" type="button" id="dieGo" style="width:100%;margin-bottom:12px" title="Open the vector editor">✎ Edit the dieline by hand — points, cut-outs, locks</button>
       <div data-for="bakery" class="sub" style="padding-left:0">
         <div class="f" style="margin-bottom:6px">Lid closure</div>
         <div class="lockgrid" id="bkLidCards">
@@ -800,12 +814,37 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
       </div>
       <label class="chk"><input id="showLines" type="checkbox"> Show cut and crease lines in 3D</label>
     </section>
+    <section data-pane="vedit">
+      <h2>✎ Edit dieline</h2>
+      <p class="note" style="margin-top:0">Works like Figma: click a part to see its points, drag points and edges. Fold lines stay attached and the 3D updates live.</p>
+      <div class="f">Tools</div>
+      <div class="vtools" id="vTools">
+        <button type="button" data-vt="select" aria-pressed="true" title="Select and move points (V)"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-3 6z"/></svg>Select</button>
+        <button type="button" data-vt="rect" aria-pressed="false" title="Draw a rectangular cut-out / window (R)"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1.5"/></svg>Window</button>
+        <button type="button" data-vt="ellipse" aria-pressed="false" title="Draw a round cut-out / hole (O)"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg>Round hole</button>
+      </div>
+      <div class="f">Add a lock</div>
+      <div class="lockgrid" id="vLocks">
+        <button type="button" class="lockc" data-vl="hook" aria-pressed="false"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M4 8v18M4 13h4v1l-2 2h3a8 8 0 0 1 0 2H6l2 2v1H4"/><path d="M26 6v22" stroke-dasharray="2 2"/><path d="M25 12h2v10h-2z"/></svg><b>Hook lock</b><span>Tongue with hooks through a slit in the wall it lies on</span></button>
+        <button type="button" class="lockc" data-vl="tab" aria-pressed="false"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 6h16v14h-4v6h-8v-6H6z"/><path d="M4 26h36"/><path d="M14 26h8" stroke-width="3"/></svg><b>Tab &amp; slot</b><span>Straight tab into a slot in the panel it stands on</span></button>
+        <button type="button" class="lockc" data-vl="arrow" aria-pressed="false"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 6h18v12h-4l3 3-6 6-6-6 3-3H6z"/><path d="M4 26h36"/></svg><b>Arrow lock</b><span>Barbed tab — snaps through and can’t pull out</span></button>
+        <button type="button" class="lockc" data-vl="notch" aria-pressed="false"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M4 10h12a6 6 0 0 0 12 0h12v16H4z"/></svg><b>Thumb notch</b><span>Finger cut-out to open a tuck or a lid</span></button>
+      </div>
+      <p class="note">Pick a lock, then click a cut edge on the dieline. The slot it goes into is cut automatically in the panel that edge meets when the box is folded.</p>
+      <div class="f" style="margin-top:12px">Selection</div>
+      <div class="vinsp" id="vInsp"></div>
+      <p class="note bad" id="vStale" hidden>Some hand edits were made for a different construction and are switched off.</p>
+      <label class="chk"><input id="vMirror" type="checkbox" checked> Mirror edits to the other side</label>
+      <button class="btn" id="vReset" type="button" style="width:100%;margin-top:8px">Reset all hand edits</button>
+      <p class="note">Hand edits stay when you change the size: points you didn’t move follow the box, moved points scale with their part.</p>
+    </section>
   </aside>
 
   <main>
     <div class="tabs" role="tablist">
       <div class="seg"><button class="tab" role="tab" id="t3d" aria-selected="true">3D</button>
-      <button class="tab" role="tab" id="t2d" aria-selected="false">Dieline</button></div>
+      <button class="tab" role="tab" id="t2d" aria-selected="false">Dieline</button>
+      <button class="tab" role="tab" id="tEd" aria-selected="false" title="Edit the dieline like in Figma: points, curves, cut-outs, locks">✎ Edit</button></div>
       <span class="dims" id="sheet"></span>
     </div>
     <div id="view3d"></div>
@@ -819,10 +858,9 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
       <div class="zoom board-ov" id="zoomBar">
         <button id="zOut" aria-label="Zoom out">−</button><output id="zVal">100%</output><button id="zIn" aria-label="Zoom in">+</button>
         <button id="zFit" class="wide">Fit</button><button id="z11" class="wide" title="Actual size on screen">1:1</button>
-        <button id="dieBtn" class="wide" aria-pressed="false" title="Edit the die by hand: pull edges, round corners, shape the locks">Edit dieline</button><button id="gridBtn" class="wide" aria-pressed="false" title="10 mm grid">Grid</button><button id="snapBtn" class="wide" aria-pressed="true" title="Snap to panel centre and whole millimetres while dragging">Snap</button>
+        <button id="gridBtn" class="wide" aria-pressed="false" title="10 mm grid">Grid</button><button id="snapBtn" class="wide" aria-pressed="true" title="Snap to panel centre and whole millimetres while dragging">Snap</button>
       </div>
       <p class="board-hint board-ov">Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom</p>
-      <div class="diebar board-ov" id="dieBar" hidden></div>
       <div class="selbar board-ov" id="selBar" hidden>
         <button type="button" data-a="fx" title="Flip horizontally (Shift+H)" aria-label="Flip horizontally"><svg viewBox="0 0 24 24"><path d="M12 3v18M9 6 3 18h6zM15 6l6 12h-6z"/></svg></button>
         <button type="button" data-a="fy" title="Flip vertically (Shift+V)" aria-label="Flip vertically"><svg viewBox="0 0 24 24"><path d="M3 12h18M6 9 18 3v6zM6 15l12 6v-6z"/></svg></button>
@@ -1028,7 +1066,7 @@ const VPRESETS = {
   pump:[['100 ml',40,95],['250 ml',50,118],['500 ml',65,152]],
   ptube:[['Ø 50',50],['Ø 75',75],['Ø 100',100]],
 };
-const DEFAULTS = { die:[], lk:{}, type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
+const DEFAULTS = { vec:[], vadd:[], locks:[], lk:{}, type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
   winW:40, winH:50, winY:55, bkWm:22, bkStyle:'tuck', bkLock:'tuck', bkLid:'', bkCorner:'ears', bkFric:false, bkSide:false, bkRib:false, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
   ...LBL_BASE, ...CARD_BASE, cupKind:'cup', cupLid:false, ...CUP_BASE, base:'', tplOrig:'',
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'FOREST TEA', sub:'blend No.4 · 100 g',
@@ -1593,25 +1631,19 @@ function prodDims(P){
   if (P.dimMode==='outer'){ L -= 2*t; W -= 2*t; H -= tray ? t : 2*t; }
   return tray ? {L:L+2*t, W:W+2*t, H:H+t} : {L:L+t, W:W+t, H:H+2*t};
 }
-/* ---------- hand edits of the die (Dieline → Edit dieline): pull a free cut edge, round a free corner ----------
-   S.die = [{t:'e', n:node id, h:-1 outline | hole index, i:edge index, c:loop length, d:mm}, {t:'r', …, i:vertex index, r:mm}]
-   Only free geometry is touched (edges that are cuts, corners not on a crease), so folds and the 3D model stay intact.
-   Indices refer to the builder's geometry; an edit whose loop changed its vertex count no longer applies and is skipped. */
-const dKey = p => p[0].toFixed(2)+','+p[1].toFixed(2);
-const loopArea = L => { let a = 0; L.forEach((p,i) => { const q = L[(i+1)%L.length]; a += p[0]*q[1] - q[0]*p[1]; }); return a/2; };
-function dieFlags(N){
-  const E = new Map(), V = new Map(), ek = (a,b) => { const ka = dKey(a), kb = dKey(b); return ka < kb ? ka+'|'+kb : kb+'|'+ka; };
-  for (const n of N) for (const L of [n.poly, ...n.holes]) L.forEach((a,i) => { const b = L[(i+1)%L.length]; if (dKey(a)===dKey(b)) return; const k = ek(a,b); E.set(k, (E.get(k)||0)+1); V.set(dKey(a), (V.get(dKey(a))||0)+1); });
-  const F = new Map();
-  for (const n of N) [n.poly, ...n.holes].forEach((L, j) => { const m = L.length, ef = [], vf = [], cn = [];
-    for (let i = 0; i < m; i++){ const b = L[(i+1)%m]; ef.push((E.get(ek(L[i],b))||0) < 2); }
-    for (let i = 0; i < m; i++){ const a = L[(i-1+m)%m], p = L[i], b = L[(i+1)%m], la = Math.hypot(p[0]-a[0], p[1]-a[1]), lb = Math.hypot(b[0]-p[0], b[1]-p[1]);
-      vf.push((V.get(dKey(p))||0) < 2 && ef[(i-1+m)%m] && ef[i]);
-      const c = la > 1e-6 && lb > 1e-6 ? ((p[0]-a[0])*(b[0]-p[0]) + (p[1]-a[1])*(b[1]-p[1]))/(la*lb) : 1;
-      cn.push(c < Math.cos(22*DEG) && la > 1.5 && lb > 1.5); }
-    F.set(n.id+'|'+(j-1), {len:m, ef, vf, cn, ccw: loopArea(L) > 0, pts: L.map(p => [p[0], p[1]])}); });
-  return F;
-}
+/* ---------- vector layer (the ✎ Edit tab): hand-edited outlines, cut-outs and locks on top of the builder's die ----------
+   Loops are keyed 'node|h': h = -1 outline, 0,1,… builder holes, 'x<id>' user cut-outs.
+   S.vec   = [{n, h, c: builder point count, bb: builder bbox, pts:[{x,y, a?: builder index, w?: weld id, c1?, c2?: bezier handles, r?: corner radius}]}]
+             untouched points keep their builder index (a) and follow the box when its size changes; moved points scale
+             with the part's bbox; points shared by two parts (fold lines) carry the same weld id and stay together
+   S.vadd  = [{id, n, pts:[{u,v, c1?, c2?, r?}]}]   cut-outs, coordinates normalised to the part's outline bbox
+   S.locks = [{id, type, n, h:-1, i: edge index, c: point count, t: 0…1 along the edge, p:{w, D, b, head}}]
+             the tongue is inserted into the edge; the matching slot is found on every build from the folded 3D geometry */
+const vk = (n, h) => n+'|'+h;
+const vkSplit = k => { const i = k.lastIndexOf('|'), h = k.slice(i+1); return {n:k.slice(0,i), h: h[0]==='x' ? h : +h}; };
+const bboxOf = L => { let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+  for (const p of L){ const x = p.x ?? p[0], y = p.y ?? p[1]; if (x < a) a = x; if (y < b) b = y; if (x > c) c = x; if (y > d) d = y; } return [a,b,c,d]; };
+const loopArea = L => { let a = 0; L.forEach((p,i) => { const q = L[(i+1)%L.length], px = p.x ?? p[0], py = p.y ?? p[1], qx = q.x ?? q[0], qy = q.y ?? q[1]; a += px*qy - qx*py; }); return a/2; };
 function filletPts(L, i, r){
   const m = L.length, P = L[i], A = L[(i-1+m)%m], C = L[(i+1)%m], la = Math.hypot(A[0]-P[0], A[1]-P[1]), lc = Math.hypot(C[0]-P[0], C[1]-P[1]);
   if (la < 1e-6 || lc < 1e-6) return [P];
@@ -1624,37 +1656,121 @@ function filletPts(L, i, r){
   const k = Math.max(3, Math.ceil(Math.abs(da)/(PI/18)));
   return Array.from({length:k+1}, (_,j) => [cc[0] + r*Math.cos(a1+da*j/k), cc[1] + r*Math.sin(a1+da*j/k)]);
 }
-// pulling edge i: everything of the loop past the half-way line between its hinge (the farthest fixed point behind it) and the
-// edge moves with it, so rounded tucks, tongues and window corners keep their shape and only the straight run stretches
-function pullInfo(L, fl, i){
-  const m = L.length, a = L[i], b = L[(i+1)%m], ln = Math.hypot(b[0]-a[0], b[1]-a[1]); if (ln < 1e-6) return null;
-  const sg = fl.ccw ? 1 : -1, nv = [sg*(b[1]-a[1])/ln, -sg*(b[0]-a[0])/ln], pr = p => p[0]*nv[0] + p[1]*nv[1], pe = pr(a);
-  let p0 = -Infinity; L.forEach((p,j) => { if (!fl.vf[j] && pr(p) < pe - .1) p0 = Math.max(p0, pr(p)); });
-  if (p0 === -Infinity) p0 = Math.min(...L.map(pr));
-  const th = (p0 + pe)/2; if (L.some((p,j) => !fl.vf[j] && pr(p) > th)) return null;
-  return {nv, pe, th, mv: L.map(p => pr(p) > th)};
+// control loop → polygon: bezier segments sampled, rounded corners filleted
+function expandLoop(L){
+  const out = [], m = L.length;
+  for (let i = 0; i < m; i++){ const P = L[i], Q = L[(i+1)%m], Z = L[(i-1+m)%m];
+    if (P.r > 0 && !P.c1 && !P.c2 && !Z.c2 && !Q.c1) out.push(...filletPts([[Z.x,Z.y],[P.x,P.y],[Q.x,Q.y]], 1, P.r));
+    else out.push([P.x, P.y]);
+    if (P.c2 || Q.c1){ const a = [P.x + (P.c2?.[0]||0), P.y + (P.c2?.[1]||0)], b = [Q.x + (Q.c1?.[0]||0), Q.y + (Q.c1?.[1]||0)];
+      for (let j = 1; j < 20; j++){ const t = j/20, s = 1-t; out.push([s*s*s*P.x + 3*s*s*t*a[0] + 3*s*t*t*b[0] + t*t*t*Q.x, s*s*s*P.y + 3*s*s*t*a[1] + 3*s*t*t*b[1] + t*t*t*Q.y]); } } }
+  return out;
 }
-function applyDieEdits(N, edits, F){
-  const N1 = new Map(); if (!edits || !edits.length) return N1;
-  const loopOf = (n, h) => h < 0 ? n.poly : n.holes[h], put = (n, h, L) => { if (h < 0) n.poly = L; else { n.holes = [...n.holes]; n.holes[h] = L; } };
-  for (const ed of edits){ if (ed.t !== 'e' || !ed.d) continue; const n = N.find(n => n.id===ed.n), fl = F.get(ed.n+'|'+ed.h), L = n && loopOf(n, ed.h);
-    if (!L || !fl || L.length !== ed.c || L.length !== fl.len || !fl.ef[ed.i]) continue;
-    const pi = pullInfo(L, fl, ed.i); if (!pi) continue; const d = Math.max(ed.d, -(pi.pe - pi.th)*.9);
-    put(n, ed.h, L.map((p,j) => pi.mv[j] ? [p[0]+pi.nv[0]*d, p[1]+pi.nv[1]*d] : p)); }
-  for (const n of N) [n.poly, ...n.holes].forEach((L, j) => N1.set(n.id+'|'+(j-1), L));    // pulled, not yet rounded (handles sit here)
-  const R = edits.filter(e => e.t==='r' && e.r > 0).sort((p,q) => q.i - p.i);
-  for (const ed of R){ const n = N.find(n => n.id===ed.n), fl = F.get(ed.n+'|'+ed.h), L0 = N1.get(ed.n+'|'+ed.h);
-    if (!n || !fl || !L0 || L0.length !== ed.c || fl.len !== ed.c || !fl.vf[ed.i]) continue;
-    const L = loopOf(n, ed.h);   // only higher indices were replaced so far, so ed.i still points at the corner
-    const pts = filletPts(L, ed.i, ed.r); put(n, ed.h, [...L.slice(0, ed.i), ...pts, ...L.slice(ed.i+1)]); }
-  return N1;
+// where every part sits in the folded box (same maths as setPose(1)): local (x-ox, y-oy, 0) → world
+function foldMats(N){
+  const M = new Map(), by = new Map(N.map(n => [n.id, n])), AX = {x:new THREE.Vector3(1,0,0), y:new THREE.Vector3(0,1,0), z:new THREE.Vector3(0,0,1)};
+  const get = n => { if (M.has(n.id)) return M.get(n.id); let m; const p = n.parent && by.get(n.parent);
+    if (p) m = get(p).clone().multiply(new THREE.Matrix4().makeTranslation(n.origin[0]-p.origin[0], n.origin[1]-p.origin[1], 0)).multiply(new THREE.Matrix4().makeRotationAxis(AX[n.axis] || AX.z, n.angle || 0));
+    else { const f = n.final || {p:[0,0,0], q:new THREE.Quaternion()}; m = new THREE.Matrix4().compose(new THREE.Vector3(...f.p), f.q, new THREE.Vector3(1,1,1)); }
+    M.set(n.id, m); return m; };
+  N.forEach(get); return M;
 }
+/* locks: tongue shapes in edge coordinates (u along the edge from its first point, v outwards), plus how the slot mates:
+   'par'  — the tongue lies against a parallel wall and is pushed through a slit in it (hook ears, Bento)
+   'perp' — the tongue goes straight through the panel the edge stands on (tab into a base slot) */
+const LOCK_T = {
+  hook:  {name:'Hook lock',   mate:'par',  sv:1.25, th:1.2, def: e => ({w:+clamp(e*.3, 8, 24).toFixed(1), D:9, b:3, head:'round'})},
+  tab:   {name:'Tab & slot',  mate:'perp', sv:0,    th:1.6, def: e => ({w:+clamp(e*.35, 8, 40).toFixed(1), D:8})},
+  arrow: {name:'Arrow lock',  mate:'perp', sv:0,    th:1.6, def: e => ({w:+clamp(e*.25, 8, 26).toFixed(1), D:9, b:3})},
+  notch: {name:'Thumb notch', mate:null,   def: e => ({w:+clamp(e*.22, 14, 30).toFixed(1), D:7})},
+};
+function lockShape(type, p){
+  const w = p.w, D = p.D, b = p.b || 0;
+  if (type==='hook'){ const n = 2.5, R = w/2 + b, hk = b > .05, head = [];
+    if (p.head==='trap') head.push([-R*.45, n+D],[R*.45, n+D]);
+    else if (p.head==='arrow') head.push([0, n+D]);
+    else if (p.head==='flat'){ const c = Math.min(1.5, D*.3); head.push([-R, n+D-c],[-R+c, n+D],[R-c, n+D],[R, n+D-c]); }
+    else for (let i = 1; i < 14; i++){ const t = PI - PI*i/14; head.push([R*Math.cos(t), n + D*Math.sin(t)]); }
+    return [[-w/2,0],[-w/2,n], ...(hk ? [[-R, n-1.2]] : []), ...head, ...(hk ? [[R, n-1.2]] : []), [w/2,n],[w/2,0]]; }
+  if (type==='tab'){ const r = Math.min(2.5, D*.4, w*.2), t = Math.min(1, w*.06), pts = [[-w/2,0],[-w/2+t, D-r]];
+    for (let i = 1; i < 6; i++){ const a = PI - PI/2*i/6; pts.push([-w/2+t+r + r*Math.cos(a), D-r + r*Math.sin(a)]); }
+    pts.push([-w/2+t+r, D],[w/2-t-r, D]);
+    for (let i = 1; i < 6; i++){ const a = PI/2 - PI/2*i/6; pts.push([w/2-t-r + r*Math.cos(a), D-r + r*Math.sin(a)]); }
+    return [...pts, [w/2-t, D-r],[w/2,0]]; }
+  if (type==='arrow'){ const n = 2; return [[-w/2,0],[-w/2,n],[-w/2-b, n+1.2],[-w*.18, n+D],[w*.18, n+D],[w/2+b, n+1.2],[w/2,n],[w/2,0]]; }
+  const pts = []; for (let i = 1; i < 14; i++){ const t = PI - PI*i/14; pts.push([w/2*Math.cos(t), -D*Math.sin(t)]); }   // thumb notch (into the part)
+  return [[-w/2,0], ...pts, [w/2,0]];
+}
+function lockGeom(l, A, B, ccw){
+  const dx = B.x-A.x, dy = B.y-A.y, len = Math.hypot(dx, dy) || 1e-6, u = [dx/len, dy/len], sg = ccw ? 1 : -1, v = [sg*u[1], -sg*u[0]];
+  const p = {...LOCK_T[l.type].def(len), ...l.p}; p.w = clamp(+p.w || 10, 3, Math.max(3, len - 2*(+p.b||0) - 2)); p.D = clamp(+p.D || 8, 1, 60);
+  const half = p.w/2 + (+p.b||0) + 1, t = len > 2*half ? clamp(l.t, half/len, 1 - half/len) : .5, c = [A.x + dx*t, A.y + dy*t];
+  const pts = lockShape(l.type, p).map(([a,b]) => [c[0] + u[0]*a + v[0]*b, c[1] + u[1]*a + v[1]*b]);
+  return {pts, c, u, v, p, len, t};
+}
+// the panel this tongue goes into when folded: closest panel whose surface carries the slot line, oriented the right way
+function lockMate(N, M, nid, g, type){
+  const T = LOCK_T[type]; if (!T.mate) return null;
+  const n = N.find(x => x.id===nid), Mn = M.get(nid); if (!n || !Mn) return null;
+  const W = (x, y) => new THREE.Vector3(x - n.origin[0], y - n.origin[1], 0).applyMatrix4(Mn), hw = g.p.w/2 + .5;
+  const S1 = [g.c[0] - g.u[0]*hw + g.v[0]*T.sv, g.c[1] - g.u[1]*hw + g.v[1]*T.sv], S2 = [g.c[0] + g.u[0]*hw + g.v[0]*T.sv, g.c[1] + g.u[1]*hw + g.v[1]*T.sv];
+  const w1 = W(...S1), w2 = W(...S2), dir = W(g.c[0] + g.v[0]*5, g.c[1] + g.v[1]*5).sub(W(g.c[0], g.c[1])).normalize();
+  let best = null;
+  for (const m of N){ if (m.id===nid) continue; const Mm = M.get(m.id); if (!Mm) continue;
+    const inv = Mm.clone().invert(), l1 = w1.clone().applyMatrix4(inv), l2 = w2.clone().applyMatrix4(inv), z = Math.abs(l1.z) + Math.abs(l2.z);
+    if (Math.abs(l1.z) > 3 || Math.abs(l2.z) > 3) continue;
+    const nz = new THREE.Vector3(0,0,1).transformDirection(Mm), dot = Math.abs(nz.dot(dir));
+    if (T.mate==='par' ? dot > .35 : dot < .6) continue;
+    const a = [l1.x + m.origin[0], l1.y + m.origin[1]], b = [l2.x + m.origin[0], l2.y + m.origin[1]], mid = [(a[0]+b[0])/2, (a[1]+b[1])/2];
+    if (![a, b, mid].every(q => inPoly(q[0], q[1], m.poly) && !m.holes.some(h => inPoly(q[0], q[1], h)))) continue;
+    if (!best || z < best.z) best = {m, a, b, z}; }
+  if (!best) return null;
+  const {a, b} = best, L = Math.hypot(b[0]-a[0], b[1]-a[1]) || 1, ux = (b[0]-a[0])/L, uy = (b[1]-a[1])/L, t = T.th/2, e = .25;
+  return {id: best.m.id, hole: [[a[0]-ux*e - uy*t, a[1]-uy*e + ux*t],[b[0]+ux*e - uy*t, b[1]+uy*e + ux*t],[b[0]+ux*e + uy*t, b[1]+uy*e - ux*t],[a[0]-ux*e + uy*t, a[1]-uy*e - ux*t]]};
+}
+function vecApply(N, P){
+  const CL0 = new Map(), CLb = new Map(), V = {CL0, CLb, locks:[], stale:0, slots:[]};
+  for (const n of N) [n.poly, ...n.holes].forEach((L, j) => CL0.set(vk(n.id, j-1), L));
+  for (const [k, L] of CL0) CLb.set(k, L.map(p => ({x:p[0], y:p[1]})));
+  const vec = P.vec || [], vadd = P.vadd || [], locks = P.locks || [];
+  if (!vec.length && !vadd.length && !locks.length) return V;
+  // 1. hand-edited loops
+  const welds = new Map();
+  for (const o of vec){ const k = vk(o.n, o.h), L0 = CL0.get(k); if (!L0 || L0.length !== o.c){ V.stale++; continue; }
+    const [a,b,c,d] = bboxOf(L0), sx = o.bb[2]-o.bb[0] > .01 ? (c-a)/(o.bb[2]-o.bb[0]) : 1, sy = o.bb[3]-o.bb[1] > .01 ? (d-b)/(o.bb[3]-o.bb[1]) : 1;
+    CLb.set(k, o.pts.map(q => { const fx = q.a != null && L0[q.a], pt = fx ? {x:L0[q.a][0], y:L0[q.a][1]} : {x: a + (q.x - o.bb[0])*sx, y: b + (q.y - o.bb[1])*sy};
+      if (q.c1) pt.c1 = [q.c1[0]*sx, q.c1[1]*sy]; if (q.c2) pt.c2 = [q.c2[0]*sx, q.c2[1]*sy]; if (q.r) pt.r = q.r;
+      if (q.w){ pt.w = q.w; if (!welds.has(q.w)) welds.set(q.w, []); welds.get(q.w).push(pt); } return pt; })); }
+  for (const g of welds.values()) for (const pt of g.slice(1)){ pt.x = g[0].x; pt.y = g[0].y; }
+  // 2. cut-outs
+  for (const a of vadd){ const L0 = CL0.get(vk(a.n, -1)); if (!L0) continue; const [x0,y0,x1,y1] = bboxOf(L0), W = x1-x0, H = y1-y0;
+    CLb.set(vk(a.n, 'x'+a.id), a.pts.map(q => { const pt = {x: x0 + q.u*W, y: y0 + q.v*H}; if (q.c1) pt.c1 = [q.c1[0]*W, q.c1[1]*H]; if (q.c2) pt.c2 = [q.c2[0]*W, q.c2[1]*H]; if (q.r) pt.r = q.r; return pt; })); }
+  // 3. tongues into their edges
+  const CL = new Map(CLb), byLoop = new Map();
+  for (const l of locks){ if (!LOCK_T[l.type]) continue; const k = vk(l.n, l.h ?? -1), L = CLb.get(k);
+    if (!L || L.length !== l.c || !L[l.i]){ V.locks.push({...l, gone:true}); continue; }
+    if (!byLoop.has(k)) byLoop.set(k, []); byLoop.get(k).push(l); }
+  for (const [k, list] of byLoop){ const L = CLb.get(k), ccw = loopArea(L) > 0, out = [];
+    L.forEach((A, i) => { out.push(A); const B = L[(i+1)%L.length];
+      for (const l of list.filter(l => l.i===i).sort((p,q) => p.t - q.t)){ const g = lockGeom(l, A, B, ccw); out.push(...g.pts.map(([x,y]) => ({x, y, lk:l.id}))); V.locks.push({...l, g, k}); } });
+    CL.set(k, out); }
+  // 4. polygons back onto the parts
+  const EX = new Map(); for (const [k, L] of CL) EX.set(k, expandLoop(L));
+  for (const n of N){ const hs = n.holes.map((_, j) => EX.get(vk(n.id, j))); n.poly = EX.get(vk(n.id, -1));
+    n.holes = [...hs, ...vadd.filter(a => a.n===n.id).map(a => EX.get(vk(n.id, 'x'+a.id))).filter(Boolean)]; }
+  // 5. slots where the tongues go in
+  if (V.locks.some(l => l.g && LOCK_T[l.type].mate)){ const M = foldMats(N);
+    for (const l of V.locks){ if (!l.g || !LOCK_T[l.type].mate) continue; const mt = lockMate(N, M, l.n, l.g, l.type);
+      l.mate = mt?.id || null; if (mt){ N.find(x => x.id===mt.id).holes.push(mt.hole); V.slots.push({n:mt.id, pts:mt.hole, lock:l.id}); } } }
+  return V;
+}
+
 function build(P){
   P = {...P}; for (const k of NUM) P[k] = +P[k];
   const Pin = {...P}; Object.assign(P, prodDims(P));
   const B = maker(); LOCKS = [];
   const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, bakery:buildBakery, drawer:buildDrawer, pouch:buildPouch, label:buildLabel, cup:buildCup, card:buildCard}[P.type] || buildTube)(P,B) || {};
-  const DF = dieFlags(B.N), N1 = applyDieEdits(B.N, P.die, DF), locks = LOCKS;
+  const locks = LOCKS, V = vecApply(B.N, P);
   const perfs = [...(BOX.has(P.type) ? constructionExtras(P, B) : ['label','card'].includes(P.type) ? constructionExtras({cornerR:P.cornerR}, B) : []), ...(extra.perfs || [])];
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   for (const n of B.N) for (const [x,y] of n.poly){ minX=Math.min(minX,x); minY=Math.min(minY,y); maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); }
@@ -1674,7 +1790,7 @@ function build(P){
     : Math.abs(a[1]-y0)<.01 && Math.abs(b[1]-y0)<.01 && ov(a[0],b[0],x0,x1) > 1);
   for (const f of B.faces){ const [x0,y0,x1,y1] = f.r;
     f.clip = [x0-(onCrease(x0,y0,x0,y1)?0:BLEED), y0-(onCrease(x0,y0,x1,y0)?0:BLEED), x1+(onCrease(x1,y0,x1,y1)?0:BLEED), y1+(onCrease(x0,y1,x1,y1)?0:BLEED)]; }
-  return { ...extra, N:B.N, faces:B.faces, cuts, creases, perfs, P:Pin, Pm:P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY}, DF, N1, locks };
+  return { ...extra, N:B.N, faces:B.faces, cuts, creases, perfs, P:Pin, Pm:P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY}, V, locks };
 }
 
 /* ---------- artwork ---------- */
@@ -2629,6 +2745,8 @@ function doRefresh(){
 }
 let gen = 0, sig2d = '';
 function render2D(){
+  if (vMode){ sig2d = 'v'; $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">✎ Edit · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm · cut — black, fold — blue dashed</p>${vSvg()}</div>`;
+    if (!vFitted){ vFitted = true; fitBoard(); } else drawRulers(); vInspRender(); return; }
   const sp = Math.min(4, 1600/Math.max(G.b.w,G.b.h)), inside = hasInside();
   const out = drawArt(document.createElement('canvas'), G, sp, false, 'out').toDataURL('image/jpeg',.85);
   const inn = inside ? drawArt(document.createElement('canvas'), G, sp, false, 'in').toDataURL('image/jpeg',.85) : null;
@@ -2723,7 +2841,7 @@ const canStretch = el => el.kind==='shape';
 function drawSel(){
   try {
     document.querySelectorAll('#boardInner .selov').forEach(n => n.remove());
-    if (dieEdit){ $('selBar').hidden = true; if (!$('view2d').hidden) drawDie(); return; }
+    if (vMode){ $('selBar').hidden = true; return; }
     const el = curEl(), bar = $('selBar'), svg = el && document.querySelector(`#boardInner [data-side=${el.side}] svg`), g = svg && elGeo(el);
     if (!g || $('view2d').hidden){ bar.hidden = true; return; }
     const k = 1/(BK*bz), hw = g.w/2, hh = g.h/2, hs = 4.5*k, n = v => +v.toFixed(3);
@@ -2798,7 +2916,7 @@ const selectEl = id => { if (selId === id) return; selId = id; renderEls(); sync
 $('view2d').addEventListener('pointerdown', e => {
   if (e.target.closest('.board-ov')) return;
   const v = $('view2d');
-  if (e.button === 0 && dieEdit){ if (dieDown(e)) return; }
+  if (vMode){ if (vDown(e)) return; }
   else if (e.button === 0){
     const hd = e.target.closest('.selov [data-h]'), cur = curEl();
     if (hd && cur && !cur.locked){ const svg = hd.ownerSVGElement, g = elGeo(cur); if (g){
@@ -2814,7 +2932,7 @@ $('view2d').addEventListener('pointerdown', e => {
 });
 $('view2d').addEventListener('pointermove', e => {
   const v = $('view2d');
-  if (act?.die){ dieMove(e); return; }
+  if (vAct){ vMove(e); return; }
   if (act){ const el = act.el;
     if (act.mode==='move'){
       if (!act.live){ if (Math.hypot(e.clientX-act.sx, e.clientY-act.sy) < 3) return;
@@ -2825,17 +2943,17 @@ $('view2d').addEventListener('pointermove', e => {
     } else { dragging = true; transformEl(svgPt(act.svg, e), e); }
     syncEl(); drawSel(); refresh(); return; }
   if (pan){ bx = pan.bx + e.clientX - pan.x; by = pan.by + e.clientY - pan.y; applyBoard(); return; }
-  if (e.pointerType === 'mouse' && !dieEdit){ const over = !e.target.closest('.board-ov, .selov [data-h]') && !!hitEl(e)?.el; v.classList.toggle('overel', over); }
+  if (vMode){ if (e.pointerType === 'mouse') vHover(e); return; }
+  if (e.pointerType === 'mouse'){ const over = !e.target.closest('.board-ov, .selov [data-h]') && !!hitEl(e)?.el; v.classList.toggle('overel', over); }
 });
-const endAct = () => { const wd = act?.die; if (act && dragging && !wd) renderEls(); if (wd) setTimeout(dieBarVals); act = null; GUIDES = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
+const endAct = () => { if (vAct) vUp(); if (act && dragging) renderEls(); act = null; GUIDES = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
 $('view2d').addEventListener('pointerup', endAct);
 $('view2d').addEventListener('pointercancel', endAct);
 $('view2d').addEventListener('dblclick', e => { const el = curEl(); if (!el || !['text','barcode','qr'].includes(el.kind) || e.target.closest('.board-ov')) return;
   setPane('elements'); $('elText').focus(); $('elText').select(); });
 document.addEventListener('keydown', e => {
   if (document.querySelector('.app').hidden || document.querySelector('dialog[open]') || e.target.closest?.('input,textarea,select,[contenteditable]')) return;
-  if (dieEdit && !$('view2d').hidden){ if (e.key === 'Escape'){ if (dsel){ dsel = null; dieBarRender(); drawSel(); } else setDieEdit(false); e.preventDefault(); }
-    else if ((e.key === 'Delete' || e.key === 'Backspace') && dsel){ dieClear(); e.preventDefault(); } return; }
+  if (vMode && !$('view2d').hidden){ if (vKey(e)) e.preventDefault(); return; }
   const el = curEl(); if (!el) return; const k = e.key, mod = e.metaKey || e.ctrlKey, kl = k.toLowerCase();
   if (k === 'Escape') selectEl(null);
   else if (k === 'Delete' || k === 'Backspace') $('elDel').click();
@@ -2847,130 +2965,310 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
 });
 
-/* ---------- dieline editor: pull free edges, round free corners, shape hook locks (all live in 3D) ---------- */
-let dieEdit = false, dsel = null, dieMirror = true;
-const refOf = s => { const a = s.split('|'); return {n:a[0], h:+a[1], i:+a[2]}; };
-const sameRef = (a,b) => a.n===b.n && a.h===b.h && a.i===b.i;
-const dieLoop = (n, h) => { const L = G.N1?.get(n+'|'+h); if (L) return L; const nd = G.N.find(x => x.id===n); return nd && (h < 0 ? nd.poly : nd.holes[h]); };
-const curLock = () => dsel?.kind==='lock' ? (G.locks||[]).find(l => l.id===dsel.id) || (G.locks||[]).find(l => l.grp===dsel.grp) : null;
-const dieEditOf = (t, it) => (S.die||[]).find(e => e.t===t && sameRef(e, it));
-function mirrorRef(t, it){
-  const fl = G.DF.get(it.n+'|'+it.h); if (!fl) return null;
-  const cx = (G.b.minX + G.b.maxX)/2, near = (p,q) => Math.abs(p[0]-q[0]) < .02 && Math.abs(p[1]-q[1]) < .02;
-  const P = [2*cx - fl.pts[it.i][0], fl.pts[it.i][1]], Q = fl.pts[(it.i+1)%fl.len], MQ = [2*cx - Q[0], Q[1]];
-  for (const [key, f2] of G.DF){ const k = key.lastIndexOf('|'), ref = {n:key.slice(0,k), h:+key.slice(k+1)}, m = f2.len;
-    for (let j = 0; j < m; j++){ if (!near(f2.pts[j], P)) continue;
-      if (t==='r'){ if (f2.vf[j]) return {...ref, i:j}; continue; }
-      if (near(f2.pts[(j-1+m)%m], MQ) && f2.ef[(j-1+m)%m]) return {...ref, i:(j-1+m)%m};
-      if (near(f2.pts[(j+1)%m], MQ) && f2.ef[j]) return {...ref, i:j}; } }
-  return null;
+/* ---------- ✎ Edit tab: Figma-style vector editing of the die (clean board, no artwork) ---------- */
+let vMode = false, vTool = 'select', vSel = {k:null, idx:[], lock:null, blk:null}, vAct = null, vHov = null, vMirror = true, vPrevPane = 'build', vFitted = false, vLast = {t:0, x:0, y:0};
+const vLoop = k => G.V.CLb.get(k);
+const vK = () => 1/(BK*bz);
+const ptKey = p => (p.x ?? p[0]).toFixed(2)+','+(p.y ?? p[1]).toFixed(2);
+const PART_NAMES = {base:'Base', lid:'Lid', front:'Front wall', back:'Back wall', sideL:'Left side', sideR:'Right side', lip:'Front lip', lidFront:'Lid front', lidL:'Lid side, left', lidR:'Lid side, right'};
+const partName = id => PART_NAMES[id] || FACE_NAMES[id] || id.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+function vShared(){ if (G.V._sh) return G.V._sh; const m = new Map();
+  for (const [k, L] of G.V.CLb) L.forEach((p, i) => { const key = ptKey(p); if (!m.has(key)) m.set(key, []); m.get(key).push({k, i}); });
+  return G.V._sh = m; }
+const vIsShared = p => (vShared().get(ptKey(p))?.length || 0) > 1;
+function vFolds(){ if (G.V._cr) return G.V._cr; const s = new Set(); for (const [a,b] of G.creases){ const ka = ptKey(a), kb = ptKey(b); s.add(ka < kb ? ka+'|'+kb : kb+'|'+ka); } return G.V._cr = s; }
+const vIsFold = (A, B) => { const ka = ptKey(A), kb = ptKey(B); return vFolds().has(ka < kb ? ka+'|'+kb : kb+'|'+ka); };
+const vFoldM = () => G.V._M || (G.V._M = foldMats(G.N));
+const vCx = () => (G.b.minX + G.b.maxX)/2;
+function vMirrorPt(base, k, i){ const p = base.get(k)[i], x = 2*vCx() - p.x; if (Math.abs(x - p.x) < .05) return null;
+  for (const [k2, L] of base){ const j = L.findIndex(q => Math.abs(q.x - x) < .05 && Math.abs(q.y - p.y) < .05); if (j >= 0) return {k:k2, i:j}; } return null; }
+// write a control loop back into the project (only what differs from the builder is stored)
+function vCommit(k, L){
+  const {n, h} = vkSplit(k);
+  if (typeof h === 'string'){ const id = h.slice(1), [x0,y0,x1,y1] = bboxOf(G.V.CL0.get(vk(n,-1))), W = x1-x0 || 1, H = y1-y0 || 1, r5 = v => +v.toFixed(5);
+    S.vadd = (S.vadd||[]).map(a => a.id !== id ? a : {...a, pts: L.map(p => { const q = {u:r5((p.x-x0)/W), v:r5((p.y-y0)/H)};
+      if (p.c1) q.c1 = [r5(p.c1[0]/W), r5(p.c1[1]/H)]; if (p.c2) q.c2 = [r5(p.c2[0]/W), r5(p.c2[1]/H)]; if (p.r) q.r = +p.r; return q; })}); return; }
+  const L0 = G.V.CL0.get(k), rest = (S.vec||[]).filter(o => vk(o.n, o.h) !== k);
+  const same = L.length === L0.length && L.every((p,i) => Math.abs(p.x-L0[i][0]) < .005 && Math.abs(p.y-L0[i][1]) < .005 && !p.c1 && !p.c2 && !p.r);
+  if (same){ S.vec = rest; return; }
+  const r3 = v => +v.toFixed(3), pts = L.map(p => { const o = {x:r3(p.x), y:r3(p.y)}, a = L0.findIndex(q => Math.abs(q[0]-p.x) < .005 && Math.abs(q[1]-p.y) < .005);
+    if (a >= 0 && !p.w) o.a = a; if (p.w) o.w = p.w; if (p.c1) o.c1 = p.c1.map(r3); if (p.c2) o.c2 = p.c2.map(r3); if (p.r) o.r = +p.r; return o; });
+  S.vec = [...rest, {n, h, c:L0.length, bb:bboxOf(L0), pts}];
 }
-function dieSet(t, it, patch){
-  const tg = [it]; if (dieMirror){ const m = mirrorRef(t, it); if (m && !sameRef(m, it)) tg.push(m); }
-  const list = (S.die||[]).filter(e => !(e.t===t && tg.some(x => sameRef(x, e))));
-  if (patch) for (const x of tg) list.push({t, n:x.n, h:x.h, i:x.i, c:G.DF.get(x.n+'|'+x.h).len, ...patch});
-  S.die = list; custom();
+const vDone = () => { custom(); refresh(true); };
+// locks follow their edge when points are added or removed
+function vRelocks(k, before, after){
+  S.locks = (S.locks||[]).map(l => { if (vk(l.n, l.h ?? -1) !== k || !before[l.i]) return l;
+    const A = before[l.i], B = before[(l.i+1)%before.length], c = [A.x + (B.x-A.x)*l.t, A.y + (B.y-A.y)*l.t]; let best = null;
+    after.forEach((P, i) => { const Q = after[(i+1)%after.length], dx = Q.x-P.x, dy = Q.y-P.y, l2 = dx*dx + dy*dy || 1e-9, t = clamp(((c[0]-P.x)*dx + (c[1]-P.y)*dy)/l2, 0, 1), d = Math.hypot(P.x+dx*t-c[0], P.y+dy*t-c[1]);
+      if (!best || d < best.d) best = {d, i, t}; });
+    return {...l, i:best.i, t:+best.t.toFixed(4), c:after.length}; });
 }
-const setPull = (it, d) => dieSet('e', it, Math.abs(d) < .01 ? null : {d:+(+d).toFixed(2)});
-const setRound = (it, r) => dieSet('r', it, r < .01 ? null : {r:+(+r).toFixed(2)});
-function setLock(grp, o){ const lk = {...(S.lk||{})}; if (o) lk[grp] = {...(lk[grp]||{}), ...o}; else delete lk[grp]; S.lk = lk; custom(); }
-function dieClear(){
-  if (dsel?.kind==='v') dsel.items.forEach(it => setRound(it, 0)); else if (dsel?.kind==='e') setPull(dsel, 0); else if (dsel?.kind==='lock') setLock(dsel.grp, null);
-  refresh(true); setTimeout(dieBarVals);
+/* ---------- drawing ---------- */
+function vSvg(){
+  const {w, h, minX, maxY} = G.b, X = x => +(x-minX).toFixed(3), Y = y => +(maxY-y).toFixed(3);
+  const d = L => L.map((p,i) => (i ? 'L' : 'M') + X(p[0]) + ' ' + Y(p[1])).join('') + 'Z', seg = S2 => S2.map(([a,b]) => `M${X(a[0])} ${Y(a[1])}L${X(b[0])} ${Y(b[1])}`).join('');
+  let s = `<svg id="vsvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f2(w)} ${f2(h)}" style="width:${(w*BK).toFixed(1)}px;height:${(h*BK).toFixed(1)}px">`;
+  s += `<g class="vparts">${G.N.map(n => `<path data-k="${vk(n.id,-1)}" d="${d(n.poly)}${n.holes.map(d).join('')}"/>`).join('')}</g>`;
+  s += `<path class="vcr" d="${seg(G.creases)}"/><path class="vpf" d="${seg(G.perfs||[])}"/><path class="vcut" d="${seg(G.cuts)}"/>`;
+  for (const [k, L] of G.V.CLb) if (!k.endsWith('|-1')) s += `<path class="vhole" data-k="${k}" d="${d(expandLoop(L))}"/>`;
+  return s + `<g id="vov">${vOverlay()}</g></svg>`;
 }
-function drawDie(){
-  const svg = document.querySelector('#boardInner [data-side=out] svg'); if (!svg || !G?.DF) return;
-  const {minX, maxY} = G.b, n3 = v => +v.toFixed(3), X = x => n3(x-minX), Y = y => n3(maxY-y), k = 1/(BK*bz);
-  const selV = dsel?.kind==='v' ? dsel.items : [], rounded = new Set((S.die||[]).filter(e => e.t==='r').map(e => e.n+'|'+e.h+'|'+e.i));
+function vOverlay(){
+  if (!G?.V) return ''; const {minX, maxY} = G.b, X = x => +(x-minX).toFixed(3), Y = y => +(maxY-y).toFixed(3), k = vK(), n3 = v => +v.toFixed(3);
+  const d = L => L.map((p,i) => (i ? 'L' : 'M') + X(p[0] ?? p.x) + ' ' + Y(p[1] ?? p.y)).join('') + 'Z';
   let h = '';
-  for (const lk of G.locks||[]){ const q = lk.q, x0 = Math.min(lk.x, lk.xc+lk.s*q.D), x1 = Math.max(lk.x, lk.xc+lk.s*q.D), on = dsel?.kind==='lock' && dsel.grp===lk.grp;
-    h += `<rect class="dl${on ? ' on' : ''}${q.bad ? ' bad' : ''}" data-dl="${lk.grp}|${lk.id}" x="${n3(X(x0)-.6)}" y="${n3(Y(lk.ym+q.R)-.6)}" width="${n3(x1-x0+1.2)}" height="${n3(2*q.R+1.2)}" rx="1"><title>Hook lock — click to shape it</title></rect>`; }
-  let dots = '';
-  const inLock = p => (G.locks||[]).some(l => { const x0 = Math.min(l.x, l.xc+l.s*l.q.D) - .3, x1 = Math.max(l.x, l.xc+l.s*l.q.D) + .3; return p[0] > x0 && p[0] < x1 && Math.abs(p[1]-l.ym) < l.q.R + .3; });
-  for (const [key, fl] of G.DF){ const k0 = key.lastIndexOf('|'), n = key.slice(0,k0), hh = +key.slice(k0+1), L = dieLoop(n, hh); if (!L || L.length !== fl.len) continue;
-    L.forEach((a,i) => { const b = L[(i+1)%L.length];
-      if (inLock(a) && inLock(b)) return;
-      if (fl.ef[i] && Math.hypot(b[0]-a[0], b[1]-a[1]) >= 2.5 && pullInfo(L, fl, i)){ const on = dsel?.kind==='e' && sameRef(dsel, {n, h:hh, i});
-        h += `<line class="de${on ? ' on' : ''}" data-de="${key}|${i}" x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}"/>`; }
-      if (fl.vf[i] && fl.cn[i] && !inLock(a)){ const ref = key+'|'+i, on = selV.some(x => sameRef(x, {n, h:hh, i}));
-        dots += `<circle class="dv${on ? ' on' : rounded.has(ref) ? ' rd' : ''}" data-dv="${ref}" cx="${X(a[0])}" cy="${Y(a[1])}" r="${n3(3.6*k)}"/>`; } }); }
-  h += dots;
-  const lk = curLock();
-  if (lk){ const q = lk.q, s = lk.s, hd = (x, y, t, cur, cls='') => `<circle class="dh ${cls}" data-dh="${t}" cx="${X(x)}" cy="${Y(y)}" r="${n3(5*k)}" style="cursor:${cur}"/>`;
-    h += hd(lk.xc+s*q.D, lk.ym, 'D', 'ew-resize') + hd(lk.x+s*1.25, lk.ym-q.w/2, 'w', 'ns-resize') + hd(lk.xc-s*1.2, lk.ym+q.R, 'b', 'ns-resize') + hd(lk.xc+s*q.D*.45, lk.ym, 'pos', 'move', 'mv'); }
-  svg.insertAdjacentHTML('beforeend', `<g class="selov dieov">${h}</g>`);
+  if (vHov && vHov !== vSel.k && G.V.CLb.get(vHov)) h += `<path class="hov" d="${d(expandLoop(G.V.CLb.get(vHov)))}"/>`;
+  // locks: user ones and the box's own hook ears
+  for (const l of G.V.locks) if (l.g){ const on = vSel.lock === l.id, bad = LOCK_T[l.type].mate && !l.mate;
+    h += `<path class="lk${on ? ' on' : ''}${bad ? ' bad' : ''}" data-lk="${l.id}" d="${d([l.g.pts[0], ...l.g.pts, l.g.pts[l.g.pts.length-1]])}"><title>${LOCK_T[l.type].name}</title></path>`;
+    if (on) for (const sl of G.V.slots.filter(s => s.lock === l.id)) h += `<path class="gslot" d="${d(sl.pts)}"/>`; }
+  for (const lk of G.locks||[]){ const q = lk.q, x0 = Math.min(lk.x, lk.xc+lk.s*q.D), x1 = Math.max(lk.x, lk.xc+lk.s*q.D), on = vSel.blk === lk.id;
+    h += `<rect class="lk${on ? ' on' : ''}${q.bad ? ' bad' : ''}" data-blk="${lk.id}" x="${n3(X(x0)-.6)}" y="${n3(Y(lk.ym+q.R)-.6)}" width="${n3(x1-x0+1.2)}" height="${n3(2*q.R+1.2)}" rx="1"><title>Hook lock (part of this box)</title></rect>`; }
+  // the active loop: outline, segments, points, bezier handles
+  const L = vSel.k && vLoop(vSel.k);
+  if (L){ h += `<path class="sel" d="${d(expandLoop(L))}"/>`;
+    L.forEach((A, i) => { const B = L[(i+1)%L.length]; h += `<line class="seg" data-sg="${i}" x1="${X(A.x)}" y1="${Y(A.y)}" x2="${X(B.x)}" y2="${Y(B.y)}"/>`; });
+    for (const i of vSel.idx){ const P = L[i]; if (!P) continue;
+      for (const c of ['c1','c2']) if (P[c]){ const hx = P.x + P[c][0], hy = P.y + P[c][1];
+        h += `<line class="hl" x1="${X(P.x)}" y1="${Y(P.y)}" x2="${X(hx)}" y2="${Y(hy)}"/><circle class="hd" data-hd="${c}" data-i="${i}" cx="${X(hx)}" cy="${Y(hy)}" r="${n3(3.6*k)}"/>`; } }
+    const s = 3.4*k; L.forEach((P, i) => { const on = vSel.idx.includes(i), tw = vIsShared(P);
+      h += `<rect class="nd${on ? ' on' : ''}${tw ? ' tw' : ''}${P.c1 || P.c2 ? ' cv' : ''}" data-nd="${i}" x="${n3(X(P.x)-s)}" y="${n3(Y(P.y)-s)}" width="${n3(2*s)}" height="${n3(2*s)}"${P.c1 || P.c2 ? ` rx="${n3(s)}"` : ''}/>`; }); }
+  // handles of the selected lock
+  const hd = (x, y, t, cur, cls='') => `<circle class="lh ${cls}" data-lh="${t}" cx="${X(x)}" cy="${Y(y)}" r="${n3(5*k)}" style="cursor:${cur}"/>`;
+  const ul = vSel.lock && G.V.locks.find(l => l.id === vSel.lock && l.g);
+  if (ul){ const g = ul.g, P = (a, b) => [g.c[0] + g.u[0]*a + g.v[0]*b, g.c[1] + g.u[1]*a + g.v[1]*b], n0 = {hook:2.5, arrow:2, tab:0, notch:0}[ul.type], sg = ul.type === 'notch' ? -1 : 1;
+    h += hd(...P(0, sg*(n0 + g.p.D)), 'D', 'pointer') + hd(...P(g.p.w/2, sg*Math.max(1, (n0 + g.p.D)*.3)), 'w', 'pointer');
+    if (ul.type === 'hook' || ul.type === 'arrow') h += hd(...P(g.p.w/2 + (g.p.b||0), n0 + (ul.type === 'hook' ? -1.2 : 1.2)), 'b', 'pointer');
+    h += hd(...P(0, sg*(n0 + g.p.D)*.45), 'pos', 'move', 'mv'); }
+  const bl = vSel.blk && (G.locks||[]).find(l => l.id === vSel.blk);
+  if (bl){ const q = bl.q, s = bl.s; h += hd(bl.xc+s*q.D, bl.ym, 'D', 'ew-resize') + hd(bl.x+s*1.25, bl.ym-q.w/2, 'w', 'ns-resize') + hd(bl.xc-s*1.2, bl.ym+q.R, 'b', 'ns-resize') + hd(bl.xc+s*q.D*.45, bl.ym, 'pos', 'move', 'mv'); }
+  // lock tool: the edge under the cursor and a ghost of the lock + where its slot will go
+  if (vHov?.edge){ const e = vHov.edge, t = vTool.slice(5), g = lockGeom({type:t, t:e.t, p:{}}, e.A, e.B, loopArea(vLoop(e.k)) > 0);
+    h += `<line class="edge" x1="${X(e.A.x)}" y1="${Y(e.A.y)}" x2="${X(e.B.x)}" y2="${Y(e.B.y)}"/><path class="ghost" d="${d([g.pts[0], ...g.pts])}"/>`;
+    const mt = lockMate(G.N, vFoldM(), vkSplit(e.k).n, g, t); if (mt) h += `<path class="gslot" d="${d(mt.hole)}"/>`; }
+  if (vAct?.kind === 'mq' && vAct.live){ const [a, b] = [vAct.a, vAct.b]; h += `<rect class="mq" x="${X(Math.min(a[0],b[0]))}" y="${Y(Math.max(a[1],b[1]))}" width="${n3(Math.abs(b[0]-a[0]))}" height="${n3(Math.abs(b[1]-a[1]))}"/>`; }
+  if (vAct?.kind === 'draw'){ const [a, b] = [vAct.a, vAct.b], x = X(Math.min(a[0],b[0])), y = Y(Math.max(a[1],b[1])), w = n3(Math.abs(b[0]-a[0])), hh = n3(Math.abs(b[1]-a[1]));
+    h += vAct.shape === 'rect' ? `<rect class="ghost" x="${x}" y="${y}" width="${w}" height="${hh}"/>` : `<ellipse class="ghost" cx="${n3(x+w/2)}" cy="${n3(y+hh/2)}" rx="${n3(w/2)}" ry="${n3(hh/2)}"/>`; }
+  return h;
 }
-function dieDown(e){
-  const t = e.target.closest('.dieov [data-dv], .dieov [data-de], .dieov [data-dl], .dieov [data-dh]');
-  if (!t){ if (dsel){ dsel = null; dieBarRender(); drawSel(); } return false; }
-  const svg = t.ownerSVGElement, p = svgPt(svg, e), bx = p.x + G.b.minX, by = G.b.maxY - p.y, base = {svg, sx:e.clientX, sy:e.clientY, live:false};
-  if (t.dataset.dh){ const lk = curLock(); if (!lk) return false; act = {...base, die:'lock', h:t.dataset.dh, lk, off: by - lk.ym, live:true}; dragging = true; }
-  else if (t.dataset.dl){ const [grp, id] = t.dataset.dl.split('|'); dsel = {kind:'lock', grp, id}; dieBarRender(); drawSel(); return true; }
-  else if (t.dataset.dv){ const it = refOf(t.dataset.dv);
-    if (e.shiftKey && dsel?.kind==='v'){ const j = dsel.items.findIndex(x => sameRef(x, it)); if (j >= 0) dsel.items.splice(j, 1); else dsel.items.push(it); if (!dsel.items.length) dsel = null; }
-    else if (!(dsel?.kind==='v' && dsel.items.some(x => sameRef(x, it)))) dsel = {kind:'v', items:[it]};
-    dieBarRender(); drawSel(); if (!dsel) return true;
-    const L = dieLoop(it.n, it.h); act = {...base, die:'r', at:[...L[it.i]]}; }
-  else { const it = refOf(t.dataset.de), L = dieLoop(it.n, it.h), fl = G.DF.get(it.n+'|'+it.h), pi = L && fl && pullInfo(L, fl, it.i);
-    dsel = {kind:'e', ...it}; dieBarRender(); drawSel(); if (!pi) return true;
-    act = {...base, die:'e', it, nv:pi.nv, p0: bx*pi.nv[0] + by*pi.nv[1], d0: dieEditOf('e', it)?.d || 0}; }
-  $('view2d').setPointerCapture(e.pointerId); e.preventDefault(); return true;
+const vOv = () => { const g = document.getElementById('vov'); if (g) g.innerHTML = vOverlay(); };
+const vRender = () => { vOv(); vInspRender(); };
+/* ---------- edits ---------- */
+function vSnapshot(){ const m = new Map(); for (const [k, L] of G.V.CLb) m.set(k, L.map(p => ({...p}))); return m; }
+function vStartMove(items, b, e){
+  const base = vSnapshot(), mir = new Map(); if (vMirror) for (const it of items){ const m = vMirrorPt(base, it.k, it.i); if (m && !items.some(x => x.k === m.k && x.i === m.i)) mir.set(it.k+'#'+it.i, m); }
+  const moving = new Set(); for (const it of items){ const key = ptKey(base.get(it.k)[it.i]); for (const t of vShared().get(key) || [it]) moving.add(t.k+'#'+t.i); }
+  return {kind:'pts', items, base, mir, sh:vShared(), wid:new Map(), moving, b0:b, sx:e?.clientX ?? 0, sy:e?.clientY ?? 0, live:!e};
 }
-function dieMove(e){
-  if (!act.live){ if (Math.hypot(e.clientX-act.sx, e.clientY-act.sy) < 3) return; act.live = true; dragging = true; }
-  const p = svgPt(act.svg, e), bx = p.x + G.b.minX, by = G.b.maxY - p.y, sn = v => snapOn && !e.altKey ? Math.round(v*2)/2 : +v.toFixed(2);
-  if (act.die==='e') setPull(act.it, sn(act.d0 + bx*act.nv[0] + by*act.nv[1] - act.p0));
-  else if (act.die==='r'){ const r = sn(Math.hypot(bx-act.at[0], by-act.at[1])); for (const it of dsel?.items||[]) setRound(it, r); }
-  else { const lk = act.lk, q = lk.q, o = {};
-    if (act.h==='D') o.D = clamp(sn(lk.s*(bx - lk.xc)), 2, 30);
-    else if (act.h==='w') o.w = clamp(sn(2*Math.abs(by - lk.ym)), 4, 60);
-    else if (act.h==='b') o.b = clamp(sn(Math.abs(by - lk.ym) - q.w/2), 0, 8);
-    else o.pos = sn(by - act.off - lk.ym0);
-    setLock(lk.grp, o); }
-  refresh(true);
+function vApplyMove(a, dx, dy){
+  const out = new Map(), done = new Set(), get = k => { if (!out.has(k)) out.set(k, a.base.get(k).map(p => ({...p}))); return out.get(k); };
+  const mv = (k, i, ddx, ddy) => { const bp = a.base.get(k)[i], key = ptKey(bp), tw = a.sh.get(key) || [{k, i}];
+    let w = null; if (tw.length > 1){ w = bp.w || a.wid.get(key); if (!w){ w = 'w'+uid(); a.wid.set(key, w); } }
+    for (const t of tw){ const id = t.k+'#'+t.i; if (done.has(id)) continue; done.add(id); const b0 = a.base.get(t.k)[t.i], q = get(t.k)[t.i]; q.x = b0.x + ddx; q.y = b0.y + ddy; if (w) q.w = w; } };
+  for (const it of a.items){ mv(it.k, it.i, dx, dy); const m = a.mir.get(it.k+'#'+it.i); if (m) mv(m.k, m.i, -dx, dy); }
+  for (const [k, L] of out) vCommit(k, L); vDone();
 }
-const HEADS = {round:['Round head','M3 4h7a6 6 0 0 1 0 12H3'], trap:['Trapezoid head','M3 4h7l5 3v6l-5 3H3'], arrow:['Arrow head','M3 4h7l7 6-7 6H3'], flat:['Square head','M3 4h11l1 1v10l-1 1H3']};
-function dieBarRender(){
-  const bar = $('dieBar'); bar.hidden = !dieEdit; if (!dieEdit) return;
-  const nE = (S.die||[]).length + Object.keys(S.lk||{}).length; let h = '';
-  if (!dsel) h = `<span class="h">Drag a cut edge to pull it · click a corner to round it (Shift — several) · click a lock tongue to shape it</span>`;
-  else if (dsel.kind==='v') h = `<b>${dsel.items.length} corner${dsel.items.length > 1 ? 's' : ''}</b><label>Radius<input type="number" id="dRad" min="0" max="80" step="0.5">mm</label><button type="button" data-d="clear">Square</button>`;
-  else if (dsel.kind==='e') h = `<b>Edge</b><label>Pull out<input type="number" id="dPull" min="-200" max="200" step="0.5">mm</label><button type="button" data-d="clear">Reset</button>`;
-  else h = `<b>Hook lock</b>${Object.entries(HEADS).map(([v,[t,d]]) => `<button type="button" data-head="${v}" title="${t}" aria-label="${t}"><svg viewBox="0 0 20 20"><path d="${d}"/></svg></button>`).join('')}`
-    + `<label title="Neck width = slit length">Neck<input type="number" id="dW" min="4" max="60" step="0.5"></label><label title="Head depth">Head<input type="number" id="dD" min="2" max="30" step="0.5"></label>`
-    + `<label title="How far each hook sticks out past the slit">Hook<input type="number" id="dB" min="0" max="8" step="0.5"></label><label title="Shift along the edge">Shift<input type="number" id="dP" min="-100" max="100" step="0.5"></label>`
-    + `<button type="button" data-d="clear">Reset</button><span class="warn" id="dWarn"></span>`;
-  h += `<span class="sep"></span><button type="button" data-d="mirror" aria-pressed="${dieMirror}" title="Change the mirrored side too">Mirror</button><button type="button" data-d="all"${nE ? '' : ' disabled'}>Reset all</button><button type="button" data-d="done">Done</button>`;
-  bar.innerHTML = h; dieBarVals();
+function vToggleSmooth(k, i){
+  const one = (k, i) => { const L = vLoop(k).map(p => ({...p})), m = L.length, P = L[i], Z = L[(i-1+m)%m], Q = L[(i+1)%m];
+    if (P.c1 || P.c2){ delete P.c1; delete P.c2; } else { const tx = (Q.x - Z.x)*.2, ty = (Q.y - Z.y)*.2; P.c1 = [-tx, -ty]; P.c2 = [tx, ty]; delete P.r; }
+    vCommit(k, L); };
+  if (vIsShared(vLoop(k)[i])){ toast('That point sits on a fold line — it can’t be curved.'); return; }
+  one(k, i); if (vMirror){ const m = vMirrorPt(G.V.CLb, k, i); if (m && !(m.k === k && m.i === i)) one(m.k, m.i); } vDone();
 }
-function dieBarVals(){
-  if (!dieEdit || !dsel) return; const v = (id, x) => { const n = $(id); if (n && document.activeElement !== n) n.value = +(+x).toFixed(2); };
-  if (dsel.kind==='v') v('dRad', dieEditOf('r', dsel.items[0])?.r || 0);
-  else if (dsel.kind==='e') v('dPull', dieEditOf('e', dsel)?.d || 0);
-  else { const lk = curLock(); if (!lk) return; const q = lk.q; v('dW', q.w); v('dD', q.D); v('dB', q.b); v('dP', q.pos);
-    document.querySelectorAll('#dieBar [data-head]').forEach(b => b.setAttribute('aria-pressed', b.dataset.head===q.head));
-    $('dWarn').textContent = q.bad ? 'Does not fit the panel — clamped' : ''; }
-  const all = document.querySelector('#dieBar [data-d=all]'); if (all) all.disabled = !((S.die||[]).length + Object.keys(S.lk||{}).length);
+function vInsert(k, i, b){
+  const before = vLoop(k), L = before.map(p => ({...p})), m = L.length, P = L[i], Q = L[(i+1)%m];
+  if (vIsFold(P, Q)){ toast('That edge is a fold line — points can’t be added to it.'); return; }
+  let np;
+  if (P.c2 || Q.c1){ const p0 = [P.x, P.y], p1 = [P.x+(P.c2?.[0]||0), P.y+(P.c2?.[1]||0)], p2 = [Q.x+(Q.c1?.[0]||0), Q.y+(Q.c1?.[1]||0)], p3 = [Q.x, Q.y];
+    const at = t => { const s = 1-t; return [0,1].map(j => s*s*s*p0[j] + 3*s*s*t*p1[j] + 3*s*t*t*p2[j] + t*t*t*p3[j]); };
+    let bt = .5, bd = Infinity; for (let j = 1; j < 60; j++){ const q = at(j/60), dd = Math.hypot(q[0]-b[0], q[1]-b[1]); if (dd < bd){ bd = dd; bt = j/60; } }
+    const lp = (a, c, t) => [a[0]+(c[0]-a[0])*t, a[1]+(c[1]-a[1])*t], A = lp(p0,p1,bt), B2 = lp(p1,p2,bt), C = lp(p2,p3,bt), D = lp(A,B2,bt), E = lp(B2,C,bt), F = lp(D,E,bt);
+    P.c2 = [A[0]-p0[0], A[1]-p0[1]]; Q.c1 = [C[0]-p3[0], C[1]-p3[1]]; np = {x:F[0], y:F[1], c1:[D[0]-F[0], D[1]-F[1]], c2:[E[0]-F[0], E[1]-F[1]]}; }
+  else { const dx = Q.x-P.x, dy = Q.y-P.y, t = clamp(((b[0]-P.x)*dx + (b[1]-P.y)*dy)/(dx*dx+dy*dy || 1), .02, .98); np = {x:P.x+dx*t, y:P.y+dy*t}; }
+  L.splice(i+1, 0, np); vRelocks(k, before, L); vCommit(k, L); vSel.idx = [i+1]; vDone();
 }
-$('dieBar').addEventListener('input', e => { const id = e.target.id, x = parseFloat(e.target.value); if (!isFinite(x) || !dsel) return;
-  if (id==='dRad') dsel.items.forEach(it => setRound(it, clamp(x, 0, 80)));
-  else if (id==='dPull') setPull(dsel, clamp(x, -200, 200));
-  else if (dsel.kind==='lock') setLock(dsel.grp, {[{dW:'w', dD:'D', dB:'b', dP:'pos'}[id]]: x});
-  refresh(true); setTimeout(dieBarVals); });
-$('dieBar').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.head && dsel?.kind==='lock'){ setLock(dsel.grp, {head:b.dataset.head}); refresh(true); setTimeout(dieBarVals); return; }
-  const a = b.dataset.d;
-  if (a==='clear') return dieClear();
-  if (a==='mirror'){ dieMirror = !dieMirror; b.setAttribute('aria-pressed', dieMirror); return; }
-  if (a==='all'){ S.die = []; S.lk = {}; custom(); dsel = null; refresh(true); dieBarRender(); return; }
-  if (a==='done') setDieEdit(false); });
-function setDieEdit(on){
-  dieEdit = on; dsel = null; $('dieBtn').setAttribute('aria-pressed', on); if (on && selId) selectEl(null);
-  document.querySelector('.board-hint').textContent = on ? 'Edit dieline · Esc — deselect / leave · Alt while dragging — no snapping' : 'Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom';
-  dieBarRender(); drawSel();
+function vDelete(){
+  if (vSel.lock){ const l = (S.locks||[]).find(x => x.id === vSel.lock); S.locks = (S.locks||[]).filter(x => x.id !== vSel.lock && !(vMirror && l?.mi && x.id === l.mi)); vSel.lock = null; vDone(); return; }
+  if (!vSel.k) return; const {h} = vkSplit(vSel.k);
+  if (!vSel.idx.length){ if (typeof h === 'string'){ S.vadd = (S.vadd||[]).filter(a => 'x'+a.id !== h); vSel = {k:null, idx:[]}; vDone(); } return; }
+  const before = vLoop(vSel.k), keep = before.filter((p, i) => !vSel.idx.includes(i) || vIsShared(p));
+  if (keep.length < 3){ toast('A part needs at least 3 points.'); return; }
+  if (keep.length === before.length){ toast('Points on fold lines can’t be deleted.'); return; }
+  const L = keep.map(p => ({...p})); vRelocks(vSel.k, before, L); vCommit(vSel.k, L); vSel.idx = []; vDone();
 }
-$('dieBtn').addEventListener('click', () => setDieEdit(!dieEdit));
-$('dieGo').addEventListener('click', () => { if ($('view2d').hidden) $('t2d').click(); setDieEdit(true); });
+function vSetRadius(r){
+  const set = (k, i) => { const L = vLoop(k).map(p => ({...p})), P = L[i]; if (!P || vIsShared(P) || P.c1 || P.c2) return; if (r > 0) P.r = r; else delete P.r; vCommit(k, L); };
+  for (const i of vSel.idx){ set(vSel.k, i); if (vMirror){ const m = vMirrorPt(G.V.CLb, vSel.k, i); if (m && !(m.k === vSel.k && m.i === i)) set(m.k, m.i); } }
+  vDone();
+}
+// locks
+function vEdgeAt(b){
+  const tol = 10*vK(); let best = null;
+  for (const [k, L] of G.V.CLb){ if (!k.endsWith('|-1')) continue;
+    L.forEach((A, i) => { const B = L[(i+1)%L.length]; if (A.c2 || B.c1 || vIsFold(A, B)) return; const dx = B.x-A.x, dy = B.y-A.y, l2 = dx*dx + dy*dy; if (l2 < 36) return;
+      const t = clamp(((b[0]-A.x)*dx + (b[1]-A.y)*dy)/l2, 0, 1), dd = Math.hypot(A.x+dx*t-b[0], A.y+dy*t-b[1]); if (dd < tol && (!best || dd < best.d)) best = {k, i, t, d:dd, A, B}; }); }
+  return best;
+}
+function vAddLock(type, e){
+  const {n} = vkSplit(e.k), L = vLoop(e.k), len = Math.hypot(e.B.x-e.A.x, e.B.y-e.A.y), l = {id:uid(), type, n, h:-1, i:e.i, c:L.length, t:+e.t.toFixed(4), p:LOCK_T[type].def(len)}, add = [l];
+  if (vMirror){ const mx = p => ({x:2*vCx() - p.x, y:p.y}), MA = mx(e.A), MB = mx(e.B), near = (p, q) => Math.abs(p.x-q.x) < .05 && Math.abs(p.y-q.y) < .05;
+    if (!(near(MA, e.A) && near(MB, e.B)) && !(near(MA, e.B) && near(MB, e.A)))
+      for (const [k2, L2] of G.V.CLb){ if (!k2.endsWith('|-1')) continue; const j = L2.findIndex((P, i) => { const Q = L2[(i+1)%L2.length]; return (near(P, MA) && near(Q, MB)) || (near(P, MB) && near(Q, MA)); });
+        if (j >= 0){ const rev = near(L2[j], MB), m = {id:uid(), type, n:vkSplit(k2).n, h:-1, i:j, c:L2.length, t:+(rev ? 1-e.t : e.t).toFixed(4), p:{...l.p}, mi:l.id, rev}; l.mi = m.id; l.rev = rev; add.push(m); break; } } }
+  S.locks = [...(S.locks||[]), ...add]; vSel = {k:null, idx:[], lock:l.id}; vToolSet('select'); vDone();
+}
+function vLockSet(id, o){
+  S.locks = (S.locks||[]).map(l => { if (l.id !== id && !(vMirror && l.mi === id)) return l; const mine = l.id === id, {t, ...p} = o;
+    return {...l, ...(t != null ? {t: +(mine || !l.rev ? t : 1-t).toFixed(4)} : {}), p:{...l.p, ...p}}; });
+  custom();
+}
+function vLockBSet(grp, o){ const lk = {...(S.lk||{})}; if (o) lk[grp] = {...(lk[grp]||{}), ...o}; else delete lk[grp]; S.lk = lk; custom(); }
+/* ---------- pointer ---------- */
+function vDown(e){
+  if (e.button !== 0) return false; const svg = $('vsvg'); if (!svg || !G?.V) return false;
+  const p = svgPt(svg, e), b = [p.x + G.b.minX, G.b.maxY - p.y], now = performance.now(), dbl = now - vLast.t < 380 && Math.hypot(e.clientX-vLast.x, e.clientY-vLast.y) < 6;
+  vLast = {t: dbl ? 0 : now, x:e.clientX, y:e.clientY};
+  const cap = () => { try { $('view2d').setPointerCapture(e.pointerId); } catch {} e.preventDefault(); return true; }, T = e.target;
+  if (vTool === 'rect' || vTool === 'ellipse'){ const n = G.N.find(n => inPoly(b[0], b[1], n.poly)); if (!n){ toast('Start the cut-out inside a part.'); return true; }
+    vAct = {kind:'draw', n:n.id, a:b, b, shape:vTool}; return cap(); }
+  if (vTool.startsWith('lock:')){ const ed = vEdgeAt(b); if (ed) vAddLock(vTool.slice(5), ed); else toast('Click on a cut edge of a part (not on a fold line).'); return true; }
+  const hd = T.closest('[data-hd]'), nd = T.closest('[data-nd]'), sg = T.closest('[data-sg]'), lh = T.closest('[data-lh]'), lk = T.closest('[data-lk]'), blk = T.closest('[data-blk]'), part = T.closest('[data-k]');
+  if (hd){ vAct = {kind:'hd', k:vSel.k, i:+hd.dataset.i, which:hd.dataset.hd}; return cap(); }
+  if (lh){ const ul = vSel.lock && G.V.locks.find(l => l.id === vSel.lock && l.g), bl = vSel.blk && (G.locks||[]).find(l => l.id === vSel.blk);
+    if (ul) vAct = {kind:'lh', h:lh.dataset.lh, l:ul, g:ul.g}; else if (bl) vAct = {kind:'blh', h:lh.dataset.lh, lk:bl, off:b[1] - bl.ym}; else return true; return cap(); }
+  if (nd){ const i = +nd.dataset.nd; if (dbl){ vToggleSmooth(vSel.k, i); return true; }
+    if (e.shiftKey){ const j = vSel.idx.indexOf(i); if (j >= 0) vSel.idx.splice(j, 1); else vSel.idx.push(i); } else if (!vSel.idx.includes(i)) vSel.idx = [i];
+    vRender(); if (!vSel.idx.length) return true; vAct = vStartMove(vSel.idx.map(i => ({k:vSel.k, i})), b, e); return cap(); }
+  if (sg){ const i = +sg.dataset.sg, L = vLoop(vSel.k); if (dbl){ vInsert(vSel.k, i, b); return true; }
+    vSel.idx = [i, (i+1)%L.length]; vRender(); vAct = vStartMove(vSel.idx.map(i => ({k:vSel.k, i})), b, e); return cap(); }
+  if (lk || blk){ vSel = {k:null, idx:[], lock: lk ? lk.dataset.lk : null, blk: blk ? blk.dataset.blk : null}; vRender();
+    if (lk){ const ul = G.V.locks.find(l => l.id === lk.dataset.lk && l.g); if (ul){ vAct = {kind:'lh', h:'pos', l:ul, g:ul.g, sx:e.clientX, sy:e.clientY, live:false}; return cap(); } } return true; }
+  if (part){ const k = part.dataset.k; if (vSel.k !== k){ vSel = {k, idx:[], lock:null, blk:null}; vRender(); } else if (!e.shiftKey){ vSel.idx = []; vRender(); }
+    vAct = {kind:'mq', a:b, b, sx:e.clientX, sy:e.clientY, live:false, add:e.shiftKey ? [...vSel.idx] : []}; return cap(); }
+  if (vSel.k || vSel.lock || vSel.blk){ vSel = {k:null, idx:[], lock:null, blk:null}; vRender(); }
+  return false;
+}
+function vMove(e){
+  const svg = $('vsvg'); if (!svg) return; const p = svgPt(svg, e), b = [p.x + G.b.minX, G.b.maxY - p.y], a = vAct;
+  if (a.live === false){ if (Math.hypot(e.clientX-a.sx, e.clientY-a.sy) < 3) return; a.live = true; }
+  const sn = v => snapOn && !e.altKey ? Math.round(v*2)/2 : +v.toFixed(2);
+  if (a.kind === 'pts'){ let dx = b[0]-a.b0[0], dy = b[1]-a.b0[1]; if (e.shiftKey){ if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
+    const P0 = a.base.get(a.items[0].k)[a.items[0].i]; let tx = P0.x + dx, ty = P0.y + dy;
+    if (snapOn && !e.altKey){ let best = 6*vK(), hit = null;
+      for (const [k, L] of a.base) L.forEach((q, i) => { if (a.moving.has(k+'#'+i)) return; const dd = Math.hypot(q.x-tx, q.y-ty); if (dd < best){ best = dd; hit = q; } });
+      if (hit){ tx = hit.x; ty = hit.y; } else { tx = P0.x + sn(dx); ty = P0.y + sn(dy); } }
+    vApplyMove(a, tx - P0.x, ty - P0.y); return; }
+  if (a.kind === 'hd'){ const L = vLoop(a.k).map(q => ({...q})), P = L[a.i]; if (!P) return; const v = [b[0]-P.x, b[1]-P.y], o = a.which === 'c1' ? 'c2' : 'c1';
+    P[a.which] = v; if (!e.altKey && P[o]){ const len = Math.hypot(...P[o]), l2 = Math.hypot(...v) || 1; P[o] = [-v[0]/l2*len, -v[1]/l2*len]; } vCommit(a.k, L); vDone(); return; }
+  if (a.kind === 'lh'){ const g = a.g, rx = b[0]-g.c[0], ry = b[1]-g.c[1], pu = rx*g.u[0] + ry*g.u[1], pv = rx*g.v[0] + ry*g.v[1], o = {};
+    if (a.h === 'pos'){ const A = vLoop(vk(a.l.n, -1))[a.l.i], B = vLoop(vk(a.l.n, -1))[(a.l.i+1)%a.l.c], dx = B.x-A.x, dy = B.y-A.y; o.t = clamp(((b[0]-A.x)*dx + (b[1]-A.y)*dy)/(dx*dx+dy*dy || 1), 0, 1); }
+    else if (a.h === 'D') o.D = clamp(sn(a.l.type === 'notch' ? -pv : pv - ({hook:2.5, arrow:2}[a.l.type] || 0)), 1, 60);
+    else if (a.h === 'w') o.w = clamp(sn(2*Math.abs(pu)), 3, 120);
+    else o.b = clamp(sn(Math.abs(pu) - g.p.w/2), 0, 10);
+    vLockSet(a.l.id, o); refresh(true); return; }
+  if (a.kind === 'blh'){ const lk = a.lk, q = lk.q, o = {};
+    if (a.h === 'D') o.D = clamp(sn(lk.s*(b[0] - lk.xc)), 2, 30); else if (a.h === 'w') o.w = clamp(sn(2*Math.abs(b[1] - lk.ym)), 4, 60);
+    else if (a.h === 'b') o.b = clamp(sn(Math.abs(b[1] - lk.ym) - q.w/2), 0, 8); else o.pos = sn(b[1] - a.off - lk.ym0);
+    vLockBSet(lk.grp, o); refresh(true); return; }
+  if (a.kind === 'draw'){ a.b = b; vOv(); return; }
+  if (a.kind === 'mq'){ a.b = b; const L = vLoop(vSel.k), x0 = Math.min(a.a[0], b[0]), x1 = Math.max(a.a[0], b[0]), y0 = Math.min(a.a[1], b[1]), y1 = Math.max(a.a[1], b[1]);
+    vSel.idx = [...new Set([...a.add, ...L.map((q, i) => q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1 ? i : -1).filter(i => i >= 0)])]; vRender(); }
+}
+function vUp(){
+  const a = vAct; vAct = null; if (!a) return;
+  if (a.kind === 'draw'){ const w = Math.abs(a.b[0]-a.a[0]), h = Math.abs(a.b[1]-a.a[1]);
+    if (w > 2 && h > 2){ const [x0,y0,x1,y1] = bboxOf(G.V.CL0.get(vk(a.n,-1))), W = x1-x0, H = y1-y0, u0 = (Math.min(a.a[0],a.b[0])-x0)/W, u1 = (Math.max(a.a[0],a.b[0])-x0)/W, v0 = (Math.min(a.a[1],a.b[1])-y0)/H, v1 = (Math.max(a.a[1],a.b[1])-y0)/H;
+      const id = uid(), r5 = v => +v.toFixed(5); let pts;
+      if (a.shape === 'rect') pts = [{u:u0, v:v0}, {u:u1, v:v0}, {u:u1, v:v1}, {u:u0, v:v1}];
+      else { const cu = (u0+u1)/2, cv = (v0+v1)/2, ru = (u1-u0)/2, rv = (v1-v0)/2, kk = .5523;
+        pts = [{u:cu+ru, v:cv, c1:[0,-rv*kk], c2:[0,rv*kk]}, {u:cu, v:cv+rv, c1:[ru*kk,0], c2:[-ru*kk,0]}, {u:cu-ru, v:cv, c1:[0,rv*kk], c2:[0,-rv*kk]}, {u:cu, v:cv-rv, c1:[-ru*kk,0], c2:[ru*kk,0]}]; }
+      S.vadd = [...(S.vadd||[]), {id, n:a.n, pts:pts.map(q => ({...q, u:r5(q.u), v:r5(q.v)}))}]; vSel = {k:vk(a.n, 'x'+id), idx:[]}; vToolSet('select'); vDone(); }
+    else vOv(); return; }
+  vRender();
+}
+function vHover(e){
+  const svg = $('vsvg'); if (!svg || !G?.V) return;
+  if (vTool.startsWith('lock:')){ const p = svgPt(svg, e), ed = vEdgeAt([p.x + G.b.minX, G.b.maxY - p.y]); vHov = ed ? {edge:ed} : null; vOv(); return; }
+  const k = e.target.closest?.('[data-k]')?.dataset.k || null; if (k !== vHov){ vHov = k; vOv(); }
+}
+function vKey(e){
+  const k = e.key, kl = k.toLowerCase(), mod = e.metaKey || e.ctrlKey;
+  if (k === 'Escape'){ if (vTool !== 'select') vToolSet('select'); else if (vSel.idx.length){ vSel.idx = []; vRender(); } else { vSel = {k:null, idx:[], lock:null, blk:null}; vRender(); } return true; }
+  if (k === 'Delete' || k === 'Backspace'){ vDelete(); return true; }
+  if (k.startsWith('Arrow') && !mod && vSel.k && vSel.idx.length){ const d = e.shiftKey ? 10 : 1, [dx, dy] = {ArrowLeft:[-d,0], ArrowRight:[d,0], ArrowUp:[0,d], ArrowDown:[0,-d]}[k];
+    vApplyMove(vStartMove(vSel.idx.map(i => ({k:vSel.k, i}))), dx, dy); return true; }
+  if (!mod && !e.altKey && ({v:'select', r:'rect', o:'ellipse'})[kl]){ vToolSet({v:'select', r:'rect', o:'ellipse'}[kl]); return true; }
+  return false;
+}
+/* ---------- side panel ---------- */
+function vToolSet(t){ vTool = t; vHov = null;
+  document.querySelectorAll('#vTools [data-vt]').forEach(b => b.setAttribute('aria-pressed', b.dataset.vt === t));
+  document.querySelectorAll('#vLocks [data-vl]').forEach(b => b.setAttribute('aria-pressed', 'lock:'+b.dataset.vl === t));
+  $('view2d').classList.toggle('vdraw', t !== 'select'); vOv(); }
+const HEADS = {round:['Round','M3 4h7a6 6 0 0 1 0 12H3'], trap:['Trapezoid','M3 4h7l5 3v6l-5 3H3'], arrow:['Arrow','M3 4h7l7 6-7 6H3'], flat:['Square','M3 4h11l1 1v10l-1 1H3']};
+function vInspRender(){
+  const box = $('vInsp'); if (!box || !vMode || !G?.V) return;
+  const num = (id, lbl, v, step = .5, min = 0, max = 200, tip = '') => `<label class="f"${tip ? ` title="${tip}"` : ''}>${lbl}<input type="number" data-vi="${id}" value="${+(+v).toFixed(2)}" step="${step}" min="${min}" max="${max}"></label>`;
+  const heads = cur => `<div class="vheads">${Object.entries(HEADS).map(([v,[t,d]]) => `<button type="button" class="btn mini" data-vhead="${v}" aria-pressed="${cur === v}" title="${t} head"><svg viewBox="0 0 20 20"><path d="${d}"/></svg></button>`).join('')}</div>`;
+  let h = '';
+  const ul = vSel.lock && G.V.locks.find(l => l.id === vSel.lock), bl = vSel.blk && (G.locks||[]).find(l => l.id === vSel.blk);
+  if (ul && ul.g){ const T = LOCK_T[ul.type], p = ul.g.p;
+    h = `<div class="vhead"><b>${T.name}</b> <span>on ${partName(ul.n)}</span></div>` + (ul.type === 'hook' ? heads(p.head || 'round') : '')
+      + `<div class="row2">${num('w', ul.type === 'hook' ? 'Neck width, mm' : 'Width, mm', p.w, .5, 3, 120)}${num('D', ul.type === 'notch' ? 'Depth, mm' : 'Length, mm', p.D, .5, 1, 60)}`
+      + (ul.type === 'hook' || ul.type === 'arrow' ? num('b', 'Hook, mm', p.b || 0, .5, 0, 10, 'How far each barb sticks out past the slot') : '') + num('t', 'Position, %', ul.g.t*100, 1, 0, 100) + `</div>`
+      + (T.mate ? (ul.mate ? `<p class="note ok">✓ Slot cut in “${partName(ul.mate)}” — that is where this edge lands when the box is folded. It moves with the lock.</p>` : `<p class="note bad">⚠ No panel meets this edge when the box is folded, so no slot was cut. Put the lock on an edge that touches another panel in 3D (ear, flap, inner wall).</p>`) : `<p class="note">Finger notch — no slot needed.</p>`)
+      + `<button class="btn" type="button" data-va="del">Delete lock</button>`; }
+  else if (bl){ const q = bl.q;
+    h = `<div class="vhead"><b>Hook lock</b> <span>built into this box</span></div>` + heads(q.head)
+      + `<div class="row2">${num('bw', 'Neck width, mm', q.w, .5, 4, 60)}${num('bD', 'Head, mm', q.D, .5, 2, 30)}${num('bb', 'Hook, mm', q.b, .5, 0, 8)}${num('bpos', 'Shift, mm', q.pos, .5, -100, 100)}</div>`
+      + (q.bad ? `<p class="note bad">⚠ Doesn’t fit the ear — clamped.</p>` : `<p class="note ok">✓ Its slit in the side wall follows the neck automatically.</p>`) + `<button class="btn" type="button" data-va="breset">Reset this lock</button>`; }
+  else if (vSel.k && vLoop(vSel.k)){ const {n, h:hh} = vkSplit(vSel.k), L = vLoop(vSel.k), cut = typeof hh === 'string', nm = partName(n) + (hh === -1 ? '' : cut ? ' · cut-out' : ' · hole');
+    const edited = (S.vec||[]).some(o => vk(o.n, o.h) === vSel.k);
+    if (!vSel.idx.length) h = `<div class="vhead"><b>${nm}</b> <span>${L.length} points</span></div><p class="note">Drag a point or an edge · drag across the part to select several · double-click an edge to add a point · double-click a point to curve it · red points sit on a fold line and move it with them.</p>`
+      + (edited ? `<button class="btn" type="button" data-va="resetpart">Reset this part</button>` : '') + (cut ? `<button class="btn" type="button" data-va="del">Delete cut-out</button>` : '');
+    else { const pts = vSel.idx.map(i => L[i]).filter(Boolean), one = pts.length === 1 ? pts[0] : null, fold = pts.some(vIsShared), free = pts.filter(q => !vIsShared(q) && !q.c1 && !q.c2);
+      h = `<div class="vhead"><b>${pts.length} point${pts.length > 1 ? 's' : ''}</b> <span>${nm}</span></div><div class="row2">`
+        + (one ? num('x', 'X, mm', one.x - G.b.minX - BLEED, .5, -999, 9999) + num('y', 'Y, mm', G.b.maxY - BLEED - one.y, .5, -999, 9999) : '')
+        + (free.length ? num('r', 'Corner radius, mm', free[0].r || 0, .5, 0, 100) : '') + `</div><div class="btns">`
+        + (one ? `<button class="btn" type="button" data-va="curve">${one.c1 || one.c2 ? 'Make it a corner' : 'Make it a curve'}</button>` : '') + `<button class="btn" type="button" data-va="del">Delete point${pts.length > 1 ? 's' : ''}</button></div>`
+        + (fold ? `<p class="note bad">Red points sit on a fold line: moving them moves the fold, so the 3D fold can look off.</p>` : ''); } }
+  else h = `<p class="note">Click a part on the dieline to see its points, or pick a lock above and click an edge.</p>`;
+  box.innerHTML = h;
+  const n = (S.vec||[]).length + (S.vadd||[]).length + (S.locks||[]).length + Object.keys(S.lk||{}).length;
+  $('vReset').disabled = !n; $('vReset').textContent = n ? `Reset all hand edits (${n})` : 'Reset all hand edits';
+  $('vStale').hidden = !G.V.stale;
+}
+$('vInsp').addEventListener('change', e => {
+  const id = e.target.dataset.vi, x = parseFloat(e.target.value); if (!id || !isFinite(x)) return;
+  if (vSel.lock){ vLockSet(vSel.lock, id === 't' ? {t:clamp(x/100, 0, 1)} : {[id]: x}); refresh(true); return; }
+  if (vSel.blk){ const bl = (G.locks||[]).find(l => l.id === vSel.blk); if (bl){ vLockBSet(bl.grp, {[{bw:'w', bD:'D', bb:'b', bpos:'pos'}[id]]: x}); refresh(true); } return; }
+  if (!vSel.k) return; const L = vLoop(vSel.k);
+  if (id === 'r') return vSetRadius(clamp(x, 0, 100));
+  if ((id === 'x' || id === 'y') && vSel.idx.length === 1){ const P = L[vSel.idx[0]], tx = x + G.b.minX + BLEED, ty = G.b.maxY - BLEED - x;
+    vApplyMove(vStartMove([{k:vSel.k, i:vSel.idx[0]}]), id === 'x' ? tx - P.x : 0, id === 'y' ? ty - P.y : 0); }
+});
+$('vInsp').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.vhead){ if (vSel.lock) vLockSet(vSel.lock, {head:b.dataset.vhead}); else if (vSel.blk){ const bl = (G.locks||[]).find(l => l.id === vSel.blk); if (bl) vLockBSet(bl.grp, {head:b.dataset.vhead}); } refresh(true); return; }
+  const a = b.dataset.va;
+  if (a === 'del') vDelete();
+  else if (a === 'curve' && vSel.idx.length === 1) vToggleSmooth(vSel.k, vSel.idx[0]);
+  else if (a === 'resetpart'){ S.vec = (S.vec||[]).filter(o => vk(o.n, o.h) !== vSel.k); vSel.idx = []; vDone(); }
+  else if (a === 'breset'){ const bl = (G.locks||[]).find(l => l.id === vSel.blk); if (bl){ vLockBSet(bl.grp, null); refresh(true); } }
+});
+$('vTools').addEventListener('click', e => { const b = e.target.closest('[data-vt]'); if (b) vToolSet(b.dataset.vt); });
+$('vLocks').addEventListener('click', e => { const b = e.target.closest('[data-vl]'); if (b) vToolSet(vTool === 'lock:'+b.dataset.vl ? 'select' : 'lock:'+b.dataset.vl); });
+$('vMirror').addEventListener('change', e => { vMirror = e.target.checked; });
+$('vReset').addEventListener('click', () => { S.vec = []; S.vadd = []; S.locks = []; S.lk = {}; vSel = {k:null, idx:[], lock:null, blk:null}; vDone(); });
+function vSetMode(on){
+  if (on === vMode) return; vMode = on; $('view2d').classList.toggle('vmode', on);
+  document.querySelector('.board-hint').textContent = on ? 'Click a part — drag points and edges · double-click an edge to add a point · V select · R window · O round hole · Esc' : 'Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom';
+  vSel = {k:null, idx:[], lock:null, blk:null}; vAct = null; vHov = null;
+  if (on){ vPrevPane = document.querySelector('aside section[data-pane].on')?.dataset.pane || 'build'; if (selId) selectEl(null); setPane('vedit'); vFitted = false; }
+  else { setPane(vPrevPane === 'vedit' ? 'build' : vPrevPane); sig2d = ''; }
+  vToolSet('select');
+}
+$('dieGo').addEventListener('click', () => $('tEd').click());
 
 /* ---------- UI ---------- */
 function syncUI(){
@@ -3183,10 +3481,11 @@ function bindInputs(){
   $('play').addEventListener('click',()=>{ const to = T > .5 ? 0 : 1;
     const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 2800*Math.abs(to-T)+200;
     anim = {from:T, to, t0:performance.now(), dur}; });
-  const tabs = [$('t3d'),$('t2d')];
-  tabs.forEach(tb=>tb.addEventListener('click',()=>{ const is2 = tb.id==='t2d';
+  const tabs = [$('t3d'),$('t2d'),$('tEd')];
+  tabs.forEach(tb=>tb.addEventListener('click',()=>{ const is2 = tb.id!=='t3d';
     tabs.forEach(x=>x.setAttribute('aria-selected', x===tb)); $('view2d').hidden=!is2;
     document.querySelector('main').classList.toggle('board-mode', is2); document.querySelector('.fold').hidden = isStatic();
+    vSetMode(tb.id==='tEd');
     if (is2){ sig2d=''; render2D(); } }));
 }
 function renderSlots(){
@@ -3976,7 +4275,7 @@ const autoOpt = '<option value="auto">Default</option>';
 $('vglass').innerHTML = autoOpt + Object.entries(GLASS).map(([k,v]) => `<option value="${k}">${v.n}</option>`).join('');
 $('vcap').innerHTML = autoOpt + Object.entries(CAPS).map(([k,v]) => `<option value="${k}">${v.n}</option>`).join('');
 $('vfill').innerHTML = autoOpt + Object.entries(FILLS).map(([k,v]) => `<option value="${k}">${v.n}</option>`).join('');
-bindInputs(); renderTpls(); syncUI(); renderMine(); setPane(store.get('skladka-pane','size')); resize();
+bindInputs(); renderTpls(); syncUI(); renderMine(); setPane((p => p==='vedit' ? 'build' : p)(store.get('skladka-pane','size'))); resize();
 camera.position.set(.55,.38,1);
 BLEED = +S.bleed || 3; SAFE = +S.safe || 3;
 G = build(S); rebuild3D(); geomDirty=false; applyFold(1,true); renderSlots(); renderEls(); doRefresh();
