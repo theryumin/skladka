@@ -472,7 +472,8 @@ window.SB = (() => {
   const URL = 'https://ftemkscqwyazwiggnflj.supabase.co', KEY = 'sb_publishable_swXb5CVXJJ-4o8whevZEzg_AgVHPrmc', SK = 'skladka-sb';
   let ses = null; try { ses = JSON.parse(localStorage.getItem(SK)); } catch {}
   const keep = v => { ses = v; try { v ? localStorage.setItem(SK, JSON.stringify(v)) : localStorage.removeItem(SK); } catch {} };
-  const show = () => document.documentElement.classList.toggle('locked', !ses);
+  // on a share link page the visitor sees the shared project, not the sign-in form (a stale session here used to leave the page blank)
+  const show = () => { const H = document.documentElement; H.classList.toggle('locked', !ses && !H.classList.contains('shared')); };
   const fail = (j, r) => { const e = new Error(j.error_description || j.msg || j.message || j.error || r.statusText || 'Network error'); e.code = j.code || j.error_code; e.status = r.status; return e; };
   const grant = async (type, body) => { const r = await fetch(`${URL}/auth/v1/token?grant_type=${type}`, {method:'POST', headers:{apikey:KEY, 'Content-Type':'application/json'}, body:JSON.stringify(body)});
     const j = await r.json().catch(() => ({})); if (!r.ok) throw fail(j, r);
