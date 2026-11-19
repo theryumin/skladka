@@ -180,7 +180,11 @@ html.shared #goHome{visibility:hidden}
 .shbar{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:var(--hover);border-radius:10px;padding:4px 6px 4px 12px}
 .shbar .btn.mini{height:28px;padding:0 10px;font-size:12.5px;width:auto;white-space:nowrap}
 .shbar #shWho{white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
-html.viewing #savedState,html.viewing #undoBtn,html.viewing #redoBtn,html.viewing header label.btn.ghost{display:none}
+html.viewing #savedState,html.viewing #undoBtn,html.viewing #redoBtn,html.viewing header label.btn.ghost,html.linkedit header label.btn.ghost{display:none}
+html.ro #tEd,html.ro #vOrig,html.ro #selBar,html.ro .rail [data-pane=mine],html.ro .board-hint{display:none!important}
+html.ro #aside > section :is(button,input,select,textarea,label.btn){opacity:.5;cursor:not-allowed}
+html.ro #aside::before{content:"View only — you can look around and export the files. Ask the owner for an edit link to make changes.";display:block;margin:12px 16px 0;padding:10px 12px;border-radius:8px;background:var(--hover);font-size:12.5px;line-height:1.4;color:var(--muted,#666)}
+.shlink select{flex:none;width:auto}
 .dlg.rv{padding:22px}
 .shbar .btn.ok{background:#1f9d55;border-color:#1f9d55;color:#fff}
 @media (max-width:900px){.shbar #shWho{display:none}}
@@ -1029,8 +1033,8 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
   <div class="pophead"><h2 id="shareH">Share “<span id="shName"></span>”</h2><button class="btn icon" type="button" id="shX" aria-label="Close">✕</button></div>
   <section>
     <div class="f">Link for the print house or client</div>
-    <div class="shlink"><input type="text" id="shLink" readonly placeholder="No link yet — press “Create link”" aria-label="Share link"><button class="btn pri" type="button" id="shCopy" disabled>Create link</button></div>
-    <p class="note">Anyone with the link can view the 3D and the dieline, download the print files and say “looks good / needs changes”. No account needed; nothing they change is saved to your project. <button class="btn link" type="button" id="shOff" hidden>Turn the link off</button></p>
+    <div class="shlink"><input type="text" id="shLink" readonly placeholder="No link yet — press “Create link”" aria-label="Share link"><select id="shLinkRole" aria-label="What people with the link can do"><option value="view">Can view</option><option value="edit">Can edit</option></select><button class="btn pri" type="button" id="shCopy" disabled>Create link</button></div>
+    <p class="note" id="shLinkNote"></p><p class="note"><button class="btn link" type="button" id="shOff" hidden>Turn the link off</button></p>
   </section>
   <section>
     <div class="f">Invite people</div>
@@ -3091,6 +3095,7 @@ const selectEl = id => { if (selId === id) return; selId = id; renderEls(); sync
 $('view2d').addEventListener('pointerdown', e => {
   if (e.target.closest('.board-ov')) return;
   const v = $('view2d');
+  if (isRO()){ pan = {x:e.clientX, y:e.clientY, bx, by}; v.classList.add('panning'); v.setPointerCapture(e.pointerId); return; }   // view-only link: pan only
   if (vMode){ if (vDown(e)) return; }
   else if (e.button === 0){
     const hd = e.target.closest('.selov [data-h]'), cur = curEl();
@@ -3124,10 +3129,10 @@ $('view2d').addEventListener('pointermove', e => {
 const endAct = () => { if (vAct) vUp(); if (act && dragging) renderEls(); act = null; GUIDES = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
 $('view2d').addEventListener('pointerup', endAct);
 $('view2d').addEventListener('pointercancel', endAct);
-$('view2d').addEventListener('dblclick', e => { const el = curEl(); if (!el || !['text','barcode','qr'].includes(el.kind) || e.target.closest('.board-ov')) return;
+$('view2d').addEventListener('dblclick', e => { if (isRO()) return; const el = curEl(); if (!el || !['text','barcode','qr'].includes(el.kind) || e.target.closest('.board-ov')) return;
   setPane('elements'); $('elText').focus(); $('elText').select(); });
 document.addEventListener('keydown', e => {
-  if (document.querySelector('.app').hidden || document.querySelector('dialog[open]') || e.target.closest?.('input,textarea,select,[contenteditable]')) return;
+  if (isRO() || document.querySelector('.app').hidden || document.querySelector('dialog[open]') || e.target.closest?.('input,textarea,select,[contenteditable]')) return;
   if (vMode && !$('view2d').hidden){ if (vKey(e)) e.preventDefault(); return; }
   const el = curEl(); if (!el) return; const k = e.key, mod = e.metaKey || e.ctrlKey, kl = k.toLowerCase();
   if (k === 'Escape') selectEl(null);
@@ -4106,7 +4111,13 @@ const cloudErr = e => e.code === '42501' ? 'the database refuses access (run the
 let saveSeq = 0;
 async function saveProject(){
   if (!S.pid) return;
-  if (viewOnly){ $('savedState').textContent = 'View only — changes aren’t saved'; return; }
+  if (viewOnly){ if (shareCtx?.role !== 'edit'){ $('savedState').textContent = 'View only'; return; }
+    const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
+    $('savedState').textContent = 'Saving…';
+    try { const ok = await SB.rpc('save_shared', {t:shareCtx.token, n:S.pname || 'Untitled', d:{settings:{...S}, imgs, elimgs}, th:snapThumb() || null});
+      $('savedState').textContent = ok === false ? 'Not saved — the owner turned editing off' : 'Saved to the owner’s project'; if (ok !== false) return 'cloud'; }
+    catch (e){ $('savedState').textContent = 'Not saved — ' + (/PGRST202|could not find/i.test(String(e.code) + e.message) ? 'the owner needs to finish the sharing setup' : e.message); }
+    return; }
   if (sharedEdit){ const imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
     $('savedState').textContent = 'Saving to cloud…';
     try { const up = async o => { const r = {}; for (const k in o) r[k] = await SB.upload(o[k]); return r; };
@@ -4187,6 +4198,7 @@ async function shareRefresh(){
   const [sh, rv] = await Promise.all([SB.req(`/rest/v1/shares?project_id=eq.${S.pid}&select=*&order=created_at`), SB.req(`/rest/v1/reviews?project_id=eq.${S.pid}&select=*&order=created_at.desc`)]);
   const link = sh.find(x => !x.email), ppl = sh.filter(x => x.email);
   $('shLink').value = link ? shareUrl(link.token) : ''; $('shOff').hidden = !link; $('shOff').dataset.id = link?.id || '';
+  if (link) $('shLinkRole').value = link.role === 'edit' ? 'edit' : 'view'; $('shLinkRole').dataset.id = link?.id || ''; linkNote();
   $('shCopy').textContent = link ? 'Copy link' : 'Create link'; $('shCopy').disabled = false;
   $('shPeople').innerHTML = ppl.map(p => `<div class="shp" data-sid="${p.id}"><span>${esc(p.email)}</span><select data-role aria-label="Access"><option value="view"${p.role === 'view' ? ' selected' : ''}>Can view</option><option value="edit"${p.role === 'edit' ? ' selected' : ''}>Can edit</option></select><button type="button" data-unshare title="Remove access" aria-label="Remove access for ${esc(p.email)}">✕</button></div>`).join('');
   $('shReviews').innerHTML = rv.length ? rv.map(r => `<div class="rvi"><b class="${r.verdict === 'ok' ? 'ok' : 'no'}">${r.verdict === 'ok' ? '✓ Looks good' : '✎ Needs changes'}</b> — ${esc(r.who || 'someone')}<small>${fdt(r.created_at)}</small>${r.comment ? `<p>${esc(r.comment)}</p>` : ''}</div>`).join('') : '<p class="note">No feedback yet. People with the link can press “Looks good” or “Needs changes”.</p>';
@@ -4196,7 +4208,7 @@ async function openShare(){
   if (!SB.user){ toast('Sign in to share.'); return; }
   if (viewOnly){ toast('Only the owner can share this project.'); return; }
   $('shName').textContent = S.pname || 'Untitled'; $('shStat').textContent = 'Saving the project to the cloud…'; $('shStat').className = 'ordstat';
-  $('shLink').value = ''; $('shCopy').disabled = true; $('shOff').hidden = true; $('shPeople').innerHTML = ''; $('shareDlg').showModal();
+  $('shLink').value = ''; $('shCopy').disabled = true; $('shOff').hidden = true; $('shPeople').innerHTML = ''; $('shLinkRole').value = 'view'; linkNote(); $('shareDlg').showModal();
   if (!S.pid) S.pid = crypto.randomUUID();
   clearTimeout(saveT); const ok = await saveProject();   // a share needs the project in the cloud
   if (ok !== 'cloud'){ shErr(Object.assign(new Error('The project could not be saved to the cloud: ' + $('savedState').textContent), {code:'SAVE'})); return; }
@@ -4210,6 +4222,34 @@ grant select on public.reviews to authenticated;
 grant select, insert, update, delete on public.projects to authenticated;
 grant execute on function shared_project(text) to anon, authenticated;
 grant execute on function add_review(text, text, text, text) to anon, authenticated;`;
+const LINK_SQL = `create or replace function shared_project(t text) returns json
+language sql stable security definer set search_path = public as $$
+  select json_build_object('id', p.id, 'name', p.name, 'data', p.data, 'thumb', p.thumb, 'updated_at', p.updated_at, 'role', s.role,
+    'by', (select u.email from auth.users u where u.id = p.owner))
+  from shares s join projects p on p.id = s.project_id where s.token = t
+$$;
+create or replace function save_shared(t text, n text, d jsonb, th text) returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  update projects p set name = left(coalesce(n, p.name), 200), data = d, thumb = th, updated_at = now()
+    from shares s where s.token = t and s.role = 'edit' and s.project_id = p.id;
+  return found;
+end $$;
+grant execute on function shared_project(text) to anon, authenticated;
+grant execute on function save_shared(text, text, jsonb, text) to anon, authenticated;`;
+function linkNote(){ const ed = $('shLinkRole').value === 'edit';
+  $('shLinkNote').textContent = ed ? 'Anyone with the link can change the design — changes are saved to this project. No account needed. Give it only to people you trust.'
+    : 'Anyone with the link can look at the 3D and the dieline, download the print files and say “looks good / needs changes”. They can’t change anything.'; }
+// the edit link needs save_shared() in the database — check once and show the SQL if it's missing
+async function linkSqlCheck(){ if ($('shLinkRole').value !== 'edit') return true;
+  try { await SB.rpc('save_shared', {t:'-', n:null, d:{}, th:null}); return true; }
+  catch (e){ if (/PGRST202|could not find the function|save_shared/i.test(String(e.code) + e.message)){
+      $('shStat').innerHTML = `<b>One more step for edit links.</b>\nIn Supabase → SQL Editor run this once:<code>${esc(LINK_SQL)}</code>`; $('shStat').className = 'ordstat bad'; return false; }
+    return true; } }
+$('shLinkRole').addEventListener('change', async e => { linkNote(); $('shStat').textContent = ''; if (!(await linkSqlCheck())) { e.target.value = 'view'; linkNote(); return; }
+  const id = e.target.dataset.id; if (!id) return;
+  try { await SB.req(`/rest/v1/shares?id=eq.${id}`, {method:'PATCH', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({role:e.target.value})});
+    toast(e.target.value === 'edit' ? 'People with the link can now edit.' : 'The link is view only now.'); } catch (x){ shErr(x); } });
 const shErr = e => { const c = String(e.code || ''), m = String(e.message || e);
   const hint = c === '42501' || /permission denied/i.test(m) ? 'The database doesn’t give signed-in users access to sharing. In Supabase → SQL Editor run:'
     : c === '42P01' || c === 'PGRST205' || /relation|schema cache/i.test(m) ? 'Sharing tables are missing in the database — run the sharing SQL from the setup.'
@@ -4220,7 +4260,8 @@ const shErr = e => { const c = String(e.code || ''), m = String(e.message || e);
   $('shStat').className = 'ordstat bad'; console.error('share', e); };
 $('shCopy').addEventListener('click', async () => {
   if (!$('shLink').value){ $('shCopy').disabled = true; $('shCopy').textContent = 'Creating…';
-    try { await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, role:'view'})}); await shareRefresh(); }
+    if (!(await linkSqlCheck())){ $('shCopy').disabled = false; $('shCopy').textContent = 'Create link'; return; }
+    try { await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, role:$('shLinkRole').value})}); await shareRefresh(); }
     catch (x){ shErr(x); $('shCopy').disabled = false; $('shCopy').textContent = 'Create link'; return; }
     if (!$('shLink').value){ shErr(new Error('The link was created but can’t be read back — check the “owner manages shares” policy.')); return; } }
   try { await navigator.clipboard.writeText($('shLink').value); } catch { $('shLink').select(); try { document.execCommand('copy'); } catch {} }
@@ -4240,9 +4281,14 @@ $('shPeople').addEventListener('click', async e => { const r = e.target.closest(
 async function reviewBadge(){ $('rvBadge').textContent = ''; if (!SB.user || viewOnly || !SB.isId(S.pid)) return;
   try { const rv = await SB.req(`/rest/v1/reviews?project_id=eq.${S.pid}&select=id`), n = rv.length - store.get('skladka-rvseen-' + S.pid, 0); $('rvBadge').textContent = n > 0 ? n : ''; } catch {} }
 // ---- the viewer side
+const isRO = () => !!shareCtx && viewOnly && shareCtx.role !== 'edit';     // opened by a view-only link: nothing can be changed
 function shareBar(){
-  const on = !!shareCtx && viewOnly; $('shBar').hidden = !on; $('shareBtn').hidden = on || sharedEdit;
-  document.documentElement.classList.toggle('viewing', on); if (on){ $('shWho').textContent = `${shareCtx.by || 'Shared'} · view only`; $('shWho').title = 'You can look around, change sizes to check and export files — nothing is saved to the owner’s project.'; }
+  const on = !!shareCtx && viewOnly, ro = isRO(), H = document.documentElement; $('shBar').hidden = !on; $('shareBtn').hidden = on || sharedEdit;
+  H.classList.toggle('viewing', ro); H.classList.toggle('linkedit', on && !ro); H.classList.toggle('ro', ro);
+  for (const sec of document.querySelectorAll('#aside > section')) sec.inert = ro;
+  if (ro && vMode) $('t2d').click();
+  if (on){ $('shWho').textContent = `${shareCtx.by || 'Shared'} · ${ro ? 'view only' : 'can edit'}`;
+    $('shWho').title = ro ? 'You can look around and export the files. Changes are not possible with this link.' : 'Your changes are saved to the owner’s project.'; }
 }
 async function openShared(tok){
   let r; try { r = await SB.rpc('shared_project', {t:tok}); } catch (e){ r = null; }
@@ -4252,9 +4298,9 @@ async function openShared(tok){
   await Promise.all(Object.entries(d.elimgs || {}).map(([i, src]) => loadElImg(i, src)));
   await Promise.all(Object.entries(d.imgs || {}).map(([k, src]) => loadImg(k, src)));
   S.els = (S.els || []).filter(e => e.kind !== 'image' || ELIMG[e.id]);
-  viewOnly = true; sharedEdit = false; shareCtx = {token:tok, by:r.by, name:r.name}; lastThumb = r.thumb || '';
-  $('pname').value = S.pname; $('pname').readOnly = true; syncUI(); syncEl(); renderEls(); refresh(true); shareBar(); openEditor();
-  $('savedState').textContent = 'View only';
+  viewOnly = true; sharedEdit = false; shareCtx = {token:tok, by:r.by, name:r.name, role: r.role === 'edit' ? 'edit' : 'view'}; lastThumb = r.thumb || '';
+  $('pname').value = S.pname; $('pname').readOnly = shareCtx.role !== 'edit'; syncUI(); syncEl(); renderEls(); refresh(true); shareBar(); openEditor();
+  $('savedState').textContent = shareCtx.role === 'edit' ? 'Changes are saved to the owner’s project' : 'View only';
 }
 $('rvOk').addEventListener('click', () => sendReview('ok'));
 $('rvNo').addEventListener('click', () => { $('rvWho').value ||= store.get('skladka-rvwho', SB.user?.email || ''); $('rvDlg').showModal(); $('rvText').focus(); });
@@ -4298,7 +4344,7 @@ function histGo(back){ clearTimeout(hist.t); const from = back ? hist.u : hist.r
   if (selId && !S.els.some(e => e.id===selId)) selId = null; syncUI(); syncEl(); renderEls(); refresh(true); updHist(); }
 $('undoBtn').addEventListener('click', () => histGo(true));
 $('redoBtn').addEventListener('click', () => histGo(false));
-document.addEventListener('keydown', e => { if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || document.querySelector('.app').hidden) return;
+document.addEventListener('keydown', e => { if (isRO() || !(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || document.querySelector('.app').hidden) return;
   if (e.target.closest('input[type=text],input[type=number],textarea')) return; e.preventDefault(); histGo(!e.shiftKey); });
 function openEditor(){ setTimeout(histReset, 400); if (location.hash === '#editor') showView(); else location.hash = 'editor'; }
 function cardHTML(svg, name, desc, mm, attrs){
