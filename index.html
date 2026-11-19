@@ -573,6 +573,7 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
       <div class="savemenu" id="saveMenu" role="menu" hidden>
         <button class="btn" role="menuitem" id="exZip"><b>Print package for the printer</b><small>ZIP — print PDF/X-4 + proof with specs + DXF die + SVG + 3D mockup</small></button>
         <button class="btn" role="menuitem" id="exPdf"><b>Print file · PDF/X-4</b><small>for the press: only the print pages 1:1, CMYK FOGRA39, bleed and crop marks, CutContour / Crease and finishes as spot colours</small></button>
+        <button class="btn" role="menuitem" id="exEdit"><b>Editable artwork · PDF + SVG</b><small>for Illustrator, CorelDRAW, Affinity, Figma: every element a separate vector object, named layers</small></button>
         <button class="btn" role="menuitem" id="exProof"><b>Proof &amp; specification PDF</b><small>for approval: 3D view, full spec, artwork pages, technical drawing with dimensions</small></button>
         <button class="btn" role="menuitem" id="exSvgArt"><b>Dieline with artwork, SVG</b><small>design + die lines as layers</small></button>
         <button class="btn" role="menuitem" id="exDxf"><b>Die for CAD / cutter, DXF</b><small>ArtiosCAD, Esko, AutoCAD, CorelDRAW, cutting tables — layers CUT, CREASE, BLEED…</small></button>
@@ -2058,7 +2059,7 @@ function drawIcon(ctx, el, s){
   const W = el.size*s, k = W/24, ic = el.icon || 'up';
   ctx.save(); ctx.strokeStyle = ctx.fillStyle = el.color || '#000000';
   if (ic==='eac'){ ctx.font = `700 ${W*.62}px "Montserrat", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('EAC', 0, W*.03); ctx.restore(); return [W, W*.6]; }
-  ctx.scale(k,k); ctx.translate(-12,-12); ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(new Path2D(ICONS[ic][1]));
+  ctx.scale(k,k); ctx.translate(-12,-12); ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(ctx.svgPath ? ctx.svgPath(ICONS[ic][1]) : new Path2D(ICONS[ic][1]));
   if (ic==='pap'){ ctx.font = '600 4.2px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('21', 12, 10.6); ctx.font = '700 4.4px "IBM Plex Sans", sans-serif'; ctx.fillText('PAP', 12, 19.6); }
   ctx.restore(); return [W,W];
 }
@@ -2141,16 +2142,17 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
   if (o.text==='skip') ctx.fillText = () => {};
   if (o.rec) ctx.fillText = (t,x,y) => o.rec.push({t:String(t), x, y, el:curElId, m:ctx.getTransform(), font:ctx.font, fill:ctx.fillStyle, align:ctx.textAlign, base:ctx.textBaseline, clip:lastClip});
   if (side==='out'){
-    if (IMGS.layout) ctx.drawImage(IMGS.layout.img,0,0,FW,FH);
+    ctx.vlay?.('pic'); if (IMGS.layout) ctx.drawImage(IMGS.layout.img,0,0,FW,FH);
     for (const f of G.faces){
       if (!IMGS[f.key] && (!S.showText || IMGS.layout)) continue;
       const {cx,cy,cw,ch,rot,lw,lh} = faceX(G,f,s,side);
       ctx.save(); clipFace(ctx,G,f,s,side); ctx.translate(cx,cy); ctx.rotate(rot);
+      ctx.vlay?.(IMGS[f.key] ? 'pic' : 'panel');
       if (IMGS[f.key]){ const img=IMGS[f.key].img, iw=img.naturalWidth, ih=img.naturalHeight, k=Math.max((lw+2*BLEED*s)/iw,(lh+2*BLEED*s)/ih); ctx.drawImage(img,-iw*k/2,-ih*k/2,iw*k,ih*k); }
       else if (!(f.key==='top' && S.type==='bakery' && S.window)) placeholder(ctx,f.key,lw,lh,s);   // the window takes the lid centre
       ctx.restore();
     }
-    if (G.pouch){ const {W,D,H,seal} = G.pouch;
+    if (G.pouch){ const {W,D,H,seal} = G.pouch; ctx.vlay?.('bg');
       for (const x0 of [0, W+D]){ ctx.fillStyle='rgba(0,0,0,.07)'; ctx.fillRect(X(x0),Y(H),W*s,seal*s);
         ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=.8*s; ctx.beginPath(); ctx.moveTo(X(x0+2),Y(H-seal-12)); ctx.lineTo(X(x0+W-2),Y(H-seal-12)); ctx.stroke();
         ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=.4*s; ctx.beginPath(); ctx.moveTo(X(x0+2),Y(H-seal-12)+.9*s); ctx.lineTo(X(x0+W-2),Y(H-seal-12)+.9*s); ctx.stroke(); }
@@ -2174,7 +2176,7 @@ function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
     if (bb && hl===el.id){ ctx.setLineDash([2*s,1.2*s]); ctx.lineWidth=Math.max(1,.4*s); ctx.strokeStyle='#ff2d87'; ctx.strokeRect(-bb[0]/2-s,-bb[1]/2-s,bb[0]+2*s,bb[1]+2*s); ctx.setLineDash([]); }
     ctx.restore();
   }
-  if (!o.rec && G.N?.length){   // the fill covers the shape and its bleed only, the rest of the sheet stays paper
+  if (!o.rec && !ctx.vlay && G.N?.length){   // the fill covers the shape and its bleed only, the rest of the sheet stays paper
     ctx.save(); ctx.setLineDash([]); ctx.beginPath();
     for (const n of G.N) for (const p of [n.poly, ...(n.holes||[])]){ p.forEach(([px,py],i) => ctx[i?'lineTo':'moveTo'](X(px), Y(py))); ctx.closePath(); }
     const m = document.createElement('canvas'); m.width = canvas.width; m.height = canvas.height; const mx = m.getContext('2d');
@@ -4461,6 +4463,252 @@ async function vectorText(side){
     return out;
   } catch(e){ console.warn('outlines', e); return null; }
 }
+/* ---------- editable vector artwork: drawArt is replayed into a recording 2D context, every fill / stroke / image / text
+   becomes a separate vector object in sheet mm (y down), tagged with its layer (background, pictures, panel text, one per element) */
+const EDIT_FIN = { varnish:'Varnish', varnish3d:'Varnish_3D', foil_gold:'Foil_Gold', foil_silver:'Foil_Silver', foil_copper:'Foil_Copper', foil_rose:'Foil_RoseGold', foil_holo:'Foil_Holo', emboss:'Emboss', deboss:'Deboss' };
+const EDIT_FINC = { Varnish:'0 0 0 0.12', Varnish_3D:'0.1 0 0 0.12', Foil_Gold:'0 0.25 0.85 0.15', Foil_Silver:'0 0 0 0.35', Foil_Copper:'0 0.55 0.75 0.25', Foil_RoseGold:'0 0.3 0.25 0.1', Foil_Holo:'0.2 0 0.1 0.15', Emboss:'0.6 0 0.6 0', Deboss:'0.6 0 0.6 0' };
+function elLabels(){ const n = {}, out = {};
+  for (const e of S.els){ if (e.kind==='dieline') continue; const k = {text:'Text', image:'Logo', barcode:'Barcode', qr:'QR code', shape:'Shape', icon:'Symbol'}[e.kind] || e.kind;
+    n[k] = (n[k] || 0) + 1; out[e.id] = e.kind==='text' ? `Text “${String(e.text||'').split('\n')[0].trim().slice(0,28)}”` : e.kind==='icon' ? (ICONS[e.icon||'up']?.[0] || 'Symbol') : `${k} ${n[k]}`;
+    if (e.spot) out[e.id] += ` · PANTONE ${e.spot.replace(/^pantone\s*/i,'')}`; if (EDIT_FIN[e.fin]) out[e.id] += ` · ${EDIT_FIN[e.fin].replace('_',' ')}`; }
+  return out; }
+class VecCtx {
+  constructor(s){ this.s = s; this.ops = []; this.layer = 'bg'; this.path = []; this.cur = null; this.st = []; this.mx = document.createElement('canvas').getContext('2d');
+    this.g = {m:[1,0,0,1,0,0], fill:'#000000', stroke:'#000000', lw:1, cap:'butt', join:'miter', ml:10, dash:[], doff:0, ga:1, font:'10px sans-serif', align:'start', base:'alphabetic', clips:[]}; this.canvas = {width:1, height:1}; }
+  vlay(l){ this.layer = l; }
+  get L(){ return curElId ? 'el:' + curElId : this.layer; }
+  // state
+  save(){ this.st.push({...this.g, m:[...this.g.m], clips:[...this.g.clips], dash:[...this.g.dash]}); }
+  restore(){ if (this.st.length) this.g = this.st.pop(); this.mx.font = this.g.font; }
+  set fillStyle(v){ this.g.fill = v; } get fillStyle(){ return this.g.fill; }
+  set strokeStyle(v){ this.g.stroke = v; } get strokeStyle(){ return this.g.stroke; }
+  set lineWidth(v){ if (v > 0) this.g.lw = +v; } get lineWidth(){ return this.g.lw; }
+  set lineCap(v){ this.g.cap = v; } get lineCap(){ return this.g.cap; }
+  set lineJoin(v){ this.g.join = v; } get lineJoin(){ return this.g.join; }
+  set miterLimit(v){ this.g.ml = +v; } get miterLimit(){ return this.g.ml; }
+  set globalAlpha(v){ this.g.ga = +v; } get globalAlpha(){ return this.g.ga; }
+  set font(v){ this.g.font = v; this.mx.font = v; } get font(){ return this.mx.font; }
+  set textAlign(v){ this.g.align = v; } get textAlign(){ return this.g.align; }
+  set textBaseline(v){ this.g.base = v; } get textBaseline(){ return this.g.base; }
+  set lineDashOffset(v){ this.g.doff = +v; } get lineDashOffset(){ return this.g.doff; }
+  set globalCompositeOperation(v){} get globalCompositeOperation(){ return 'source-over'; }
+  set imageSmoothingEnabled(v){} set imageSmoothingQuality(v){} set filter(v){} set shadowBlur(v){} set shadowColor(v){} set letterSpacing(v){ this.mx.letterSpacing = v; }
+  setLineDash(d){ this.g.dash = [...d]; } getLineDash(){ return [...this.g.dash]; }
+  measureText(t){ this.mx.font = this.g.font; return this.mx.measureText(t); }
+  // transforms
+  setTransform(a,b,c,d,e,f){ if (a && typeof a==='object') ({a,b,c,d,e,f} = a); this.g.m = a===undefined ? [1,0,0,1,0,0] : [a,b,c,d,e,f]; }
+  resetTransform(){ this.g.m = [1,0,0,1,0,0]; }
+  getTransform(){ const [a,b,c,d,e,f] = this.g.m; return new DOMMatrix([a,b,c,d,e,f]); }
+  transform(a,b,c,d,e,f){ const [A,B,C,D,E,F] = this.g.m; this.g.m = [A*a+C*b, B*a+D*b, A*c+C*d, B*c+D*d, A*e+C*f+E, B*e+D*f+F]; }
+  translate(x,y){ this.transform(1,0,0,1,x,y); } scale(x,y){ this.transform(x,0,0,y,0,0); }
+  rotate(r){ const c = Math.cos(r), n = Math.sin(r); this.transform(c,n,-n,c,0,0); }
+  P(x,y){ const [a,b,c,d,e,f] = this.g.m, s = this.s; return [(a*x+c*y+e)/s, (b*x+d*y+f)/s]; }
+  // paths (points stored in sheet mm, already transformed — like the canvas does)
+  beginPath(){ this.path = []; this.cur = null; }
+  moveTo(x,y){ this.path.push(['M', ...this.P(x,y)]); this.cur = [x,y]; this.start = [x,y]; }
+  lineTo(x,y){ if (!this.cur) return this.moveTo(x,y); this.path.push(['L', ...this.P(x,y)]); this.cur = [x,y]; }
+  bezierCurveTo(a,b,c,d,x,y){ if (!this.cur) this.moveTo(a,b); this.path.push(['C', ...this.P(a,b), ...this.P(c,d), ...this.P(x,y)]); this.cur = [x,y]; }
+  quadraticCurveTo(qx,qy,x,y){ if (!this.cur) this.moveTo(qx,qy); const [x0,y0] = this.cur; this.bezierCurveTo(x0+2/3*(qx-x0), y0+2/3*(qy-y0), x+2/3*(qx-x), y+2/3*(qy-y), x, y); }
+  closePath(){ if (this.path.length){ this.path.push(['Z']); this.cur = this.start; } }
+  rect(x,y,w,h){ this.moveTo(x,y); this.lineTo(x+w,y); this.lineTo(x+w,y+h); this.lineTo(x,y+h); this.closePath(); }
+  roundRect(x,y,w,h,r){ r = Array.isArray(r) ? r[0] : r; r = Math.max(0, Math.min(+r||0, Math.abs(w)/2, Math.abs(h)/2)); if (w < 0){ x += w; w = -w; } if (h < 0){ y += h; h = -h; }
+    if (!r) return this.rect(x,y,w,h); const H = PI/2;
+    this.moveTo(x+r,y); this.lineTo(x+w-r,y); this.ellipse(x+w-r,y+r,r,r,0,-H,0); this.lineTo(x+w,y+h-r); this.ellipse(x+w-r,y+h-r,r,r,0,0,H);
+    this.lineTo(x+r,y+h); this.ellipse(x+r,y+h-r,r,r,0,H,PI); this.lineTo(x,y+r); this.ellipse(x+r,y+r,r,r,0,PI,PI+H); this.closePath(); }
+  arc(x,y,r,a0,a1,ccw){ this.ellipse(x,y,r,r,0,a0,a1,ccw); }
+  ellipse(cx,cy,rx,ry,rot,a0,a1,ccw){
+    let d = a1 - a0; if (!ccw){ if (d >= 2*PI) d = 2*PI; else { d %= 2*PI; if (d < 0) d += 2*PI; } } else { if (d <= -2*PI) d = -2*PI; else { d %= 2*PI; if (d > 0) d -= 2*PI; } }
+    const cr = Math.cos(rot), sr = Math.sin(rot), pt = t => [cx + cr*rx*Math.cos(t) - sr*ry*Math.sin(t), cy + sr*rx*Math.cos(t) + cr*ry*Math.sin(t)],
+      dt = t => [-cr*rx*Math.sin(t) - sr*ry*Math.cos(t), -sr*rx*Math.sin(t) + cr*ry*Math.cos(t)];
+    const p0 = pt(a0); this.cur ? this.lineTo(...p0) : this.moveTo(...p0);
+    const n = Math.max(1, Math.ceil(Math.abs(d)/(PI/2) - 1e-9)), st = d/n, k = 4/3*Math.tan(st/4);
+    for (let i = 0; i < n; i++){ const t0 = a0 + i*st, t1 = t0 + st, q0 = pt(t0), q1 = pt(t1), v0 = dt(t0), v1 = dt(t1);
+      this.bezierCurveTo(q0[0]+k*v0[0], q0[1]+k*v0[1], q1[0]-k*v1[0], q1[1]-k*v1[1], q1[0], q1[1]); } }
+  arcTo(x1,y1,x2,y2,r){ this.lineTo(x1,y1); }
+  // SVG path data (icons) → current path
+  svgPath(dstr){ const save = this.path; this.beginPath(); const tk = dstr.match(/[a-zA-Z]|-?(?:\d*\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/g) || []; let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0, lc = null, lq = null;
+    const num = () => +tk[i++];
+    while (i < tk.length){ if (/[a-zA-Z]/.test(tk[i])) cmd = tk[i++]; const rel = cmd === cmd.toLowerCase() && cmd !== 'z' ? 1 : 0, C = cmd.toUpperCase(), ox = rel ? x : 0, oy = rel ? y : 0;
+      if (C === 'M'){ x = ox + num(); y = oy + num(); this.moveTo(x,y); sx = x; sy = y; cmd = rel ? 'l' : 'L'; lc = lq = null; }
+      else if (C === 'L'){ x = ox + num(); y = oy + num(); this.lineTo(x,y); lc = lq = null; }
+      else if (C === 'H'){ x = ox + num(); this.lineTo(x,y); lc = lq = null; }
+      else if (C === 'V'){ y = oy + num(); this.lineTo(x,y); lc = lq = null; }
+      else if (C === 'C'){ const a = ox+num(), b = oy+num(), c = ox+num(), d = oy+num(); x = ox+num(); y = oy+num(); this.bezierCurveTo(a,b,c,d,x,y); lc = [c,d]; lq = null; }
+      else if (C === 'S'){ const a = lc ? 2*x-lc[0] : x, b = lc ? 2*y-lc[1] : y, c = ox+num(), d = oy+num(); x = ox+num(); y = oy+num(); this.bezierCurveTo(a,b,c,d,x,y); lc = [c,d]; lq = null; }
+      else if (C === 'Q'){ const a = ox+num(), b = oy+num(); x = ox+num(); y = oy+num(); this.quadraticCurveTo(a,b,x,y); lq = [a,b]; lc = null; }
+      else if (C === 'T'){ const a = lq ? 2*x-lq[0] : x, b = lq ? 2*y-lq[1] : y; x = ox+num(); y = oy+num(); this.quadraticCurveTo(a,b,x,y); lq = [a,b]; lc = null; }
+      else if (C === 'A'){ let rx = Math.abs(num()), ry = Math.abs(num()); const phi = num()*DEG, fa = num(), fs = num(), x2 = ox+num(), y2 = oy+num();
+        if (!rx || !ry){ this.lineTo(x2,y2); } else {   // SVG endpoint → centre parameterisation
+          const c = Math.cos(phi), sn = Math.sin(phi), dx = (x-x2)/2, dy = (y-y2)/2, x1p = c*dx + sn*dy, y1p = -sn*dx + c*dy;
+          const lam = x1p*x1p/(rx*rx) + y1p*y1p/(ry*ry); if (lam > 1){ rx *= Math.sqrt(lam); ry *= Math.sqrt(lam); }
+          const num2 = rx*rx*ry*ry - rx*rx*y1p*y1p - ry*ry*x1p*x1p, den = rx*rx*y1p*y1p + ry*ry*x1p*x1p, co = (fa === fs ? -1 : 1)*Math.sqrt(Math.max(0, num2/den));
+          const cxp = co*rx*y1p/ry, cyp = -co*ry*x1p/rx, cx = c*cxp - sn*cyp + (x+x2)/2, cy = sn*cxp + c*cyp + (y+y2)/2;
+          const ang = (ux,uy,vx,vy) => Math.atan2(ux*vy - uy*vx, ux*vx + uy*vy), t1 = ang(1,0,(x1p-cxp)/rx,(y1p-cyp)/ry); let dt = ang((x1p-cxp)/rx,(y1p-cyp)/ry,(-x1p-cxp)/rx,(-y1p-cyp)/ry);
+          if (!fs && dt > 0) dt -= 2*PI; else if (fs && dt < 0) dt += 2*PI;
+          this.ellipse(cx, cy, rx, ry, phi, t1, t1+dt, !fs); }
+        x = x2; y = y2; lc = lq = null; }
+      else if (C === 'Z'){ this.closePath(); x = sx; y = sy; lc = lq = null; }
+      else i++; }
+    const p = this.path; this.path = save; return {vp:p}; }
+  // painting
+  pathOf(p){ return p && p.vp ? p.vp : this.path; }
+  fill(a, b){ const p = a && a.vp ? a.vp : this.path, rule = (typeof a === 'string' ? a : b) === 'evenodd' ? 'evenodd' : 'nonzero'; if (!p.length) return;
+    this.ops.push({t:'f', L:this.L, d:[...p], rule, col:this.g.fill, ga:this.g.ga, clips:this.g.clips}); }
+  stroke(a){ const p = a && a.vp ? a.vp : this.path; if (!p.length) return; const [A,B,C,D] = this.g.m, k = Math.sqrt(Math.abs(A*D - B*C))/this.s;
+    this.ops.push({t:'s', L:this.L, d:[...p], col:this.g.stroke, ga:this.g.ga, clips:this.g.clips, lw:this.g.lw*k, cap:this.g.cap, join:this.g.join, ml:this.g.ml, dash:this.g.dash.map(v => v*k), doff:this.g.doff*k}); }
+  clip(a, b){ const p = a && a.vp ? a.vp : this.path, rule = (typeof a === 'string' ? a : b) === 'evenodd' ? 'evenodd' : 'nonzero'; this.g.clips = [...this.g.clips, {d:[...p], rule}]; }
+  fillRect(x,y,w,h){ const sv = [this.path, this.cur]; this.beginPath(); this.rect(x,y,w,h); this.fill(); [this.path, this.cur] = sv; }
+  strokeRect(x,y,w,h){ const sv = [this.path, this.cur]; this.beginPath(); this.rect(x,y,w,h); this.stroke(); [this.path, this.cur] = sv; }
+  clearRect(){} strokeText(){}
+  fillText(t,x,y){ if (!String(t).trim()) return; this.ops.push({t:'txt', L:this.L, txt:String(t), x, y, m:this.getTransform(), font:this.g.font, align:this.g.align, base:this.g.base, col:this.g.fill, ga:this.g.ga, clips:this.g.clips}); }
+  createLinearGradient(x0,y0,x1,y1){ const g = {lin:[x0,y0,x1,y1], stops:[]}; g.addColorStop = (o, c) => g.stops.push([+o, c]); return g; }
+  createRadialGradient(x0,y0,r0,x1,y1){ return this.createLinearGradient(x0,y0,x1,y1); }
+  createPattern(){ return '#888888'; }
+  drawImage(src, ...a){ const nw = src.naturalWidth || src.width, nh = src.naturalHeight || src.height; if (!nw || !nh) return;
+    let [sx,sy,sw,sh,dx,dy,dw,dh] = a.length >= 8 ? a : a.length >= 4 ? [0,0,nw,nh,...a] : [0,0,nw,nh,a[0],a[1],nw,nh];
+    const [A,B,C,D,E,F] = this.g.m, s = this.s;
+    this.ops.push({t:'img', L:this.L, src, crop:[sx,sy,sw,sh], ga:this.g.ga, clips:this.g.clips,
+      m:[A*dw/s, B*dw/s, C*dh/s, D*dh/s, (A*dx + C*dy + E)/s, (B*dx + D*dy + F)/s]}); }   // unit square (y down) → sheet mm
+  getImageData(){ return {data:new Uint8ClampedArray(4)}; } putImageData(){}
+}
+const rgbaOf = c => { if (typeof c !== 'string') return {rgb:[136,136,136], a:1}; const m = c.match(/rgba?\(([^)]+)\)/); if (m){ const v = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat); return {rgb:v.slice(0,3).map(Math.round), a: v[3] ?? 1}; }
+  return {rgb: parseColor(c), a: 1}; };
+// one side → {ops, labels} with text turned into outlines; null fonts → text left out (reported)
+async function vecArt(side){
+  const s = 300/25.4, rec = new VecCtx(s), fake = {getContext: () => rec, width:0, height:0};
+  drawArt(fake, G, s, false, side, null, null, {print:true, els:[]});
+  let lost = 0;
+  for (const o of rec.ops) if (o.t === 'txt'){
+    try { const {wt, size, fam} = parseFont(o.font), fonts = await fontSet(fam, wt, o.txt);
+      const cm = runPath(fonts, o.txt, o.x, o.y, size, o.align, o.base, o.m, s), d = []; let cur = [0,0];
+      for (const [t, ...v] of cm){ if (t === 'Q'){ const [qx,qy,x,y] = v; d.push(['C', cur[0]+2/3*(qx-cur[0]), cur[1]+2/3*(qy-cur[1]), x+2/3*(qx-x), y+2/3*(qy-y), x, y]); cur = [x,y]; }
+        else { d.push([t, ...v]); if (v.length) cur = v.slice(-2); } }
+      Object.assign(o, {t:'f', d, rule:'nonzero', sz: size/s}); }
+    catch(e){ console.warn('edit text', e); o.t = 'skip'; lost++; } }
+  return {ops: rec.ops.filter(o => o.t !== 'skip'), lost, labels: elLabels()};
+}
+// pixels of an image source (cropped), shared by every op that draws the same picture
+async function vecPix(cache, src, crop){
+  const key = crop.map(Math.round).join(','); let per = cache.get(src); if (!per) cache.set(src, per = new Map()); if (per.has(key)) return per.get(key);
+  const [sx,sy,sw,sh] = crop, svg = src.src && /^data:image\/svg|\.svg(\?|$)/.test(src.src), k = svg ? Math.max(1, 3000/Math.max(sw,sh)) : Math.min(1, 5000/Math.max(sw,sh));
+  const W = Math.max(1, Math.round(sw*k)), H = Math.max(1, Math.round(sh*k)), c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d', {willReadFrequently:true}); x.drawImage(src, sx, sy, sw, sh, 0, 0, W, H);
+  const r = {W, H, cv:c, data:x.getImageData(0,0,W,H).data, svgSrc: svg && !crop[0] && !crop[1] && Math.abs(sw-(src.naturalWidth||sw)) < 1 && Math.abs(sh-(src.naturalHeight||sh)) < 1 ? src.src : null};
+  per.set(key, r); return r;
+}
+const vSame = (a, b) => a.t === b.t && a.t === 'f' && a.L === b.L && a.col === b.col && a.ga === b.ga && a.rule === b.rule && a.sz === b.sz && a.clips.length === b.clips.length && a.clips.every((c,i) => c === b.clips[i]);
+function vMerge(ops){ const out = []; for (const o of ops){ const p = out[out.length-1]; if (p && vSame(p, o)) p.d = p.d.concat(o.d); else out.push({...o}); } return out; }
+const layerOrder = (ops, labels) => { const seen = []; for (const o of ops) if (!seen.includes(o.L)) seen.push(o.L);
+  const nm = L => L === 'bg' ? 'Background' : L === 'pic' ? 'Pictures' : L === 'panel' ? 'Panel text' : labels[L.slice(3)] || 'Element';
+  return seen.map(L => ({L, name: nm(L), el: L.startsWith('el:') ? S.els.find(e => e.id === L.slice(3)) : null})); };
+
+async function editPdf(side){
+  const {w,h,minX,maxX,maxY} = G.b, M = 10, K = 72/25.4, PW = w+2*M, PH = h+2*M, mirror = side === 'in', pdf = PdfW();
+  const {ops: raw, lost, labels} = await vecArt(side), ops = vMerge(raw), lays = layerOrder(ops, labels), cache = new Map();
+  const res = {cs:new Map(), gs:new Map(), sh:[], im:new Map()}, oc = {}; const ocIds = [];
+  const sep = (name, c) => `[/Separation /${name.replace(/[^A-Za-z0-9_.-]/g, ch => '#' + ch.charCodeAt(0).toString(16).padStart(2,'0'))} /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [${c}] /N 1 >>]`;
+  const csName = (name, c) => { if (!res.cs.has(name)) res.cs.set(name, {k:'Cs' + res.cs.size, def: sep(name, c)}); return res.cs.get(name).k; };
+  const gsName = (ca, op) => { const key = `${pn(ca)}|${op?1:0}`; if (!res.gs.has(key)) res.gs.set(key, {k:'G' + res.gs.size, def:`<< /Type /ExtGState /ca ${pn(ca)} /CA ${pn(ca)}${op ? ' /OP true /op true /OPM 1' : ''} >>`}); return res.gs.get(key).k; };
+  const P = d => d.map(([t, ...v]) => t === 'Z' ? 'h' : v.map(pn).join(' ') + (t === 'M' ? ' m' : t === 'L' ? ' l' : ' c')).join(' ');
+  const clipOps = cl => cl.map(c => `${P(c.d)} W${c.rule === 'evenodd' ? '*' : ''} n`).join('\n');
+  const colOp = (o, stroke, el) => { const {rgb, a} = rgbaOf(o.col), white = rgb.every(v => v > 250);
+    const fin = EDIT_FIN[el?.fin]; if (fin) return {op: `/${csName(fin, EDIT_FINC[fin])} ${stroke ? 'CS 1 SCN' : 'cs 1 scn'}`, a, over:true};
+    if (el?.spot && !white) return {op: `/${csName('PANTONE ' + el.spot.replace(/^pantone\s*/i,''), rgb2cmyk(parseColor(el.color || '#000000')).map(pn).join(' '))} ${stroke ? 'CS 1 SCN' : 'cs 1 scn'}`, a};
+    const c = o.sz ? textCmyk(rgb, o.sz) : rgb2cmyk(rgb); return {op: c.map(pn).join(' ') + (stroke ? ' K' : ' k'), a}; };
+  const imgObj = async (o, el) => { const px = await vecPix(cache, o.src, o.crop), key = px; if (res.im.has(key)) return res.im.get(key);
+    const {W, H, data} = px, c = new Uint8Array(W*H*4), al = new Uint8Array(W*H); let alpha = false;
+    for (let i = 0, j = 0; j < W*H; i += 4, j++){ cmyk8(data[i], data[i+1], data[i+2], c, i); al[j] = data[i+3]; if (data[i+3] < 255) alpha = true; }
+    let sm = ''; if (alpha){ const id = pdf.id(); pdf.stream(id, `/Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode`, await deflate(al)); sm = ` /SMask ${id} 0 R`; }
+    const id = pdf.id(); pdf.stream(id, `/Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceCMYK /BitsPerComponent 8 /Interpolate true${sm} /Filter /FlateDecode`, await deflate(c));
+    const r = {k:'Im' + res.im.size, id}; res.im.set(key, r); return r; };
+  const shade = (o, el) => { const g = o.col, [x0,y0,x1,y1] = g.lin, st = g.stops.length ? g.stops : [[0,'#000'],[1,'#000']];
+    const cm = c => rgb2cmyk(rgbaOf(c).rgb).map(pn).join(' ');
+    const fn = st.length === 2 ? `<< /FunctionType 2 /Domain [0 1] /C0 [${cm(st[0][1])}] /C1 [${cm(st[1][1])}] /N 1 >>`
+      : `<< /FunctionType 3 /Domain [0 1] /Functions [${st.slice(1).map((s2, i) => `<< /FunctionType 2 /Domain [0 1] /C0 [${cm(st[i][1])}] /C1 [${cm(s2[1])}] /N 1 >>`).join(' ')}] /Bounds [${st.slice(1, -1).map(s2 => pn(s2[0])).join(' ')}] /Encode [${st.slice(1).map(() => '0 1').join(' ')}] >>`;
+    res.sh.push(`<< /ShadingType 2 /ColorSpace /DeviceCMYK /Coords [${[x0,y0,x1,y1].map(pn).join(' ')}] /Function ${fn} /Extend [true true] >>`); return 'Sh' + (res.sh.length - 1); };
+  const opStr = async o => { const el = o.L.startsWith('el:') ? S.els.find(e => e.id === o.L.slice(3)) : null, cl = clipOps(o.clips);
+    if (o.t === 'img'){ const im = await imgObj(o, el), [a,b,c,d,e,f] = o.m;
+      return `q ${cl}\n/${gsName(o.ga, false)} gs ${[a,b,-c,-d,c+e,d+f].map(pn).join(' ')} cm /${im.k} Do Q`; }
+    if (typeof o.col === 'object' && o.col?.lin){ const [A,B,C,D,E,F] = [1,0,0,1,0,0]; const sk = shade(o, el);
+      // gradient coordinates were given in canvas px of the fill-time transform — bgPaint draws in identity space
+      return `q ${cl}\n${P(o.d)} W n q ${pn(1/(300/25.4))} 0 0 ${pn(1/(300/25.4))} 0 0 cm /${sk} sh Q Q`; }
+    const c = colOp(o, o.t === 's', el); if (!c) return '';
+    const g = (c.a*o.ga < 1 || c.over) ? `/${gsName(c.a*o.ga, c.over)} gs ` : '';
+    if (o.t === 's') return `q ${cl}\n${g}${c.op} ${pn(o.lw)} w ${({butt:0, round:1, square:2})[o.cap] ?? 0} J ${({miter:0, round:1, bevel:2})[o.join] ?? 0} j ${pn(Math.max(1, o.ml))} M [${o.dash.map(pn).join(' ')}] ${pn(o.doff)} d\n${P(o.d)} S Q`;
+    return `q ${cl}\n${g}${c.op}\n${P(o.d)} f${o.rule === 'evenodd' ? '*' : ''} Q`; };
+  const bleed = bleedLoops(G).map(p => p.map(([x,y],i) => `${pn(mirror ? w-x : x)} ${pn(y)} ${i?'l':'m'}`).join(' ') + ' h').join('\n');
+  const mkOc = name => { const id = pdf.id(); pdf.obj(id, `<< /Type /OCG /Name ${pdfStr(name)} >>`); ocIds.push(id); return id; };
+  let body = `${pn(K)} 0 0 ${pn(-K)} ${pn(M*K)} ${pn((h+M)*K)} cm\n`, segs = [], cur = null;
+  for (const o of ops){ if (!cur || cur.L !== o.L){ cur = {L:o.L, ops:[]}; segs.push(cur); } cur.ops.push(o); }
+  const ocOf = {}; for (const l of lays) ocOf[l.L] = mkOc(l.name);     // listed top-down: die lines, then the last-drawn element … background
+  for (const sg of segs){ const parts = []; for (const o of sg.ops){ const t = await opStr(o); if (t) parts.push(t); }
+    const clipBg = sg.L === 'bg' ? `${bleed} W* n\n` : '';
+    body += `/OC /O${ocOf[sg.L]} BDC q ${clipBg}${parts.join('\n')}\nQ EMC\n`; }
+  // die lines on top, as spot colours that overprint
+  const X = x => mirror ? maxX-x : x-minX, Y = y => maxY-y, ln = l => l.map(([a,b]) => `${pn(X(a[0]))} ${pn(Y(a[1]))} m ${pn(X(b[0]))} ${pn(Y(b[1]))} l`).join('\n');
+  const ocB = mkOc('BLEED LIMIT (do not print)'), ocC = mkOc('CREASE'), ocK = mkOc('CUT');
+  const ov = gsName(1, true);
+  body += `/OC /O${ocB} BDC q 0.6 0 1 0 K 0.25 w [2 1] 0 d\n${bleed}\nS Q EMC\n`;
+  body += `/OC /O${ocC} BDC q /${ov} gs /${csName('Crease','1 0 0 0')} CS 1 SCN 0.25 w [3 1.5] 0 d\n${ln(G.creases)}\nS Q EMC\n`;
+  body += `/OC /O${ocK} BDC q /${ov} gs /${csName('CutContour','0 1 0 0')} CS 1 SCN 0.25 w []0 d\n${ln(G.cuts)}\nS${G.perfs?.length ? ` /${csName('Perforation','0.6 0 1 0')} CS 1 SCN [1 1] 0 d\n${ln(G.perfs)}\nS` : ''} Q EMC\n`;
+  const c = pdf.id(); pdf.stream(c, '/Filter /FlateDecode', await deflate(enc.encode(body)));
+  const shIds = res.sh.map(d => { const id = pdf.id(); pdf.obj(id, d); return id; });
+  const pagesId = pdf.id(), pg = pdf.id(), cat = pdf.id(), inf = pdf.id(), mm = v => pn(v*K);
+  pdf.obj(pg, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(PW)} ${mm(PH)}] /TrimBox [${mm(M+BLEED)} ${mm(M+BLEED)} ${mm(M+w-BLEED)} ${mm(M+h-BLEED)}] /BleedBox [${mm(M)} ${mm(M)} ${mm(M+w)} ${mm(M+h)}] /Contents ${c} 0 R
+/Resources << /XObject << ${[...res.im.values()].map(i => `/${i.k} ${i.id} 0 R`).join(' ')} >> /ExtGState << ${[...res.gs.values()].map(g => `/${g.k} ${g.def}`).join(' ')} >>
+/ColorSpace << ${[...res.cs.values()].map(v => `/${v.k} ${v.def}`).join(' ')} >> /Shading << ${shIds.map((id, i) => `/Sh${i} ${id} 0 R`).join(' ')} >>
+/Properties << ${ocIds.map(id => `/O${id} ${id} 0 R`).join(' ')} >> >> >>`);
+  pdf.obj(pagesId, `<< /Type /Pages /Kids [${pg} 0 R] /Count 1 >>`);
+  const order = [...ocIds].reverse().map(id => `${id} 0 R`).join(' ');
+  pdf.obj(cat, `<< /Type /Catalog /Pages ${pagesId} 0 R /OCProperties << /OCGs [${ocIds.map(id => `${id} 0 R`).join(' ')}] /D << /Name (Layers) /Order [${order}] /ON [${order}] >> >> >>`);
+  pdf.obj(inf, `<< /Title ${pdfStr((S.pname || 'Box') + ' — editable artwork, ' + (mirror ? 'inside' : 'outside'))} /Creator (Skladka) /Producer (Skladka) >>`);
+  return {blob: pdf.finish(cat, inf), lost, svg: await editSvg(side, ops, lays, cache)};
+}
+async function editSvg(side, ops, lays, cache){
+  const {w,h,minX,maxX,maxY} = G.b, M = 10, mirror = side === 'in', x2 = t => String(t).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const D = d => d.map(([t, ...v]) => t + v.map(f2).join(' ')).join('');
+  let defs = '', nid = 0; const clipIds = new Map(), gradIds = new Map(), imgIds = new Map();
+  const clipRef = c => { if (!clipIds.has(c)){ const id = 'c' + (nid++); clipIds.set(c, id); defs += `<clipPath id="${id}" clipPathUnits="userSpaceOnUse"><path d="${D(c.d)}" clip-rule="${c.rule}"/></clipPath>`; } return clipIds.get(c); };
+  const wrapClips = (cl, inner) => cl.reduceRight((acc, c) => `<g clip-path="url(#${clipRef(c)})">${acc}</g>`, inner);
+  const used = new Set(), slug = n => { let b = n.replace(/[“”"'·]/g, '').replace(/[^\p{L}\p{N}_-]+/gu, '_').replace(/^_+|_+$/g, '') || 'layer'; if (/^[\d-]/.test(b)) b = 'L_' + b; let k = b, i = 2; while (used.has(k)) k = b + '_' + (i++); used.add(k); return k; };
+  const one = async o => {
+    if (o.t === 'img'){ const px = await vecPix(cache, o.src, o.crop); if (!imgIds.has(px)) imgIds.set(px, px.svgSrc || px.cv.toDataURL('image/png'));
+      return wrapClips(o.clips, `<image width="1" height="1" preserveAspectRatio="none" transform="matrix(${o.m.map(f2).join(' ')})"${o.ga < 1 ? ` opacity="${f2(o.ga)}"` : ''} href="${imgIds.get(px)}"/>`); }
+    if (typeof o.col === 'object' && o.col?.lin){ if (!gradIds.has(o.col)){ const id = 'g' + (nid++), k = 25.4/300, [a,b,c,d] = o.col.lin; gradIds.set(o.col, id);
+        defs += `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${f2(a*k)}" y1="${f2(b*k)}" x2="${f2(c*k)}" y2="${f2(d*k)}">${o.col.stops.map(([of, cc]) => `<stop offset="${f2(of)}" stop-color="${x2(cc)}"/>`).join('')}</linearGradient>`; }
+      return wrapClips(o.clips, `<path d="${D(o.d)}" fill="url(#${gradIds.get(o.col)})"/>`); }
+    const el = o.L.startsWith('el:') ? S.els.find(e => e.id === o.L.slice(3)) : null, {rgb, a} = rgbaOf(FOILS[el?.fin] ? FOILS[el.fin][2] : el?.fin === 'emboss' || el?.fin === 'deboss' ? '#9fd39f' : o.col), col = `rgb(${rgb.join(',')})`, op = a*o.ga < 1 ? ` ${o.t === 's' ? 'stroke' : 'fill'}-opacity="${f2(a*o.ga)}"` : '';
+    if (o.t === 's') return wrapClips(o.clips, `<path d="${D(o.d)}" fill="none" stroke="${col}" stroke-width="${f2(o.lw)}" stroke-linecap="${o.cap}" stroke-linejoin="${o.join}"${o.dash.length ? ` stroke-dasharray="${o.dash.map(f2).join(' ')}"` : ''}${op}/>`);
+    return wrapClips(o.clips, `<path d="${D(o.d)}" fill="${col}"${o.rule === 'evenodd' ? ' fill-rule="evenodd"' : ''}${op}/>`); };
+  const bleed = bleedLoops(G).map(p => 'M' + p.map(([x,y]) => `${f2(mirror ? w-x : x)} ${f2(y)}`).join('L') + 'Z').join('');
+  defs += `<clipPath id="bleedclip" clipPathUnits="userSpaceOnUse"><path d="${bleed}" clip-rule="evenodd"/></clipPath>`;
+  let body = '';
+  for (const l of lays){ let inner = ''; for (const o of ops) if (o.L === l.L) inner += await one(o);
+    const id = slug(l.name); body += `<g id="${x2(id)}" inkscape:groupmode="layer" inkscape:label="${x2(l.name)}"${l.L === 'bg' ? ' clip-path="url(#bleedclip)"' : ''}>${inner}</g>\n`; }
+  const X = x => mirror ? maxX-x : x-minX, Y = y => maxY-y, ln = l => l.map(([a,b]) => `M${f2(X(a[0]))} ${f2(Y(a[1]))}L${f2(X(b[0]))} ${f2(Y(b[1]))}`).join('');
+  body += `<g id="BLEED_LIMIT" inkscape:groupmode="layer" inkscape:label="BLEED LIMIT (do not print)"><path d="${bleed}" fill="none" stroke="#00a651" stroke-width="0.25" stroke-dasharray="2 1"/></g>\n`;
+  body += `<g id="CREASE" inkscape:groupmode="layer" inkscape:label="CREASE"><path d="${ln(G.creases)}" fill="none" stroke="#00aeef" stroke-width="0.25" stroke-dasharray="3 1.5"/></g>\n`;
+  body += `<g id="CUT" inkscape:groupmode="layer" inkscape:label="CUT"><path d="${ln(G.cuts)}" fill="none" stroke="#ec008c" stroke-width="0.25"/>${G.perfs?.length ? `<path d="${ln(G.perfs)}" fill="none" stroke="#ff8a00" stroke-width="0.25" stroke-dasharray="1 1"/>` : ''}</g>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(w+2*M)}mm" height="${f2(h+2*M)}mm" viewBox="${-M} ${-M} ${f2(w+2*M)} ${f2(h+2*M)}">
+<title>${x2((S.pname || 'Box') + ' — editable artwork, ' + (mirror ? 'inside' : 'outside'))}</title>
+<defs>${defs}</defs>
+${body}</svg>`;
+}
+async function editFiles(zip, dir = ''){
+  let lost = 0; const sides = hasInside() ? ['out','in'] : ['out'];
+  for (const side of sides){ const nm = side === 'in' ? 'inside' : 'outside', r = await editPdf(side); lost += r.lost;
+    zip.file(`${dir}${fname('')}-editable-${nm}.pdf`, r.blob); zip.file(`${dir}${fname('')}-editable-${nm}.svg`, r.svg); }
+  return lost;
+}
+const EDIT_README = base => `${base}-editable-outside.pdf / .svg — the artwork as separate, editable vector objects (for Illustrator, CorelDRAW, Affinity, Figma, Inkscape):
+  • scale 1:1, mm; the sheet with ${BLEED} mm bleed and a 10 mm margin; TrimBox / BleedBox set
+  • every element is its own object: background (clipped to the bleed limit), pictures, panel text, each text / logo / shape / symbol / barcode / QR code
+  • text is converted to outlines (fonts are not needed); logos and photos are separate placed images
+  • PDF — CMYK FOGRA39 values, PANTONE and finishes (varnish, foil, emboss) as named spot colours; layers open in CorelDRAW, Affinity and Acrobat.
+    Illustrator ignores PDF layers and puts everything on one layer — objects stay editable; or open the SVG
+  • SVG — RGB, one named group / layer per element (Illustrator, Figma, Inkscape); set the document to CMYK after opening
+  • CUT / CREASE / BLEED LIMIT are separate layers on top`;
 function svgText(paths){
   const d = c => c.map(([t,...v]) => t + v.map(f2).join(' ')).join('');
   return paths.map((p,i) => (p.clip ? `<clipPath id="tc${i}"><rect x="${f2(p.clip[0])}" y="${f2(p.clip[1])}" width="${f2(p.clip[2])}" height="${f2(p.clip[3])}"/></clipPath>` : '')
@@ -4863,12 +5111,22 @@ async function exportChecked(kind){
 $('exPdf').addEventListener('click', () => exportChecked('print'));
 $('exProof').addEventListener('click', async () => { toast('Building the proof PDF…'); const b = await makePdf('proof'); if (b) saveFile(fname('-proof.pdf'), b); });
 $('exZip').addEventListener('click', () => exportChecked('zip'));
+$('exEdit').addEventListener('click', async () => {
+  if (!window.JSZip){ toast('The ZIP library did not load. Reload the page.'); return; }
+  toast('Building the editable files…'); await new Promise(r => setTimeout(r, 30));
+  try { const zip = new JSZip(), base = fname(''), lost = await editFiles(zip);
+    zip.file('README.txt', `Skladka — ${base}\n\n${EDIT_README(base)}\n`);
+    saveFile(base + '-editable.zip', await zip.generateAsync({type:'blob'}));
+    if (lost) toast(`${lost} text line(s) could not be outlined — fonts did not load.`); }
+  catch(e){ console.error(e); toast('Could not build the editable files.'); }
+});
 async function exportZip(){
   if (!window.JSZip){ toast('The ZIP library did not load. Reload the page.'); return; }
   toast('Building the print package…'); await new Promise(r => setTimeout(r, 30));
   const pdf = await makePdf('print'); if (!pdf) return; const proof = await makePdf('proof');
   const zip = new JSZip(), base = fname('');
   zip.file(base+'-print.pdf', pdf); if (proof) zip.file(base+'-proof.pdf', proof);
+  try { await editFiles(zip, 'editable/'); } catch(e){ console.warn('editable', e); }
   zip.file(base+'-dieline.svg', (await artSvg('out')).svg);
   if (hasInside()) zip.file(base+'-inside.svg', (await artSvg('in')).svg);
   zip.file(base+'-template.svg', svgDoc(G, null, false, true));
@@ -4889,6 +5147,7 @@ ${base}-print.pdf — the file for the press (PDF/X-4):
   • BLEED LIMIT — the die outline offset by the bleed; SAFE ZONE — copy limit; GLUE AREA — no ink / no varnish (not printed)
   • Artwork layer — print; Info layer — notes in the margins, do not print
   • only spot colours that are used are in the file
+editable/ — ${EDIT_README(base).replace(/\n/g, '\n  ')}
 ${base}-proof.pdf — for approval, not for the press: cover with the 3D view and the full specification, the artwork pages, technical drawing with dimensions and legend.
 ${base}-dieline.svg — dieline: Artwork with outlined text, CUT / CREASE layers.
 ${base}-template.svg — blank template for Illustrator / Figma: CUT, CREASE, bleed limit, safe zone, glue area, dimensions as layers.
