@@ -519,6 +519,22 @@ document.getElementById('authForm').addEventListener('submit', async e => { e.pr
   catch (x){ err.textContent = /invalid/i.test(x.message) ? 'Wrong email or password.' : /confirm/i.test(x.message) ? 'Confirm your email first — check the inbox.' : 'Could not sign in: ' + x.message; pw.select(); }
   go.disabled = false; go.textContent = 'Sign in'; });
 window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(new Event('sb-auth')); document.getElementById('authLogin').focus(); };
+// never a silent blank page: if the app crashes while starting, show what happened and a way out
+(() => { const errs = [];
+  const blank = () => { const app = document.querySelector('.app'), home = document.getElementById('home');
+    return (!app || app.hidden) && (!home || home.hidden) || document.documentElement.matches('.shared.locked'); };
+  const box = () => { if (document.getElementById('bootErr') || !blank()) return;
+    const d = document.createElement('div'); d.id = 'bootErr';
+    d.style.cssText = 'position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background:#f5f5f7;padding:16px;font:14px/1.45 system-ui,sans-serif;color:#222;visibility:visible';
+    const msg = errs.slice(0, 3).join('\n') || 'The page did not start.';
+    d.innerHTML = `<div style="max-width:520px;background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 4px 24px rgba(0,0,0,.08)"><b style="font-size:16px">Something went wrong while opening the page</b><p style="margin:8px 0">Press the button: the page reloads with this browser’s saved settings cleared. Your projects in the cloud are not touched.</p><pre style="white-space:pre-wrap;background:#f3f3f5;border-radius:8px;padding:8px 10px;font-size:12px;max-height:160px;overflow:auto"></pre><button type="button" style="margin-top:6px;padding:8px 14px;border-radius:8px;border:0;background:#6d28d9;color:#fff;font-weight:600;cursor:pointer">Reset and reload</button></div>`;
+    d.querySelector('pre').textContent = msg + '\n' + navigator.userAgent;
+    d.querySelector('button').onclick = () => { try { for (const k of Object.keys(localStorage)) if (k.startsWith('skladka') && k !== 'skladka-sb' && k !== 'skladka-mine') localStorage.removeItem(k); } catch {} location.reload(); };
+    document.body.appendChild(d); };
+  addEventListener('error', e => { errs.push(e.message + (e.filename ? ` (${e.filename.split('/').pop()}:${e.lineno})` : '')); setTimeout(box, 1500); });
+  addEventListener('unhandledrejection', e => { errs.push('Promise: ' + (e.reason?.message || e.reason)); setTimeout(box, 1500); });
+  addEventListener('load', () => setTimeout(box, 8000));
+})();
 </script>
 <div id="home" hidden>
   <nav class="hside" aria-label="Sections">
