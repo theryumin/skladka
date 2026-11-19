@@ -343,6 +343,12 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 .vlinet{display:flex;gap:6px;margin:-6px 0 14px}
 .vlinet .btn,.vheads .btn.wide{flex:1;width:auto;height:30px;padding:0 6px;font-size:12.5px;display:flex;align-items:center;justify-content:center}
 .vlinet .btn[aria-pressed=true],.vheads .btn.wide[aria-pressed=true]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft,#f3ecff)}
+.ctxm{position:fixed;z-index:500;min-width:220px;padding:5px;background:var(--panel,#fff);border:1px solid var(--line,#e5e5ea);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.16),0 2px 6px rgba(0,0,0,.08);font:13px var(--sans)}
+.ctxm button{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;height:30px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--fg,#1d1d1f);font:inherit;text-align:left;cursor:pointer}
+.ctxm button:hover:not([disabled]),.ctxm button:focus-visible{background:#0d99ff;color:#fff;outline:none}
+.ctxm button[disabled]{opacity:.4;cursor:default}
+.ctxm kbd{font:11.5px var(--mono,ui-monospace,monospace);opacity:.55}
+.ctxm hr{border:0;border-top:1px solid var(--line,#e5e5ea);margin:4px 2px}
 #vov .mq{fill:rgba(13,153,255,.08);stroke:#0d99ff;stroke-width:1;pointer-events:none}
 .vtools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
 .vtools button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);font:500 12px var(--sans);cursor:pointer}
@@ -3037,7 +3043,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- ✎ Edit tab: Figma-style vector editing of the die (clean board, no artwork) ---------- */
-let vPen = null, vLineT = 'crease', vGuides = null, vMode = false, vTool = 'select', vSel = {k:null, idx:[], lock:null, blk:null}, vAct = null, vHov = null, vMirror = true, vPrevPane = 'build', vFitted = false, vLast = {t:0, x:0, y:0};
+let vHovPt = null, vClip = null, vPen = null, vLineT = 'crease', vGuides = null, vMode = false, vTool = 'select', vSel = {k:null, idx:[], lock:null, blk:null}, vAct = null, vHov = null, vMirror = true, vPrevPane = 'build', vFitted = false, vLast = {t:0, x:0, y:0};
 const vLoop = k => G.V.CLb.get(k);
 const vK = () => 1/(BK*bz);
 const ptKey = p => (p.x ?? p[0]).toFixed(2)+','+(p.y ?? p[1]).toFixed(2);
@@ -3317,9 +3323,100 @@ function vLineSave(id, n, a, b, t){
   S.vlines = ex ? S.vlines.map(l => l.id === id ? o : l) : [...(S.vlines||[]), o];
 }
 const vLineTag = (a, b, g) => { g.tags = [[b[0], b[1], Math.hypot(b[0]-a[0], b[1]-a[1]).toFixed(1)]]; return g; };
+/* ---------- clipboard, duplicate, context menu ---------- */
+// a cut-out from absolute points (mm) into part n — stored normalised like every cut-out
+function vAddCut(n, pts){
+  const [x0,y0,x1,y1] = bboxOf(G.V.CL0.get(vk(n,-1))), W = x1-x0 || 1, H = y1-y0 || 1, r5 = v => +v.toFixed(5), id = uid();
+  S.vadd = [...(S.vadd||[]), {id, n, pts:pts.map(q => { const o = {u:r5((q.x-x0)/W), v:r5((q.y-y0)/H)}; if (q.c1) o.c1 = [r5(q.c1[0]/W), r5(q.c1[1]/H)]; if (q.c2) o.c2 = [r5(q.c2[0]/W), r5(q.c2[1]/H)]; if (q.r) o.r = q.r; return o; })}];
+  return vk(n, 'x'+id);
+}
+// what is selected, as something that can be copied (positions relative to its own centre)
+function vGrab(){
+  if (vSel.ln){ const l = (G.vl||[]).find(x => x.id === vSel.ln); if (!l) return null; const c = [(l.a[0]+l.b[0])/2, (l.a[1]+l.b[1])/2];
+    return {kind:'line', n:l.n, t:l.t, a:[l.a[0]-c[0], l.a[1]-c[1]], b:[l.b[0]-c[0], l.b[1]-c[1]], c}; }
+  if (vSel.lock){ const l = (S.locks||[]).find(x => x.id === vSel.lock); return l ? {kind:'lock', type:l.type, p:{...l.p}, src:l} : null; }
+  if (vSel.k && !vSel.k.endsWith('|-1')){ const L = vLoop(vSel.k); if (!L) return null; const [x0,y0,x1,y1] = bboxOf(L), c = [(x0+x1)/2, (y0+y1)/2];
+    return {kind:'cut', n:vkSplit(vSel.k).n, c, pts:L.map(p => ({...p, x:p.x-c[0], y:p.y-c[1]}))}; }
+  return null;
+}
+const VNAME = {cut:'cut-out', line:'line', lock:'lock'};
+function vCopy(){ const g = vGrab(); if (!g){ toast('Select a cut-out, a line or a lock to copy.'); return false; } vClip = g; toast(`Copied the ${VNAME[g.kind]} — ⌘V or right-click → Paste.`); return true; }
+// at: board point (mm) to paste at; without it the copy lands 6 mm off the original
+function vPaste(at, src = vClip){
+  if (!src){ toast('Nothing copied yet.'); return; }
+  if (src.kind === 'lock'){
+    if (!at){ const l = src.src && (S.locks||[]).find(x => x.id === src.src.id); if (!l){ toast('Right-click an edge to paste the lock there.'); return; }
+      const nl = {...l, id:uid(), t:+clamp(l.t + (l.t > .7 ? -.25 : .25), 0, 1).toFixed(4)}; delete nl.mi; delete nl.rev; S.locks = [...S.locks, nl]; vSel = {k:null, idx:[], lock:nl.id}; vDone(); return; }
+    const ed = vEdgeAt(at); if (!ed){ toast('Right-click on a cut edge to paste the lock there.'); return; }
+    vAddLock(src.type, ed); vLockSet(vSel.lock, {...src.p}); refresh(true); return; }
+  const c = at || [src.c[0] + 6, src.c[1] - 6], n = at ? vPartAt(at) : src.n; if (!n){ toast('Paste on a part.'); return; }
+  if (src.kind === 'line'){ const id = uid(); vLineSave(id, n, [c[0]+src.a[0], c[1]+src.a[1]], [c[0]+src.b[0], c[1]+src.b[1]], src.t); vSel = {k:null, idx:[], lock:null, blk:null, ln:id}; vDone(); return; }
+  vSel = {k:vAddCut(n, src.pts.map(p => ({...p, x:p.x + c[0], y:p.y + c[1]}))), idx:[]}; vDone();
+}
+const vDup = () => { const g = vGrab(); if (!g){ toast('Select a cut-out, a line or a lock to duplicate.'); return; } vPaste(null, g); };
+// flip a cut-out in place (left↔right or up↔down)
+function vFlip(ax){ const L = vLoop(vSel.k); if (!L || vSel.k.endsWith('|-1')) return; const [x0,y0,x1,y1] = bboxOf(L), c = ax === 'x' ? x0 + x1 : y0 + y1, i = ax === 'x' ? 0 : 1;
+  const F = L.map(p => { const q = {...p}; q[ax] = c - p[ax]; for (const h of ['c1','c2']) if (p[h]){ q[h] = [...p[h]]; q[h][i] = -p[h][i]; } return q; }).reverse().map(p => ({...p, c1:p.c2, c2:p.c1}));
+  for (const p of F){ if (!p.c1) delete p.c1; if (!p.c2) delete p.c2; }
+  vCommit(vSel.k, F); vDone(); }
+// centre a cut-out / line on its part
+function vCentre(){ const g = vGrab(); if (!g || g.kind === 'lock') return; const [x0,y0,x1,y1] = bboxOf(vLoop(vk(g.n, -1))), c = [(x0+x1)/2, (y0+y1)/2];
+  if (g.kind === 'line'){ vLineSave(vSel.ln, g.n, [c[0]+g.a[0], c[1]+g.a[1]], [c[0]+g.b[0], c[1]+g.b[1]], g.t); vDone(); return; }
+  const L = vLoop(vSel.k); vApplyMove(vStartMove(L.map((_, i) => ({k:vSel.k, i}))), c[0] - g.c[0], c[1] - g.c[1]); }
+function vCtxClose(){ const m = document.getElementById('vCtx'); if (m) m.remove(); }
+function vCtx(e){
+  const svg = $('vsvg'); if (!svg || !G?.V) return; e.preventDefault(); vCtxClose(); if (vPen){ vPenClose(); }
+  const p = svgPt(svg, e), b = [p.x + G.b.minX, G.b.maxY - p.y], T = e.target;
+  // right-click selects what is under the cursor first (like Figma)
+  const ln = T.closest('[data-ln]'), lk = T.closest('[data-lk]'), blk = T.closest('[data-blk]'), nd = T.closest('[data-nd]'), sg = T.closest('[data-sg]'), part = T.closest('[data-k]');
+  if (ln) vSel = {k:null, idx:[], lock:null, blk:null, ln:ln.dataset.ln};
+  else if (lk) vSel = {k:null, idx:[], lock:lk.dataset.lk, blk:null};
+  else if (blk) vSel = {k:null, idx:[], lock:null, blk:blk.dataset.blk};
+  else if (nd){ const i = +nd.dataset.nd; if (!vSel.idx.includes(i)) vSel.idx = [i]; }
+  else if (sg){}
+  else if (part && part.dataset.k !== vSel.k) vSel = {k:part.dataset.k, idx:[], lock:null, blk:null};
+  else if (!part) vSel = {k:null, idx:[], lock:null, blk:null};
+  vRender();
+  const I = [], sep = () => I.length && I[I.length-1] !== '-' && I.push('-'), it = (label, key, fn, dis) => I.push({label, key, fn, dis});
+  const g = vGrab(), cut = vSel.k && !vSel.k.endsWith('|-1'), L = vSel.k && vLoop(vSel.k);
+  if (nd && L){ const one = vSel.idx.length === 1 && L[vSel.idx[0]];
+    if (one) it(one.c1 || one.c2 ? 'Make it a corner' : 'Make it a curve', 'dbl-click', () => vToggleSmooth(vSel.k, vSel.idx[0]));
+    if (vSel.idx.some(i => L[i] && !vIsShared(L[i]) && !L[i].c1 && !L[i].c2)) it('Round the corner…', '', () => { vSetRadius(5); setTimeout(() => { const r = document.querySelector('#vInsp [data-vi=r]'); r?.focus(); r?.select(); }, 50); });
+    it('Select all points', '⌘A', () => { vSel.idx = L.map((_, i) => i); vRender(); });
+    sep(); it(vSel.idx.length > 1 ? 'Delete points' : 'Delete point', '⌫', vDelete); }
+  else if (sg && L){ const i = +sg.dataset.sg; it('Add a point here', 'dbl-click', () => vInsert(vSel.k, i, b)); it('Select this edge', '', () => { vSel.idx = [i, (i+1)%L.length]; vRender(); }); }
+  else if (g){
+    it('Copy', '⌘C', vCopy); it('Duplicate', '⌘D', vDup);
+    if (g.kind !== 'lock') it('Centre on the part', '', vCentre);
+    if (g.kind === 'cut' && typeof vkSplit(vSel.k).h === 'string'){ it('Flip horizontally', '', () => vFlip('x')); it('Flip vertically', '', () => vFlip('y')); }
+    if (g.kind === 'line'){ sep(); for (const [v, t] of Object.entries(LINE_T)) it((g.t === v ? '✓ ' : '') + t, '', () => { vLineSave(vSel.ln, g.n, (G.vl.find(x => x.id === vSel.ln)).a, (G.vl.find(x => x.id === vSel.ln)).b, v); vDone(); }); }
+    if (g.kind === 'lock'){ sep(); for (const t of Object.keys(LOCK_T)) if (t !== g.type) it('Change to ' + LOCK_T[t].name.toLowerCase(), '', () => { S.locks = S.locks.map(l => l.id === vSel.lock || (vMirror && l.mi === vSel.lock) ? {...l, type:t, p:{...LOCK_T[t].def(60), ...(l.p.w ? {w:l.p.w} : {})}} : l); vDone(); }); }
+    sep(); it('Delete', '⌫', vDelete); }
+  else if (vSel.blk){ it('Reset this lock', '', () => { const bl = (G.locks||[]).find(l => l.id === vSel.blk); if (bl){ vLockBSet(bl.grp, null); refresh(true); } }); }
+  else if (L){ const F = vFlap(vSel.k);
+    if (F) it('Flap depth…', '', () => { const r = document.querySelector('#vInsp [data-vi=fd]'); r?.focus(); r?.select(); });
+    it('Select all points', '⌘A', () => { vSel.idx = L.map((_, i) => i); vRender(); });
+    if ((S.vec||[]).some(o => vk(o.n, o.h) === vSel.k)) it('Reset this part', '', () => { S.vec = (S.vec||[]).filter(o => vk(o.n, o.h) !== vSel.k); vSel.idx = []; vDone(); });
+    sep(); it('Window here', 'R', () => vToolSet('rect')); it('Round hole here', 'O', () => vToolSet('ellipse')); it('Pen', 'P', () => vToolSet('pen')); it('Line', 'L', () => vToolSet('line')); }
+  if (vClip){ sep(); it(`Paste ${VNAME[vClip.kind]} here`, '⌘V', () => vPaste(b)); }
+  sep(); it('Zoom to fit', '', () => $('zFit').click()); it('Back to original', '', () => $('vOrig').click(), $('vOrig').disabled);
+  while (I[I.length-1] === '-') I.pop();
+  const m = document.createElement('div'); m.id = 'vCtx'; m.className = 'ctxm'; m.setAttribute('role', 'menu');
+  m.innerHTML = I.map((x, i) => x === '-' ? '<hr>' : `<button type="button" role="menuitem" data-i="${i}"${x.dis ? ' disabled' : ''}><span>${x.label}</span>${x.key ? `<kbd>${x.key}</kbd>` : ''}</button>`).join('');
+  document.body.append(m); const r = m.getBoundingClientRect();
+  m.style.left = Math.min(e.clientX, innerWidth - r.width - 8) + 'px'; m.style.top = Math.min(e.clientY, innerHeight - r.height - 8) + 'px';
+  m.addEventListener('click', ev => { const bt = ev.target.closest('button[data-i]'); if (!bt || bt.disabled) return; vCtxClose(); I[+bt.dataset.i].fn(); });
+  m.querySelector('button:not([disabled])')?.focus({preventScroll:true});
+}
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#vCtx')) vCtxClose(); }, true);
+window.addEventListener('blur', vCtxClose); window.addEventListener('resize', vCtxClose);
+document.addEventListener('keydown', e => { const m = document.getElementById('vCtx'); if (!m) return;
+  if (e.key === 'Escape'){ vCtxClose(); e.stopPropagation(); e.preventDefault(); return; }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ const bs = [...m.querySelectorAll('button:not([disabled])')], i = bs.indexOf(document.activeElement); bs[(i + (e.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length]?.focus(); e.preventDefault(); e.stopPropagation(); } }, true);
+$('view2d').addEventListener('contextmenu', e => { if (vMode && e.target.closest('#vsvg')) vCtx(e); else if (vMode) e.preventDefault(); });
 /* ---------- pointer ---------- */
 function vDown(e){
-  if (e.button !== 0) return false; const svg = $('vsvg'); if (!svg || !G?.V) return false;
+  if (e.button !== 0) return e.button === 2; const svg = $('vsvg'); if (!svg || !G?.V) return false;
   const p = svgPt(svg, e), b = [p.x + G.b.minX, G.b.maxY - p.y], now = performance.now(), dbl = now - vLast.t < 380 && Math.hypot(e.clientX-vLast.x, e.clientY-vLast.y) < 6;
   vLast = {t: dbl ? 0 : now, x:e.clientX, y:e.clientY};
   const cap = () => { try { $('view2d').setPointerCapture(e.pointerId); } catch {} e.preventDefault(); return true; }, T = e.target;
@@ -3413,7 +3510,7 @@ function vUp(){
   vRender();
 }
 function vHover(e){
-  const svg = $('vsvg'); if (!svg || !G?.V) return;
+  const svg = $('vsvg'); if (!svg || !G?.V) return; { const p = svgPt(svg, e); vHovPt = [p.x + G.b.minX, G.b.maxY - p.y]; if (!vPartAt(vHovPt)) vHovPt = null; }
   if (vTool.startsWith('lock:')){ const p = svgPt(svg, e), ed = vEdgeAt([p.x + G.b.minX, G.b.maxY - p.y]); vHov = ed ? {edge:ed} : null; vOv(); return; }
   if (vTool === 'pen'){ const p = svgPt(svg, e), [q, g] = vPenSnap([p.x + G.b.minX, G.b.maxY - p.y], e); if (vPen){ vPen.cur = q; vGuides = g; } vOv(); vGuides = null; return; }
   if (vTool === 'line'){ const p = svgPt(svg, e), b = [p.x + G.b.minX, G.b.maxY - p.y], n = vPartAt(b); vHov = null; if (n){ const [q, g] = vLineSnap(b, n, null, e); vHov = {lnp:q}; vGuides = g; } vOv(); vGuides = null; return; }
@@ -3428,6 +3525,10 @@ function vKey(e){
   if (k === 'Delete' || k === 'Backspace'){ vDelete(); return true; }
   if (k.startsWith('Arrow') && !mod && vSel.k && vSel.idx.length){ const d = e.shiftKey ? 10 : 1, [dx, dy] = {ArrowLeft:[-d,0], ArrowRight:[d,0], ArrowUp:[0,d], ArrowDown:[0,-d]}[k];
     vApplyMove(vStartMove(vSel.idx.map(i => ({k:vSel.k, i}))), dx, dy); return true; }
+  if (mod && kl === 'c'){ return vCopy(); }
+  if (mod && kl === 'v'){ vPaste(vHovPt ? [...vHovPt] : null); return true; }
+  if (mod && kl === 'd'){ vDup(); return true; }
+  if (mod && kl === 'a' && vSel.k){ vSel.idx = vLoop(vSel.k).map((_, i) => i); vRender(); return true; }
   const TK = {v:'select', r:'rect', o:'ellipse', p:'pen', l:'line'}; if (!mod && !e.altKey && TK[kl]){ vToolSet(TK[kl]); return true; }
   return false;
 }
