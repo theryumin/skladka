@@ -162,45 +162,6 @@ main.board-mode .dimlbl{display:none}
   padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1}
 .savewrap{position:relative}
-.btn.printgo{display:inline-flex;align-items:center;gap:7px;border-color:var(--accent);color:var(--accent);background:var(--panel)}
-.btn.printgo:hover{background:var(--accent-soft)}
-.dlg.order{width:min(640px,calc(100vw - 32px))}
-.dlg.order form{display:flex;flex-direction:column;gap:10px}
-.dlg.order .pophead{display:flex;align-items:center;justify-content:space-between;padding:0}
-.dlg.order .pophead h2{margin:0}
-.dlg.order input[type=date]{min-height:37px}
-.dlg.order .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media (max-width:560px){.dlg.order .row{grid-template-columns:1fr}.ordtop{grid-template-columns:1fr!important}}
-.dlg.order textarea{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);resize:vertical}
-.ordtop{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:start}
-.ordpic{aspect-ratio:3/2;border-radius:10px;overflow:hidden;background:var(--hover)}
-.ordpic img,.ordpic svg{width:100%;height:100%;object-fit:cover;display:block}
-.ordspec{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0;font-size:13px}
-.ordspec dt{color:var(--muted)}
-.ordspec dd{margin:0;font-weight:600}
-.ordwarn:empty{display:none}
-.ordwarn{font-size:12.5px;background:#fff6e5;color:#8a5300;border-radius:8px;padding:8px 10px}
-.qtys{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.qtys button{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);font:500 13px var(--sans);cursor:pointer}
-.qtys button[aria-pressed=true]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.qtys input{width:110px;height:32px}
-.ordstat{margin:0;font-size:13px;font-weight:600;min-height:1em}
-.ordstat.bad{color:var(--cut)}
-.ordfil{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
-.ordfil button{height:30px;padding:0 12px;border:1px solid var(--line);border-radius:15px;background:var(--panel);color:var(--fg);font:500 12.5px var(--sans);cursor:pointer}
-.ordfil button[aria-pressed=true]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
-.ocard{display:grid;grid-template-columns:150px 1fr auto;gap:16px;align-items:start;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:10px}
-@media (max-width:760px){.ocard{grid-template-columns:1fr}}
-.ocard .pic{aspect-ratio:3/2;border-radius:8px;overflow:hidden;background:var(--hover)}
-.ocard .pic img{width:100%;height:100%;object-fit:cover;display:block}
-.ocard h3{margin:0 0 4px;font-size:15px}
-.ocard .meta{font-size:12.5px;color:var(--muted);margin:0 0 6px}
-.ocard .spec{font-size:12.5px;line-height:1.5;margin:0}
-.ocard .side{display:flex;flex-direction:column;gap:6px;min-width:180px}
-.ocard .side .btn{width:100%}
-.ocard textarea{width:100%;font:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);resize:vertical}
-.ost{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--hover);color:var(--fg);text-transform:uppercase;letter-spacing:.03em}
-.ost.new{background:#e8f1ff;color:#0b5cd5}.ost.review{background:#fff3d6;color:#8a5300}.ost.approved{background:#efe6ff;color:#5b21b6}.ost.printing{background:#ffe9dc;color:#a43d00}.ost.shipped{background:#dff6ff;color:#035e7b}.ost.done{background:#e3f7e8;color:#16692f}.ost.cancelled{background:#f2f2f2;color:#888}
 .angs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
 .angs label{display:flex;gap:8px;align-items:center;font-size:13px}
 .icons{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
@@ -485,9 +446,6 @@ window.SB = (() => {
     get: id => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}&select=*`).then(a => a?.[0] || null),
     put: rec => req('/rest/v1/projects?on_conflict=id', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(rec)}),
     del: id => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}`, {method:'DELETE'}),
-    put2: (bucket, path, blob) => req(`/storage/v1/object/${bucket}/${path}`, {method:'POST', headers:{'Content-Type':blob.type || 'application/octet-stream', 'x-upsert':'true'}, body:blob}),
-    blob: async (bucket, path) => { const t = await token(), r = await fetch(`${URL}/storage/v1/object/authenticated/${bucket}/${path}`, {headers:{apikey:KEY, Authorization:'Bearer ' + t}}); if (!r.ok) throw fail(await r.json().catch(() => ({})), r); return r.blob(); },
-    isAdmin: async () => { try { const a = await req('/rest/v1/admins?select=user_id&limit=1'); return !!a?.length; } catch { return false; } },
     // a data: URL → a public file in assets/<user>/<content hash>.<ext> (same logo = same file)
     upload: async src => { if (!src?.startsWith('data:')) return src; if (upCache.has(src)) return upCache.get(src);
       const blob = await (await fetch(src)).blob(), ext = ({'image/svg+xml':'svg', 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif'})[blob.type] || 'bin';
@@ -510,7 +468,6 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
     <button class="logo" type="button" id="homeLogo"><span class="mk"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><path d="M2 5l6 3.5L14 5M8 8.5v6"/></svg></span>Skladka</button>
     <button class="btn pri" type="button" id="newBtn">+ New project</button>
     <button class="nav on" type="button" id="navProj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>My projects</span><em id="projCount"></em></button>
-    <button class="nav" type="button" id="navOrders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg><span id="navOrdersT">Orders</span><em id="ordCount"></em></button>
     <h2>Templates</h2>
     <div class="navlist" id="homeTpls"></div>
     <div class="who" id="whoAmI"></div>
@@ -530,12 +487,7 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
       <div class="home-sec" id="projSec">
         <div class="home-grid" id="projGrid"></div>
         <p class="empty" id="projEmpty">No projects yet. Click “+ New project” or pick a template — it will be saved here automatically.</p>
-        <p class="note" id="projNote">Projects are saved to the cloud automatically, logos included — sign in on any computer to open them.</p>
-      </div>
-      <div class="home-sec" id="ordSec" hidden>
-        <div class="ordfil" id="ordFil" hidden></div>
-        <div id="ordList"></div>
-        <p class="empty" id="ordEmpty">No orders yet. Open a project and press “Send to print”.</p>
+        <p class="note" id="projNote">Projects are saved automatically in this browser, logos included. To move one to another computer, use “Export → Project file .json”.</p>
       </div>
     </div>
   </div>
@@ -564,7 +516,6 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
     <button class="ibtn" id="redoBtn" title="Redo (⇧⌘Z)" aria-label="Redo" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <div class="sp"></div>
     <label class="btn ghost" style="position:relative;overflow:hidden">Open .json<input id="openProj" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
-    <button class="btn printgo" type="button" id="orderBtn" title="Send this design to print — we check the files and come back with the price and timing"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>Send to print</button>
     <div class="savewrap">
       <button class="btn pri" id="saveMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="saveMenu">Export<svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="savemenu" id="saveMenu" role="menu" hidden>
@@ -1015,27 +966,6 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
     <h2>Switch to “<span id="tplDlgName"></span>”?</h2>
     <p class="note">You have already customised “<b id="tplDlgCur"></b>”. Keep it in My projects and start a new project from this template — or apply the template's structure to this project (your colours, images and elements stay).</p>
     <div class="acts" style="flex-wrap:wrap"><button class="btn" value="cancel">Cancel</button><button class="btn" id="tplHere" type="button">Apply to this project</button><button class="btn pri" id="tplNew" type="button">Save it &amp; start new</button></div>
-  </form>
-</dialog>
-<dialog class="dlg order" id="orderDlg" aria-labelledby="orderH">
-  <form id="orderForm">
-    <div class="pophead"><h2 id="orderH">Send to print</h2><button class="btn icon" type="button" id="orderX" aria-label="Close">✕</button></div>
-    <div class="ordtop"><div class="ordpic" id="ordPic"></div><dl class="ordspec" id="ordSpec"></dl></div>
-    <div class="ordwarn" id="ordWarn"></div>
-    <div class="f">Quantity<div class="qtys" id="ordQtys"><button type="button" data-q="100">100</button><button type="button" data-q="300">300</button><button type="button" data-q="500">500</button><button type="button" data-q="1000">1 000</button><button type="button" data-q="3000">3 000</button><button type="button" data-q="5000">5 000</button><input id="ordQty" type="number" min="1" max="10000000" step="1" value="500" required aria-label="Quantity, pcs"></div></div>
-    <div class="row">
-      <label class="f">Name<input id="ordName" type="text" autocomplete="name" required></label>
-      <label class="f">Phone<input id="ordPhone" type="tel" autocomplete="tel" placeholder="+7 …"></label>
-    </div>
-    <div class="row">
-      <label class="f">Email<input id="ordEmail" type="email" autocomplete="email" required></label>
-      <label class="f">Needed by<input id="ordDate" type="date"></label>
-    </div>
-    <label class="f">Delivery — city and address<input id="ordAddr" type="text" autocomplete="street-address" placeholder="Pickup, or city, street, building"></label>
-    <label class="f">Comment<textarea id="ordNote" rows="2" placeholder="Anything we should know: paper sample, colour match, packing…"></textarea></label>
-    <p class="note">We check the files (bleed, resolution, finishes), confirm the price and the date, and only then start production. The print PDF with all layers is attached automatically.</p>
-    <p class="ordstat" id="ordStat" role="status"></p>
-    <div class="acts"><button class="btn" type="button" id="ordCancel">Cancel</button><button class="btn pri" type="submit" id="ordGo">Send order</button></div>
   </form>
 </dialog>
 <div class="toast" id="toast" role="status"></div>
@@ -4081,7 +4011,6 @@ const cloudErr = e => e.code === '42501' ? 'the database refuses access (run the
 let saveSeq = 0;
 async function saveProject(){
   if (!S.pid) return;
-  if (viewOnly){ $('savedState').textContent = 'Client’s design — view only, not saved'; return; }
   if (pending){ cancelAnimationFrame(pending); doRefresh(); }   // make sure the 3D model matches the settings
   if (SB.user && !SB.isId(S.pid)){ const old = S.pid; S.pid = crypto.randomUUID(); idb.del(old).catch(() => {}); }   // cloud ids are uuids
   const seq = ++saveSeq, imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
@@ -4096,9 +4025,9 @@ async function saveProject(){
   catch (e){ if (seq === saveSeq) $('savedState').textContent = local ? `Saved on this computer — cloud: ${cloudErr(e)}` : `Not saved — cloud: ${cloudErr(e)}`; }
 }
 function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Saving…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
-function newProject(name, pid){ viewOnly = false; S.pid = pid || (crypto.randomUUID ? crypto.randomUUID() : uid()+Date.now().toString(36)); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
-async function openProject(id, opt = {}){
-  fitNext = true; viewOnly = !!opt.view;
+function newProject(name, pid){ S.pid = pid || (crypto.randomUUID ? crypto.randomUUID() : uid()+Date.now().toString(36)); S.pname = name; lastThumb = ''; $('pname').value = name; autosave(); }
+async function openProject(id){
+  fitNext = true;
   let rec = null;
   if (SB.user && SB.isId(id)) try { const c = await SB.get(id); if (c) rec = {id:c.id, name:c.name, settings:c.data?.settings || {}, imgs:c.data?.imgs || {}, elimgs:c.data?.elimgs || {}, thumb:c.thumb, updated:Date.parse(c.updated_at), cloud:true}; }
     catch (e){ toast('Cloud unavailable — opening the copy on this computer.'); }
@@ -4144,106 +4073,8 @@ const setDocTitle = () => { document.title = location.hash === '#editor' && S.pn
 $('pname').addEventListener('input', () => { S.pname = $('pname').value; setDocTitle(); persist(); autosave(); });
 
 window.addEventListener('sb-auth', async () => {
-  amAdmin = null; ordCache = []; $('ordCount').textContent = '';
   if (!SB.user){ try { for (const r of (await idb.all()) || []) if (r.cloud) await idb.del(r.id); } catch {} $('whoAmI').textContent = ''; S.pid = null; if (location.hash === '#editor') location.hash = ''; }
   if (!$('home').hidden) renderProjects();
-});
-/* ---------- orders: the client sends a design to print, the platform (admin) takes it from there ---------- */
-const OST = {new:'New', review:'Checking files', approved:'Approved', printing:'In production', shipped:'Shipped', done:'Delivered', cancelled:'Cancelled'};
-let amAdmin = null, viewOnly = false;
-const optText = id => $(id)?.selectedOptions?.[0]?.text || '';
-function orderSpec(){
-  const FN = {varnish:'Spot varnish', varnish3d:'Raised 3D varnish', foil_gold:'Gold foil', foil_silver:'Silver foil', foil_copper:'Copper foil', foil_rose:'Rose gold foil', foil_holo:'Holographic foil', emboss:'Emboss', deboss:'Deboss'};
-  const vis = S.els.filter(e => !e.hidden), fins = [...new Set(vis.filter(e => e.fin).map(e => FN[e.fin] || e.fin))], spots = [...new Set(vis.filter(e => e.spot).map(e => 'PANTONE ' + e.spot.replace(/^pantone\s*/i, '')))];
-  const r = {Product:TYPE_NAMES[S.type] || S.type, Size:`${S.L}×${S.W}×${S.H} mm`, Material:optText('mat')};
-  if (BOX.has(S.type)) r.Thickness = thickOf(S) + ' mm';
-  r.Coating = optText('finish'); if (S.white) r['White ink'] = optText('white');
-  r.Inside = S.els.some(e => e.side === 'in' && !e.hidden) ? 'printed' : 'unprinted';
-  if (fins.length) r.Finishes = fins.join(', '); if (spots.length) r['Spot inks'] = spots.join(', ');
-  return r;
-}
-function orderWarn(){
-  const w = [];
-  if (!S.els.some(e => !e.hidden) && !S.title && !S.sub && (S.bg || '#ffffff').toLowerCase() === '#ffffff') w.push('The design is empty — the box will be printed blank.');
-  for (const e of S.els) if (e.kind === 'image' && ELIMG[e.id]){ const c = e.crop || [0,0,0,0], dpi = Math.round(ELIMG[e.id].img.naturalWidth*(1-c[0]-c[2])/(e.size/25.4)); if (dpi < 200 && !/svg/.test(ELIMG[e.id].src)) w.push(`A picture is only ${dpi} dpi at this size — it may print blurry (300 dpi is best).`); }
-  if (G?.V?.stale) w.push('Some hand edits of the dieline are switched off — check the ✎ Edit tab.');
-  return w;
-}
-function openOrder(){
-  if (!SB.user){ toast('Sign in to send orders.'); return; }
-  if (viewOnly){ toast('This is a client’s design opened from Orders — it can’t be ordered again from here.'); return; }
-  snapThumb(); $('ordPic').innerHTML = lastThumb ? `<img src="${lastThumb}" alt="">` : thumbSvg(G);
-  $('ordSpec').innerHTML = Object.entries(orderSpec()).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
-  const w = orderWarn(); $('ordWarn').innerHTML = w.map(x => '⚠ ' + esc(x)).join('<br>');
-  const last = store.get('skladka-contact', {}); $('ordName').value ||= last.name || ''; $('ordPhone').value ||= last.phone || ''; $('ordEmail').value ||= last.email || SB.user.email || ''; $('ordAddr').value ||= last.addr || '';
-  qtySync(); $('ordStat').textContent = ''; $('ordStat').className = 'ordstat'; $('ordGo').disabled = false; $('orderDlg').showModal();
-}
-const qtySync = () => $('ordQtys').querySelectorAll('[data-q]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.q === +$('ordQty').value));
-$('ordQtys').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (!b) return; $('ordQty').value = b.dataset.q; qtySync(); });
-$('ordQty').addEventListener('input', qtySync);
-$('orderBtn').addEventListener('click', openOrder);
-for (const id of ['orderX', 'ordCancel']) $(id).addEventListener('click', () => $('orderDlg').close());
-$('orderForm').addEventListener('submit', async e => { e.preventDefault();
-  const st = (t, bad) => { $('ordStat').textContent = t; $('ordStat').className = 'ordstat' + (bad ? ' bad' : ''); }, go = $('ordGo');
-  const qty = Math.round(+$('ordQty').value); if (!(qty > 0)){ st('Enter the quantity.', 1); return; }
-  const contact = {name:$('ordName').value.trim(), phone:$('ordPhone').value.trim(), email:$('ordEmail').value.trim(), addr:$('ordAddr').value.trim(), date:$('ordDate').value || null};
-  if (!contact.phone && !contact.email){ st('Leave a phone or an email so we can reach you.', 1); return; }
-  store.set('skladka-contact', {name:contact.name, phone:contact.phone, email:contact.email, addr:contact.addr});
-  go.disabled = true;
-  try {
-    st('Saving the project…'); clearTimeout(saveT); await saveProject();
-    if (!/cloud$/i.test($('savedState').textContent)) throw new Error('the project did not reach the cloud (' + $('savedState').textContent + ')');
-    st('Building the print PDF…'); const pdf = await makePdf(); if (!pdf) throw new Error('could not build the PDF');
-    const id = crypto.randomUUID(), path = `${SB.user.id}/${id}.pdf`;
-    st(`Uploading the print file (${(pdf.size/1048576).toFixed(1)} MB)…`); await SB.put2('orders', path, pdf);
-    st('Sending the order…');
-    const [o] = await SB.req('/rest/v1/orders', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=representation'},
-      body:JSON.stringify({id, project_id:S.pid, name:S.pname || 'Untitled', qty, spec:orderSpec(), contact, comment:$('ordNote').value.trim() || null, pdf:path, thumb:lastThumb || null})});
-    st(`✓ Order #${o?.no ?? ''} sent. We’ll check the files and contact you with the price and the date.`); $('ordNote').value = '';
-    go.textContent = 'Done'; setTimeout(() => { $('orderDlg').close(); go.textContent = 'Send order'; go.disabled = false; }, 2600);
-  } catch (x){ go.disabled = false; st('Not sent: ' + (x.code === '42501' || x.code === '42P01' || /relation|bucket/i.test(x.message) ? 'orders are not set up in the database yet (run the orders SQL).' : x.message), 1); }
-});
-// ---- the Orders page on the home screen
-let ordFilter = 'open', ordCache = [];
-function showSec(which){
-  const ord = which === 'orders'; $('projSec').hidden = ord; $('ordSec').hidden = !ord; $('navProj').classList.toggle('on', !ord); $('navOrders').classList.toggle('on', ord);
-  document.querySelector('.home-head h1').textContent = ord ? (amAdmin ? 'Orders — all clients' : 'My orders') : 'My projects';
-  document.querySelector('.home-head .acts').hidden = ord; if (ord) renderOrders();
-}
-$('navOrders').addEventListener('click', () => showSec('orders'));
-$('navProj').addEventListener('click', () => showSec('projects'));
-async function renderOrders(){
-  if (!SB.user){ $('ordList').innerHTML = ''; $('ordEmpty').hidden = false; return; }
-  amAdmin ??= await SB.isAdmin(); $('navOrdersT').textContent = amAdmin ? 'Orders (admin)' : 'My orders';
-  try { ordCache = await SB.req('/rest/v1/orders?select=*&order=created_at.desc') || []; }
-  catch (e){ $('ordList').innerHTML = `<p class="note bad">Orders are not available: ${esc(e.code === '42P01' || /relation/.test(e.message) ? 'run the orders SQL in Supabase first' : e.message)}</p>`; $('ordEmpty').hidden = true; return; }
-  const open = ordCache.filter(o => !['done','cancelled'].includes(o.status)); $('ordCount').textContent = (amAdmin ? ordCache.filter(o => o.status === 'new').length : open.length) || '';
-  $('ordFil').hidden = !amAdmin;
-  if (amAdmin) $('ordFil').innerHTML = [['open','Open'], ...Object.entries(OST), ['all','All']].map(([k, t]) => `<button type="button" data-f="${k}" aria-pressed="${ordFilter === k}">${t} <small>${k === 'all' ? ordCache.length : k === 'open' ? open.length : ordCache.filter(o => o.status === k).length}</small></button>`).join('');
-  const list = !amAdmin || ordFilter === 'all' ? ordCache : ordFilter === 'open' ? open : ordCache.filter(o => o.status === ordFilter);
-  $('ordEmpty').hidden = !!list.length; $('ordEmpty').textContent = amAdmin ? 'Nothing here.' : 'No orders yet. Open a project and press “Send to print”.';
-  const fd = t => new Date(t).toLocaleString('en-GB', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
-  $('ordList').innerHTML = list.map(o => { const c = o.contact || {}, sp = o.spec || {};
-    return `<div class="ocard" data-o="${o.id}"><div class="pic">${o.thumb ? `<img src="${o.thumb}" alt="">` : ''}</div>
-      <div><h3>#${o.no} · ${esc(o.name || 'Untitled')} <span class="ost ${o.status}">${OST[o.status] || esc(o.status)}</span></h3>
-        <p class="meta">${fd(o.created_at)} · <b>${(+o.qty).toLocaleString('en-GB')} pcs</b>${c.date ? ` · needed by ${esc(c.date)}` : ''}</p>
-        <p class="spec">${Object.entries(sp).map(([k, v]) => `${esc(k)}: <b>${esc(v)}</b>`).join(' · ')}</p>
-        ${amAdmin ? `<p class="spec">👤 ${esc(c.name || '')} · ${esc(c.phone || '')} · ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}${c.addr ? ` · 📦 ${esc(c.addr)}` : ''}</p>` : (c.addr ? `<p class="spec">📦 ${esc(c.addr)}</p>` : '')}
-        ${o.comment ? `<p class="spec">💬 ${esc(o.comment)}</p>` : ''}
-        ${!amAdmin && o.admin_note ? `<p class="spec">📝 <b>${esc(o.admin_note)}</b></p>` : ''}</div>
-      <div class="side">${amAdmin ? `<select data-ost aria-label="Status">${Object.entries(OST).map(([k, t]) => `<option value="${k}"${k === o.status ? ' selected' : ''}>${t}</option>`).join('')}</select>
-        <textarea data-onote rows="2" placeholder="Note to the client (price, date…)">${esc(o.admin_note || '')}</textarea>` : ''}
-        <button class="btn" type="button" data-opdf>Download print PDF</button>${o.project_id ? `<button class="btn" type="button" data-oproj="${o.project_id}">Open the design</button>` : ''}</div></div>`; }).join('');
-}
-$('ordFil').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (b){ ordFilter = b.dataset.f; renderOrders(); } });
-$('ordList').addEventListener('change', async e => { const card = e.target.closest('[data-o]'); if (!card) return; const id = card.dataset.o;
-  const patch = e.target.matches('[data-ost]') ? {status:e.target.value} : e.target.matches('[data-onote]') ? {admin_note:e.target.value.trim() || null} : null; if (!patch) return;
-  try { await SB.req(`/rest/v1/orders?id=eq.${id}`, {method:'PATCH', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({...patch, updated_at:new Date().toISOString()})});
-    toast(patch.status ? 'Status: ' + OST[patch.status] : 'Note saved — the client sees it.'); if (patch.status) renderOrders(); }
-  catch (x){ toast('Not saved: ' + x.message); } });
-$('ordList').addEventListener('click', async e => { const card = e.target.closest('[data-o]'); if (!card) return; const o = ordCache.find(x => x.id === card.dataset.o); if (!o) return;
-  if (e.target.closest('[data-opdf]')){ toast('Downloading…'); try { saveFile(`order-${o.no}-${(o.name || 'box').replace(/[^\w\-]+/g, '_')}-${o.qty}pcs.pdf`, await SB.blob('orders', o.pdf)); } catch (x){ toast('Download failed: ' + x.message); } }
-  const p = e.target.closest('[data-oproj]'); if (p) openProject(p.dataset.oproj, {view: amAdmin && o.owner !== SB.user.id});
 });
 /* ---------- home page ---------- */
 function showView(){
@@ -4274,7 +4105,7 @@ function cardHTML(svg, name, desc, mm, attrs){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const navItem = (svg, name, title, attrs) => `<button class="nav" type="button" ${attrs} title="${title}">${svg}<span>${name}</span></button>`;
 function renderHome(){
-  renderHomeTpls(); if (SB.user) renderOrders().catch(() => {});
+  renderHomeTpls();
   $('homeMineSec').hidden = !mine.length;
   $('homeMine').innerHTML = mine.map((m,i) => navItem(thumbSvg(build({...DEFAULTS, ...m.s})), esc(m.name), `${TYPE_NAMES[m.s.type]||''} · ${m.s.L}×${m.s.W}×${m.s.H} mm`, `data-mine="${i}"`)).join('');
   renderProjects();
