@@ -329,6 +329,20 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 .vorig:hover{border-color:var(--accent);color:var(--accent)}
 .vorig:disabled{opacity:.45;cursor:default;border-color:var(--line);color:var(--fg)}
 #view2d.vmode .vorig{display:flex}
+#vov .vln{stroke:transparent;stroke-width:9px;vector-effect:non-scaling-stroke;pointer-events:stroke;cursor:move}
+#vov .vln:hover{stroke:rgba(13,153,255,.25)}
+#vov .vln.on{stroke:rgba(13,153,255,.35)}
+#vov .vln.drawing{stroke:#2f6fdb;stroke-width:1.5px;stroke-dasharray:4 3;pointer-events:none}
+#vov .vln.drawing.perf{stroke:#ff8a00}
+#vov .vln.drawing.cut{stroke:#1d1d1f;stroke-dasharray:none}
+#vov .pent{fill:#0d99ff;pointer-events:none}
+#vov .penp{fill:rgba(13,153,255,.08);stroke:#0d99ff;stroke-width:1.6px;vector-effect:non-scaling-stroke;pointer-events:none}
+#vov .penr{fill:none;stroke:#0d99ff;stroke-width:1.2px;stroke-dasharray:4 3;vector-effect:non-scaling-stroke;pointer-events:none}
+#vov .penc{fill:none;stroke:#0d99ff;stroke-width:2px;vector-effect:non-scaling-stroke;pointer-events:none}
+#vov .fh{fill:#0d99ff;stroke:#fff;stroke-width:1.4px;vector-effect:non-scaling-stroke;pointer-events:all}
+.vlinet{display:flex;gap:6px;margin:-6px 0 14px}
+.vlinet .btn,.vheads .btn.wide{flex:1;width:auto;height:30px;padding:0 6px;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+.vlinet .btn[aria-pressed=true],.vheads .btn.wide[aria-pressed=true]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft,#f3ecff)}
 #vov .mq{fill:rgba(13,153,255,.08);stroke:#0d99ff;stroke-width:1;pointer-events:none}
 .vtools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
 .vtools button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);font:500 12px var(--sans);cursor:pointer}
@@ -831,7 +845,10 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         <button type="button" data-vt="select" aria-pressed="true" title="Select and move points (V)"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-3 6z"/></svg>Select</button>
         <button type="button" data-vt="rect" aria-pressed="false" title="Draw a rectangular cut-out / window (R)"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1.5"/></svg>Window</button>
         <button type="button" data-vt="ellipse" aria-pressed="false" title="Draw a round cut-out / hole (O)"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg>Round hole</button>
+        <button type="button" data-vt="pen" aria-pressed="false" title="Pen — cut-out of any shape: click for corners, drag for curves, click the first point or press Enter to close (P)"><svg viewBox="0 0 24 24"><path d="M12 3l6 9-6 9-6-9z"/><circle cx="12" cy="12" r="1.6"/></svg>Pen</button>
+        <button type="button" data-vt="line" aria-pressed="false" title="Draw an extra crease, perforation or cut line — ends stick to the edges (L)"><svg viewBox="0 0 24 24"><path d="M4 20L20 4" stroke-dasharray="3 2.5"/></svg>Line</button>
       </div>
+      <div class="vlinet" id="vLineT" hidden><button type="button" class="btn mini wide" data-lt="crease" aria-pressed="true">Crease</button><button type="button" class="btn mini wide" data-lt="perf" aria-pressed="false">Perforation</button><button type="button" class="btn mini wide" data-lt="cut" aria-pressed="false">Cut</button></div>
       <div class="f">Add a lock</div>
       <div class="lockgrid" id="vLocks">
         <button type="button" class="lockc" data-vl="hook" aria-pressed="false"><svg viewBox="0 0 44 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M4 8v18M4 13h4v1l-2 2h3a8 8 0 0 1 0 2H6l2 2v1H4"/><path d="M26 6v22" stroke-dasharray="2 2"/><path d="M25 12h2v10h-2z"/></svg><b>Hook lock</b><span>Tongue with hooks through a slit in the wall it lies on</span></button>
@@ -1076,7 +1093,7 @@ const VPRESETS = {
   pump:[['100 ml',40,95],['250 ml',50,118],['500 ml',65,152]],
   ptube:[['Ø 50',50],['Ø 75',75],['Ø 100',100]],
 };
-const DEFAULTS = { vec:[], vadd:[], locks:[], lk:{}, type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
+const DEFAULTS = { vec:[], vadd:[], vlines:[], locks:[], lk:{}, type:'tube', tpl:'rte', L:70, W:70, H:110, ...TUBE_BASE, tuck:15, glue:14, dust:0,
   winW:40, winH:50, winY:55, bkWm:22, bkStyle:'tuck', bkLock:'tuck', bkLid:'', bkCorner:'ears', bkFric:false, bkSide:false, bkRib:false, hangH:30, tab:15, lidH:30, gap:2, pull:40, dbl:false, lidOpen:0, hdr:0,
   ...LBL_BASE, ...CARD_BASE, cupKind:'cup', cupLid:false, ...CUP_BASE, base:'', tplOrig:'',
   bg:'#2f5d50', ink:'#f3efe4', showText:true, title:'FOREST TEA', sub:'blend No.4 · 100 g',
@@ -1793,6 +1810,9 @@ function build(P){
   const cuts=[], creases=[];
   for (const e of m.values()){ if (e.c<2) cuts.push([e.a,e.b]); else if (!extra.noCrease) creases.push([e.a,e.b]); }
   if (extra.slits) cuts.push(...extra.slits);
+  const vl = [];   // S.vlines: hand-drawn lines, ends normalised to the part's outline bbox
+  for (const l of P.vlines || []){ const O = V.CL0.get(vk(l.n, -1)); if (!O) continue; const [x0,y0,x1,y1] = bboxOf(O), W = x1-x0, H = y1-y0;
+    const a = [x0 + l.a[0]*W, y0 + l.a[1]*H], b = [x0 + l.b[0]*W, y0 + l.b[1]*H]; (l.t === 'cut' ? cuts : l.t === 'perf' ? perfs : creases).push([a, b]); vl.push({id:l.id, n:l.n, t:l.t, a, b}); }
   // artwork extends 3 mm past cut edges, but stops exactly at creases (so it doesn't spill onto the neighbouring panel)
   const ov = (a0,a1,b0,b1) => Math.min(Math.max(a0,a1),Math.max(b0,b1)) - Math.max(Math.min(a0,a1),Math.min(b0,b1));
   const onCrease = (x0,y0,x1,y1) => creases.some(([a,b]) => x0===x1
@@ -1800,7 +1820,7 @@ function build(P){
     : Math.abs(a[1]-y0)<.01 && Math.abs(b[1]-y0)<.01 && ov(a[0],b[0],x0,x1) > 1);
   for (const f of B.faces){ const [x0,y0,x1,y1] = f.r;
     f.clip = [x0-(onCrease(x0,y0,x0,y1)?0:BLEED), y0-(onCrease(x0,y0,x1,y0)?0:BLEED), x1+(onCrease(x1,y0,x1,y1)?0:BLEED), y1+(onCrease(x0,y1,x1,y1)?0:BLEED)]; }
-  return { ...extra, N:B.N, faces:B.faces, cuts, creases, perfs, P:Pin, Pm:P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY}, V, locks };
+  return { ...extra, N:B.N, faces:B.faces, cuts, creases, perfs, P:Pin, Pm:P, b:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY}, V, locks, vl };
 }
 
 /* ---------- artwork ---------- */
@@ -2976,7 +2996,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- ✎ Edit tab: Figma-style vector editing of the die (clean board, no artwork) ---------- */
-let vGuides = null, vMode = false, vTool = 'select', vSel = {k:null, idx:[], lock:null, blk:null}, vAct = null, vHov = null, vMirror = true, vPrevPane = 'build', vFitted = false, vLast = {t:0, x:0, y:0};
+let vPen = null, vLineT = 'crease', vGuides = null, vMode = false, vTool = 'select', vSel = {k:null, idx:[], lock:null, blk:null}, vAct = null, vHov = null, vMirror = true, vPrevPane = 'build', vFitted = false, vLast = {t:0, x:0, y:0};
 const vLoop = k => G.V.CLb.get(k);
 const vK = () => 1/(BK*bz);
 const ptKey = p => (p.x ?? p[0]).toFixed(2)+','+(p.y ?? p[1]).toFixed(2);
@@ -3035,6 +3055,19 @@ function vOverlay(){
     if (on) for (const sl of G.V.slots.filter(s => s.lock === l.id)) h += `<path class="gslot" d="${d(sl.pts)}"/>`; }
   for (const lk of G.locks||[]){ const q = lk.q, x0 = Math.min(lk.x, lk.xc+lk.s*q.D), x1 = Math.max(lk.x, lk.xc+lk.s*q.D), on = vSel.blk === lk.id;
     h += `<rect class="lk${on ? ' on' : ''}${q.bad ? ' bad' : ''}" data-blk="${lk.id}" x="${n3(X(x0)-.6)}" y="${n3(Y(lk.ym+q.R)-.6)}" width="${n3(x1-x0+1.2)}" height="${n3(2*q.R+1.2)}" rx="1"><title>Hook lock (part of this box)</title></rect>`; }
+  // hand-drawn lines: hit areas, the selected one with end handles
+  for (const l of G.vl || []){ const on = vSel.ln === l.id; h += `<line class="vln${on ? ' on' : ''}" data-ln="${l.id}" x1="${X(l.a[0])}" y1="${Y(l.a[1])}" x2="${X(l.b[0])}" y2="${Y(l.b[1])}"><title>${LINE_T[l.t]} line</title></line>`;
+    if (on) for (const [e, p] of [['a', l.a], ['b', l.b]]) h += `<circle class="lh" data-lne="${e}" cx="${X(p[0])}" cy="${Y(p[1])}" r="${n3(4.5*k)}" style="cursor:move"/>`; }
+  if (vAct?.kind === 'ln' && vAct.live) h += `<line class="vln drawing ${vLineT}" x1="${X(vAct.a[0])}" y1="${Y(vAct.a[1])}" x2="${X(vAct.b[0])}" y2="${Y(vAct.b[1])}"/>`;
+  if (vHov?.lnp) h += `<circle class="pent" cx="${X(vHov.lnp[0])}" cy="${Y(vHov.lnp[1])}" r="${n3(3*k)}"/>`;
+  // pen: the shape so far, a rubber band to the cursor, the first point to close on
+  if (vPen?.pts.length){ const P = vPen.pts, sg = (A, B) => A.c2 || B.c1 ? `C${X(A.x + (A.c2?.[0]||0))} ${Y(A.y + (A.c2?.[1]||0))} ${X(B.x + (B.c1?.[0]||0))} ${Y(B.y + (B.c1?.[1]||0))} ${X(B.x)} ${Y(B.y)}` : `L${X(B.x)} ${Y(B.y)}`;
+    let pd = `M${X(P[0].x)} ${Y(P[0].y)}`; for (let i = 1; i < P.length; i++) pd += sg(P[i-1], P[i]);
+    h += `<path class="penp" d="${pd}"/>`;
+    if (vPen.cur){ const c = vPen.cur, cl = P.length >= 3 && Math.hypot(c[0]-P[0].x, c[1]-P[0].y) < 7*k; h += `<path class="penr" d="M${X(P[P.length-1].x)} ${Y(P[P.length-1].y)}${sg(P[P.length-1], cl ? P[0] : {x:c[0], y:c[1]})}"/>`;
+      if (cl) h += `<circle class="penc" cx="${X(P[0].x)}" cy="${Y(P[0].y)}" r="${n3(6*k)}"/>`; }
+    const Lp = P[P.length-1]; for (const c of ['c1','c2']) if (Lp[c]) h += `<line class="hl" x1="${X(Lp.x)}" y1="${Y(Lp.y)}" x2="${X(Lp.x + Lp[c][0])}" y2="${Y(Lp.y + Lp[c][1])}"/><circle class="hd" cx="${X(Lp.x + Lp[c][0])}" cy="${Y(Lp.y + Lp[c][1])}" r="${n3(3*k)}" style="pointer-events:none"/>`;
+    const s3 = 3.2*k; P.forEach((q, i) => h += `<rect class="nd${i ? '' : ' on'}" x="${n3(X(q.x)-s3)}" y="${n3(Y(q.y)-s3)}" width="${n3(2*s3)}" height="${n3(2*s3)}" style="pointer-events:none"/>`); }
   // the active loop: outline, segments, points, bezier handles
   const L = vSel.k && vLoop(vSel.k);
   if (L){ h += `<path class="sel" d="${d(expandLoop(L))}"/>`;
@@ -3044,6 +3077,9 @@ function vOverlay(){
         h += `<line class="hl" x1="${X(P.x)}" y1="${Y(P.y)}" x2="${X(hx)}" y2="${Y(hy)}"/><circle class="hd" data-hd="${c}" data-i="${i}" cx="${X(hx)}" cy="${Y(hy)}" r="${n3(3.6*k)}"/>`; } }
     const s = 3.4*k; L.forEach((P, i) => { const on = vSel.idx.includes(i), tw = vIsShared(P);
       h += `<rect class="nd${on ? ' on' : ''}${tw ? ' tw' : ''}${P.c1 || P.c2 ? ' cv' : ''}" data-nd="${i}" x="${n3(X(P.x)-s)}" y="${n3(Y(P.y)-s)}" width="${n3(2*s)}" height="${n3(2*s)}"${P.c1 || P.c2 ? ` rx="${n3(s)}"` : ''}/>`; }); }
+  // a flap (tuck, dust flap, ear…) selected as a whole: one handle pulls its depth from the fold
+  if (L && !vSel.idx.length && !vAct){ const F = vFlap(vSel.k); if (F){ const tip = F.f + F.dir*F.d0, x = F.pi ? F.mid : tip, y = F.pi ? tip : F.mid;
+    h += `<path class="fh" data-fh="1" d="M${n3(X(x))} ${n3(Y(y)-7*k)}l${n3(7*k)} ${n3(7*k)}l${n3(-7*k)} ${n3(7*k)}l${n3(-7*k)} ${n3(-7*k)}z" style="cursor:${F.pi ? 'ns' : 'ew'}-resize"><title>Drag to change the flap depth</title></path>`; } }
   // handles of the selected lock
   const hd = (x, y, t, cur, cls='') => `<circle class="lh ${cls}" data-lh="${t}" cx="${X(x)}" cy="${Y(y)}" r="${n3(5*k)}" style="cursor:${cur}"/>`;
   const ul = vSel.lock && G.V.locks.find(l => l.id === vSel.lock && l.g);
@@ -3141,6 +3177,7 @@ function vInsert(k, i, b){
   L.splice(i+1, 0, np); vRelocks(k, before, L); vCommit(k, L); vSel.idx = [i+1]; vDone();
 }
 function vDelete(){
+  if (vSel.ln){ S.vlines = (S.vlines||[]).filter(l => l.id !== vSel.ln); vSel.ln = null; vDone(); return; }
   if (vSel.lock){ const l = (S.locks||[]).find(x => x.id === vSel.lock); S.locks = (S.locks||[]).filter(x => x.id !== vSel.lock && !(vMirror && l?.mi && x.id === l.mi)); vSel.lock = null; vDone(); return; }
   if (!vSel.k) return; const {h} = vkSplit(vSel.k);
   if (!vSel.idx.length){ if (typeof h === 'string'){ S.vadd = (S.vadd||[]).filter(a => 'x'+a.id !== h); vSel = {k:null, idx:[]}; vDone(); } return; }
@@ -3176,6 +3213,69 @@ function vLockSet(id, o){
   custom();
 }
 function vLockBSet(grp, o){ const lk = {...(S.lk||{})}; if (o) lk[grp] = {...(lk[grp]||{}), ...o}; else delete lk[grp]; S.lk = lk; custom(); }
+/* ---------- flaps: depth from their fold line ---------- */
+function vFlap(k){
+  if (!k) return null; const {n, h} = vkSplit(k); if (h !== -1) return null; const node = G.N.find(x => x.id === n), L = vLoop(k);
+  if (!node || !node.parent || !L || !['x','y'].includes(node.axis) || G.N.some(m => m.parent === n)) return null;
+  const pi = node.axis === 'x' ? 1 : 0, f = node.origin[pi], ds = L.map(p => (pi ? p.y : p.x) - f); let m = 0; for (const d of ds) if (Math.abs(d) > Math.abs(m)) m = d;
+  if (Math.abs(m) < 1 || L.some((p, i) => Math.abs(ds[i]) > .05 && vIsShared(p))) return null;   // shares a crease with a neighbour (gusset) → not a free flap
+  const oi = 1 - pi, os = L.map(p => oi ? p.y : p.x);
+  return {k, pi, f, dir:Math.sign(m), d0:Math.abs(m), L0:L.map(p => ({...p})), mid:(Math.min(...os) + Math.max(...os))/2};
+}
+function vFlapMirror(k){
+  if (!vMirror) return null; const [x0,y0,x1,y1] = bboxOf(vLoop(k)), c = vCx(), mx0 = 2*c - x1, mx1 = 2*c - x0; if (Math.abs(mx0 - x0) < .3) return null;
+  for (const [k2, L2] of G.V.CLb){ if (k2 === k || !k2.endsWith('|-1')) continue; const b = bboxOf(L2);
+    if (Math.abs(b[0]-mx0) < .3 && Math.abs(b[2]-mx1) < .3 && Math.abs(b[1]-y0) < .3 && Math.abs(b[3]-y1) < .3) return vFlap(k2); }
+  return null;
+}
+function vFlapSet(F, D){
+  const s = D / F.d0, ax = F.pi ? 'y' : 'x', L = F.L0.map(p => { const q = {...p}, d = p[ax] - F.f; if (Math.abs(d) < .05) return q; q[ax] = F.f + d*s;
+    for (const c of ['c1','c2']) if (p[c]){ q[c] = [...p[c]]; q[c][F.pi] *= s; } return q; });
+  vCommit(F.k, L);
+}
+/* ---------- pen: any-shape cut-out ---------- */
+function vPenSnap(b, e){
+  if (!snapOn || e?.altKey) return [b, null]; const tol = 6*vK(), P = vPen?.pts || [];
+  if (e?.shiftKey && P.length){ const A = P[P.length-1], dx = b[0]-A.x, dy = b[1]-A.y, an = Math.round(Math.atan2(dy, dx)/(PI/4))*(PI/4), r = Math.hypot(dx, dy); return [[A.x + Math.cos(an)*r, A.y + Math.sin(an)*r], null]; }
+  for (const [, L] of G.V.CLb) for (const q of L) if (Math.hypot(q.x-b[0], q.y-b[1]) < tol) return [[q.x, q.y], null];
+  let x = Math.round(b[0]*2)/2, y = Math.round(b[1]*2)/2; const g = {lines:[], gaps:[], marks:[]};
+  for (const q of P.slice(0, -1).concat(P.length > 2 ? [] : [])){ if (Math.abs(q.x - b[0]) < tol){ x = q.x; g.lines.push([q.x, q.y, q.x, y]); } if (Math.abs(q.y - b[1]) < tol){ y = q.y; g.lines.push([q.x, q.y, x, q.y]); } }
+  if (P.length){ const A = P[P.length-1]; if (Math.abs(A.x - b[0]) < tol){ x = A.x; g.lines.push([A.x, A.y, A.x, y]); } if (Math.abs(A.y - b[1]) < tol){ y = A.y; g.lines.push([A.x, A.y, x, A.y]); } }
+  return [[x, y], g];
+}
+function vPenClose(){
+  const p = vPen; vPen = null; if (!p || p.pts.length < 3){ vOv(); return; }
+  const [x0,y0,x1,y1] = bboxOf(G.V.CL0.get(vk(p.n,-1))), W = x1-x0 || 1, H = y1-y0 || 1, r5 = v => +v.toFixed(5), id = uid();
+  S.vadd = [...(S.vadd||[]), {id, n:p.n, pts:p.pts.map(q => { const o = {u:r5((q.x-x0)/W), v:r5((q.y-y0)/H)}; if (q.c1) o.c1 = [r5(q.c1[0]/W), r5(q.c1[1]/H)]; if (q.c2) o.c2 = [r5(q.c2[0]/W), r5(q.c2[1]/H)]; return o; })}];
+  vSel = {k:vk(p.n, 'x'+id), idx:[]}; vToolSet('select'); vDone(); toast('Cut-out added — drag its points to refine it.');
+}
+/* ---------- lines: extra crease / perforation / cut inside a part ---------- */
+const LINE_T = {crease:'Crease', perf:'Perforation', cut:'Cut'};
+function vLineSnap(b, n, from, e){
+  const L = vLoop(vk(n, -1)), tol = 7*vK(), g = {lines:[], gaps:[], marks:[]};
+  if (!snapOn || e?.altKey) return [b, g];
+  if (e?.shiftKey && from){ const dx = b[0]-from[0], dy = b[1]-from[1], an = Math.round(Math.atan2(dy, dx)/(PI/4))*(PI/4), r = Math.hypot(dx, dy); b = [from[0] + Math.cos(an)*r, from[1] + Math.sin(an)*r]; }
+  for (const q of L) if (Math.hypot(q.x-b[0], q.y-b[1]) < tol){ g.marks.push([q.x, q.y]); return [[q.x, q.y], g]; }
+  let best = null; L.forEach((A, i) => { const B = L[(i+1)%L.length], ex = B.x-A.x, ey = B.y-A.y, l2 = ex*ex + ey*ey; if (l2 < 1) return;
+    const t = clamp(((b[0]-A.x)*ex + (b[1]-A.y)*ey)/l2, 0, 1), q = [A.x+ex*t, A.y+ey*t], d = Math.hypot(q[0]-b[0], q[1]-b[1]); if (d < tol && (!best || d < best.d)) best = {d, q, A, B, ex, ey, l2}; });
+  if (best){ let q = best.q;
+    if (from && !e?.shiftKey){ const ax = Math.abs(best.ex) < .01 ? 'x' : Math.abs(best.ey) < .01 ? 'y' : null;   // perpendicular to an axis-aligned edge = straight across
+      if (ax === 'x' && Math.abs(q[1] - from[1]) < tol) q = [q[0], from[1]]; if (ax === 'y' && Math.abs(q[0] - from[0]) < tol) q = [from[0], q[1]]; }
+    g.lines.push([best.A.x, best.A.y, best.B.x, best.B.y]); return [q, g]; }
+  let x = Math.round(b[0]*2)/2, y = Math.round(b[1]*2)/2;
+  if (from){ if (Math.abs(x - from[0]) < tol) x = from[0]; if (Math.abs(y - from[1]) < tol) y = from[1]; }
+  const [px0,py0,px1,py1] = bboxOf(L), cx = (px0+px1)/2, cy = (py0+py1)/2; if (Math.abs(x-cx) < tol){ x = cx; g.lines.push([cx, py0, cx, py1]); } if (Math.abs(y-cy) < tol){ y = cy; g.lines.push([px0, cy, px1, cy]); }
+  return [[x, y], g];
+}
+const vPartAt = b => { for (const n of G.N) if (inPoly(b[0], b[1], n.poly)) return n.id; let best = null;
+  for (const n of G.N){ const L = n.poly; L.forEach((A, i) => { const B = L[(i+1)%L.length], ex = B[0]-A[0], ey = B[1]-A[1], l2 = ex*ex + ey*ey || 1, t = clamp(((b[0]-A[0])*ex + (b[1]-A[1])*ey)/l2, 0, 1), d = Math.hypot(A[0]+ex*t-b[0], A[1]+ey*t-b[1]); if (d < 7*vK() && (!best || d < best.d)) best = {d, id:n.id}; }); }
+  return best?.id || null; };
+function vLineSave(id, n, a, b, t){
+  const [x0,y0,x1,y1] = bboxOf(G.V.CL0.get(vk(n,-1))), W = x1-x0 || 1, H = y1-y0 || 1, r5 = v => +v.toFixed(5), nu = p => [r5((p[0]-x0)/W), r5((p[1]-y0)/H)];
+  const o = {id, n, t, a:nu(a), b:nu(b)}, ex = (S.vlines||[]).some(l => l.id === id);
+  S.vlines = ex ? S.vlines.map(l => l.id === id ? o : l) : [...(S.vlines||[]), o];
+}
+const vLineTag = (a, b, g) => { g.tags = [[b[0], b[1], Math.hypot(b[0]-a[0], b[1]-a[1]).toFixed(1)]]; return g; };
 /* ---------- pointer ---------- */
 function vDown(e){
   if (e.button !== 0) return false; const svg = $('vsvg'); if (!svg || !G?.V) return false;
@@ -3185,6 +3285,18 @@ function vDown(e){
   if (vTool === 'rect' || vTool === 'ellipse'){ const n = G.N.find(n => inPoly(b[0], b[1], n.poly)); if (!n){ toast('Start the cut-out inside a part.'); return true; }
     vAct = {kind:'draw', n:n.id, a:b, b, shape:vTool}; return cap(); }
   if (vTool.startsWith('lock:')){ const ed = vEdgeAt(b); if (ed) vAddLock(vTool.slice(5), ed); else toast('Click on a cut edge of a part (not on a fold line).'); return true; }
+  if (vTool === 'pen'){
+    if (!vPen){ const n = G.N.find(n => inPoly(b[0], b[1], n.poly)); if (!n){ toast('Start the shape inside a part.'); return true; } vPen = {n:n.id, pts:[]}; }
+    const [q] = vPenSnap(b, e), P = vPen.pts;
+    if (P.length >= 3 && (dbl || Math.hypot(q[0]-P[0].x, q[1]-P[0].y) < 7*vK())){ vPenClose(); return true; }
+    if (P.length && Math.hypot(q[0]-P[P.length-1].x, q[1]-P[P.length-1].y) < .3) return true;
+    P.push({x:q[0], y:q[1]}); vAct = {kind:'pen', i:P.length-1, sx:e.clientX, sy:e.clientY, live:false}; vOv(); return cap(); }
+  if (vTool === 'line'){ const n = vPartAt(b); if (!n){ toast('Start the line on a part.'); return true; }
+    const [a] = vLineSnap(b, n, null, e); vAct = {kind:'ln', n, a, b:a, sx:e.clientX, sy:e.clientY, live:false}; return cap(); }
+  const lne = T.closest('[data-lne]'), ln = T.closest('[data-ln]'), fh = T.closest('[data-fh]');
+  if (lne){ const l = (G.vl||[]).find(x => x.id === vSel.ln); if (l){ vAct = {kind:'lne', l, end:lne.dataset.lne}; return cap(); } }
+  if (ln){ const l = (G.vl||[]).find(x => x.id === ln.dataset.ln); vSel = {k:null, idx:[], lock:null, blk:null, ln:l?.id}; vRender(); if (l){ vAct = {kind:'lnm', l, b0:b, sx:e.clientX, sy:e.clientY, live:false}; return cap(); } return true; }
+  if (fh){ const F = vFlap(vSel.k); if (F){ vAct = {kind:'fd', F, M:vFlapMirror(vSel.k)}; return cap(); } }
   const hd = T.closest('[data-hd]'), nd = T.closest('[data-nd]'), sg = T.closest('[data-sg]'), lh = T.closest('[data-lh]'), lk = T.closest('[data-lk]'), blk = T.closest('[data-blk]'), part = T.closest('[data-k]');
   if (hd){ vAct = {kind:'hd', k:vSel.k, i:+hd.dataset.i, which:hd.dataset.hd}; return cap(); }
   if (lh){ const ul = vSel.lock && G.V.locks.find(l => l.id === vSel.lock && l.g), bl = vSel.blk && (G.locks||[]).find(l => l.id === vSel.blk);
@@ -3200,7 +3312,7 @@ function vDown(e){
     vAct = vStartMove(L.map((_, i) => ({k:vSel.k, i})), b, e); return cap(); }
   if (part){ const k = part.dataset.k; if (vSel.k !== k){ vSel = {k, idx:[], lock:null, blk:null}; vRender(); } else if (!e.shiftKey){ vSel.idx = []; vRender(); }
     vAct = {kind:'mq', a:b, b, sx:e.clientX, sy:e.clientY, live:false, add:e.shiftKey ? [...vSel.idx] : []}; return cap(); }
-  if (vSel.k || vSel.lock || vSel.blk){ vSel = {k:null, idx:[], lock:null, blk:null}; vRender(); }
+  if (vSel.k || vSel.lock || vSel.blk || vSel.ln){ vSel = {k:null, idx:[], lock:null, blk:null}; vRender(); }
   return false;
 }
 function vMove(e){
@@ -3228,6 +3340,14 @@ function vMove(e){
     if (a.h === 'D') o.D = clamp(sn(lk.s*(b[0] - lk.xc)), 2, 30); else if (a.h === 'w') o.w = clamp(sn(2*Math.abs(b[1] - lk.ym)), 4, 60);
     else if (a.h === 'b') o.b = clamp(sn(Math.abs(b[1] - lk.ym) - q.w/2), 0, 8); else o.pos = sn(b[1] - a.off - lk.ym0);
     vLockBSet(lk.grp, o); refresh(true); return; }
+  if (a.kind === 'pen'){ const P = vPen?.pts[a.i]; if (!P) return; const v = [b[0]-P.x, b[1]-P.y];
+    if (Math.hypot(...v) > .6){ P.c2 = v; P.c1 = [-v[0], -v[1]]; } else { delete P.c1; delete P.c2; } vPen.cur = null; vOv(); return; }
+  if (a.kind === 'ln'){ const [q, g] = vLineSnap(b, a.n, a.a, e); a.b = q; vGuides = vLineTag(a.a, q, g); vOv(); return; }
+  if (a.kind === 'lne'){ const l = a.l, other = a.end === 'a' ? l.b : l.a, [q, g] = vLineSnap(b, l.n, other, e); vGuides = vLineTag(other, q, g);
+    vLineSave(l.id, l.n, a.end === 'a' ? q : l.a, a.end === 'a' ? l.b : q, l.t); refresh(true); return; }
+  if (a.kind === 'lnm'){ const l = a.l, dx = sn(b[0]-a.b0[0]), dy = sn(b[1]-a.b0[1]); vLineSave(l.id, l.n, [l.a[0]+dx, l.a[1]+dy], [l.b[0]+dx, l.b[1]+dy], l.t); refresh(true); return; }
+  if (a.kind === 'fd'){ const F = a.F, D = clamp(sn((b[F.pi] - F.f)*F.dir), 2, 600); vFlapSet(F, D); if (a.M) vFlapSet(a.M, D);
+    vGuides = {lines:[F.pi ? [F.mid - 400, F.f, F.mid + 400, F.f] : [F.f, F.mid - 400, F.f, F.mid + 400]], gaps:[], marks:[], tags:[[F.pi ? F.mid : F.f + F.dir*D, F.pi ? F.f + F.dir*D : F.mid, 'depth ' + D.toFixed(1)]]}; vDone(); return; }
   if (a.kind === 'draw'){ const n = G.N.find(x => x.id === a.n), [px0,py0,px1,py1] = bboxOf(G.V.CLb.get(vk(a.n,-1)) || n.poly), cx = (px0+px1)/2, cy = (py0+py1)/2, tol = 6*vK(), g = {lines:[], gaps:[], marks:[]};
     let bx = b[0], by = b[1];
     if (snapOn && !e.altKey){ if (Math.abs((a.a[0]+bx)/2 - cx) < tol){ bx = 2*cx - a.a[0]; g.lines.push([cx, py0, cx, py1]); } else bx = Math.round(bx*2)/2;
@@ -3247,24 +3367,31 @@ function vUp(){
         pts = [{u:cu+ru, v:cv, c1:[0,-rv*kk], c2:[0,rv*kk]}, {u:cu, v:cv+rv, c1:[ru*kk,0], c2:[-ru*kk,0]}, {u:cu-ru, v:cv, c1:[0,rv*kk], c2:[0,-rv*kk]}, {u:cu, v:cv-rv, c1:[-ru*kk,0], c2:[ru*kk,0]}]; }
       S.vadd = [...(S.vadd||[]), {id, n:a.n, pts:pts.map(q => ({...q, u:r5(q.u), v:r5(q.v)}))}]; vSel = {k:vk(a.n, 'x'+id), idx:[]}; vToolSet('select'); vDone(); }
     else vOv(); return; }
+  if (a.kind === 'ln'){ if (Math.hypot(a.b[0]-a.a[0], a.b[1]-a.a[1]) > 2){ const id = uid(); vLineSave(id, a.n, a.a, a.b, vLineT); vSel = {k:null, idx:[], lock:null, blk:null, ln:id}; vDone(); } else vOv(); return; }
+  if (a.kind === 'pen'){ vOv(); return; }
   vRender();
 }
 function vHover(e){
   const svg = $('vsvg'); if (!svg || !G?.V) return;
   if (vTool.startsWith('lock:')){ const p = svgPt(svg, e), ed = vEdgeAt([p.x + G.b.minX, G.b.maxY - p.y]); vHov = ed ? {edge:ed} : null; vOv(); return; }
+  if (vTool === 'pen'){ const p = svgPt(svg, e), [q, g] = vPenSnap([p.x + G.b.minX, G.b.maxY - p.y], e); if (vPen){ vPen.cur = q; vGuides = g; } vOv(); vGuides = null; return; }
+  if (vTool === 'line'){ const p = svgPt(svg, e), b = [p.x + G.b.minX, G.b.maxY - p.y], n = vPartAt(b); vHov = null; if (n){ const [q, g] = vLineSnap(b, n, null, e); vHov = {lnp:q}; vGuides = g; } vOv(); vGuides = null; return; }
   const k = e.target.closest?.('[data-k]')?.dataset.k || null; if (k !== vHov){ vHov = k; vOv(); }
 }
 function vKey(e){
   const k = e.key, kl = k.toLowerCase(), mod = e.metaKey || e.ctrlKey;
+  if (vPen && k === 'Enter'){ vPenClose(); return true; }
+  if (vPen && (k === 'Backspace' || k === 'Delete')){ vPen.pts.pop(); if (!vPen.pts.length) vPen = null; vOv(); return true; }
+  if (k === 'Escape' && vPen){ vPen = null; vOv(); return true; }
   if (k === 'Escape'){ if (vTool !== 'select') vToolSet('select'); else if (vSel.idx.length){ vSel.idx = []; vRender(); } else { vSel = {k:null, idx:[], lock:null, blk:null}; vRender(); } return true; }
   if (k === 'Delete' || k === 'Backspace'){ vDelete(); return true; }
   if (k.startsWith('Arrow') && !mod && vSel.k && vSel.idx.length){ const d = e.shiftKey ? 10 : 1, [dx, dy] = {ArrowLeft:[-d,0], ArrowRight:[d,0], ArrowUp:[0,d], ArrowDown:[0,-d]}[k];
     vApplyMove(vStartMove(vSel.idx.map(i => ({k:vSel.k, i}))), dx, dy); return true; }
-  if (!mod && !e.altKey && ({v:'select', r:'rect', o:'ellipse'})[kl]){ vToolSet({v:'select', r:'rect', o:'ellipse'}[kl]); return true; }
+  const TK = {v:'select', r:'rect', o:'ellipse', p:'pen', l:'line'}; if (!mod && !e.altKey && TK[kl]){ vToolSet(TK[kl]); return true; }
   return false;
 }
 /* ---------- side panel ---------- */
-function vToolSet(t){ vTool = t; vHov = null;
+function vToolSet(t){ vTool = t; vHov = null; if (t !== 'pen') vPen = null; $('vLineT').hidden = t !== 'line';
   document.querySelectorAll('#vTools [data-vt]').forEach(b => b.setAttribute('aria-pressed', b.dataset.vt === t));
   document.querySelectorAll('#vLocks [data-vl]').forEach(b => b.setAttribute('aria-pressed', 'lock:'+b.dataset.vl === t));
   $('view2d').classList.toggle('vdraw', t !== 'select'); vOv(); }
@@ -3285,9 +3412,14 @@ function vInspRender(){
     h = `<div class="vhead"><b>Hook lock</b> <span>built into this box</span></div>` + heads(q.head)
       + `<div class="row2">${num('bw', 'Neck width, mm', q.w, .5, 4, 60)}${num('bD', 'Head, mm', q.D, .5, 2, 30)}${num('bb', 'Hook, mm', q.b, .5, 0, 8)}${num('bpos', 'Shift, mm', q.pos, .5, -100, 100)}</div>`
       + (q.bad ? `<p class="note bad">⚠ Doesn’t fit the ear — clamped.</p>` : `<p class="note ok">✓ Its slit in the side wall follows the neck automatically.</p>`) + `<button class="btn" type="button" data-va="breset">Reset this lock</button>`; }
+  else if (vSel.ln && (G.vl||[]).some(l => l.id === vSel.ln)){ const l = G.vl.find(x => x.id === vSel.ln);
+    h = `<div class="vhead"><b>${LINE_T[l.t]} line</b> <span>on ${partName(l.n)}</span></div><div class="vheads">${Object.entries(LINE_T).map(([v, t]) => `<button type="button" class="btn mini wide" data-vlt="${v}" aria-pressed="${l.t === v}">${t}</button>`).join('')}</div>`
+      + `<div class="row2">${num('lnlen', 'Length, mm', Math.hypot(l.b[0]-l.a[0], l.b[1]-l.a[1]), .5, 1, 2000)}</div>`
+      + `<p class="note">Drag the line to move it, its ends to change it — they stick to the part’s edges. ${l.t === 'crease' ? 'It’s on the dieline and in the print file; the 3D preview doesn’t fold along it.' : l.t === 'perf' ? 'Tear line — dashed cut, goes to the PERF layer.' : 'A slit — goes to the CUT layer.'}</p><button class="btn" type="button" data-va="del">Delete line</button>`; }
   else if (vSel.k && vLoop(vSel.k)){ const {n, h:hh} = vkSplit(vSel.k), L = vLoop(vSel.k), cut = typeof hh === 'string', nm = partName(n) + (hh === -1 ? '' : cut ? ' · cut-out' : ' · hole');
     const edited = (S.vec||[]).some(o => vk(o.n, o.h) === vSel.k);
-    if (!vSel.idx.length) h = `<div class="vhead"><b>${nm}</b> <span>${L.length} points</span></div><p class="note">Drag a point or an edge · drag across the part to select several · double-click an edge to add a point · double-click a point to curve it · red points sit on a fold line and move it with them.</p>`
+    const F = !vSel.idx.length && vFlap(vSel.k);
+    if (!vSel.idx.length) h = `<div class="vhead"><b>${nm}</b> <span>${L.length} points</span></div>${F ? `<div class="row2">${num('fd', 'Flap depth, mm', F.d0, .5, 2, 600, 'How far the flap reaches from its fold line')}</div><p class="note">Pull the blue diamond to make the flap longer or shorter.</p>` : ''}<p class="note">Drag a point or an edge · drag across the part to select several · double-click an edge to add a point · double-click a point to curve it · red points sit on a fold line and move it with them.</p>`
       + (edited ? `<button class="btn" type="button" data-va="resetpart">Reset this part</button>` : '') + (cut ? `<button class="btn" type="button" data-va="del">Delete cut-out</button>` : '');
     else { const pts = vSel.idx.map(i => L[i]).filter(Boolean), one = pts.length === 1 ? pts[0] : null, fold = pts.some(vIsShared), free = pts.filter(q => !vIsShared(q) && !q.c1 && !q.c2);
       h = `<div class="vhead"><b>${pts.length} point${pts.length > 1 ? 's' : ''}</b> <span>${nm}</span></div><div class="row2">`
@@ -3297,7 +3429,7 @@ function vInspRender(){
         + (fold ? `<p class="note bad">Red points sit on a fold line: moving them moves the fold, so the 3D fold can look off.</p>` : ''); } }
   else h = `<p class="note">Click a part on the dieline to see its points, or pick a lock above and click an edge.</p>`;
   box.innerHTML = h;
-  const n = (S.vec||[]).length + (S.vadd||[]).length + (S.locks||[]).length + Object.keys(S.lk||{}).length;
+  const n = (S.vec||[]).length + (S.vadd||[]).length + (S.vlines||[]).length + (S.locks||[]).length + Object.keys(S.lk||{}).length;
   $('vReset').disabled = !n; $('vReset').textContent = n ? `Reset all hand edits (${n})` : 'Reset all hand edits'; $('vOrig').disabled = !n;
   $('vStale').hidden = !G.V.stale;
 }
@@ -3305,13 +3437,16 @@ $('vInsp').addEventListener('change', e => {
   const id = e.target.dataset.vi, x = parseFloat(e.target.value); if (!id || !isFinite(x)) return;
   if (vSel.lock){ vLockSet(vSel.lock, id === 't' ? {t:clamp(x/100, 0, 1)} : {[id]: x}); refresh(true); return; }
   if (vSel.blk){ const bl = (G.locks||[]).find(l => l.id === vSel.blk); if (bl){ vLockBSet(bl.grp, {[{bw:'w', bD:'D', bb:'b', bpos:'pos'}[id]]: x}); refresh(true); } return; }
+  if (vSel.ln && id === 'lnlen'){ const l = (G.vl||[]).find(q => q.id === vSel.ln); if (l){ const len = Math.hypot(l.b[0]-l.a[0], l.b[1]-l.a[1]) || 1, s = clamp(x, 1, 2000)/len; vLineSave(l.id, l.n, l.a, [l.a[0] + (l.b[0]-l.a[0])*s, l.a[1] + (l.b[1]-l.a[1])*s], l.t); vDone(); } return; }
   if (!vSel.k) return; const L = vLoop(vSel.k);
+  if (id === 'fd'){ const F = vFlap(vSel.k), M = vFlapMirror(vSel.k), D = clamp(x, 2, 600); if (F){ vFlapSet(F, D); if (M) vFlapSet(M, D); vDone(); } return; }
   if (id === 'r') return vSetRadius(clamp(x, 0, 100));
   if ((id === 'x' || id === 'y') && vSel.idx.length === 1){ const P = L[vSel.idx[0]], tx = x + G.b.minX + BLEED, ty = G.b.maxY - BLEED - x;
     vApplyMove(vStartMove([{k:vSel.k, i:vSel.idx[0]}]), id === 'x' ? tx - P.x : 0, id === 'y' ? ty - P.y : 0); }
 });
 $('vInsp').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.vhead){ if (vSel.lock) vLockSet(vSel.lock, {head:b.dataset.vhead}); else if (vSel.blk){ const bl = (G.locks||[]).find(l => l.id === vSel.blk); if (bl) vLockBSet(bl.grp, {head:b.dataset.vhead}); } refresh(true); return; }
+  if (b.dataset.vlt){ const l = (G.vl||[]).find(q => q.id === vSel.ln); if (l){ vLineT = b.dataset.vlt; vLineSave(l.id, l.n, l.a, l.b, b.dataset.vlt); vDone(); } return; }
   const a = b.dataset.va;
   if (a === 'del') vDelete();
   else if (a === 'curve' && vSel.idx.length === 1) vToggleSmooth(vSel.k, vSel.idx[0]);
@@ -3319,15 +3454,16 @@ $('vInsp').addEventListener('click', e => { const b = e.target.closest('button')
   else if (a === 'breset'){ const bl = (G.locks||[]).find(l => l.id === vSel.blk); if (bl){ vLockBSet(bl.grp, null); refresh(true); } }
 });
 $('vTools').addEventListener('click', e => { const b = e.target.closest('[data-vt]'); if (b) vToolSet(b.dataset.vt); });
+$('vLineT').addEventListener('click', e => { const b = e.target.closest('[data-lt]'); if (!b) return; vLineT = b.dataset.lt; $('vLineT').querySelectorAll('[data-lt]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
 $('vLocks').addEventListener('click', e => { const b = e.target.closest('[data-vl]'); if (b) vToolSet(vTool === 'lock:'+b.dataset.vl ? 'select' : 'lock:'+b.dataset.vl); });
 $('vMirror').addEventListener('change', e => { vMirror = e.target.checked; });
-const vOriginal = () => { S.vec = []; S.vadd = []; S.locks = []; S.lk = {}; vSel = {k:null, idx:[], lock:null, blk:null}; vDone(); toast('Back to the original dieline — ⌘Z to undo.'); };
+const vOriginal = () => { vPen = null; S.vlines = []; S.vec = []; S.vadd = []; S.locks = []; S.lk = {}; vSel = {k:null, idx:[], lock:null, blk:null}; vDone(); toast('Back to the original dieline — ⌘Z to undo.'); };
 $('vReset').addEventListener('click', vOriginal);
 $('vOrig').addEventListener('click', vOriginal);
 function vSetMode(on){
   if (on === vMode) return; vMode = on; $('view2d').classList.toggle('vmode', on);
-  document.querySelector('.board-hint').textContent = on ? 'Click a part — drag points and edges · double-click an edge to add a point · V select · R window · O round hole · Esc' : 'Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom';
-  vSel = {k:null, idx:[], lock:null, blk:null}; vAct = null; vHov = null;
+  document.querySelector('.board-hint').textContent = on ? 'Click a part — drag points and edges · double-click an edge to add a point · V select · R window · O round hole · P pen (click/drag, Enter closes) · L line · Esc' : 'Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom';
+  vSel = {k:null, idx:[], lock:null, blk:null}; vAct = null; vHov = null; vPen = null;
   if (on){ vPrevPane = document.querySelector('aside section[data-pane].on')?.dataset.pane || 'build'; if (selId) selectEl(null); setPane('vedit'); vFitted = false; }
   else { setPane(vPrevPane === 'vedit' ? 'build' : vPrevPane); sig2d = ''; }
   vToolSet('select');
