@@ -485,7 +485,7 @@ window.SB = (() => {
   const sha = async buf => [...new Uint8Array(await crypto.subtle.digest('SHA-256', buf))].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
   const upCache = new Map();
   return {
-    URL, isId, show,
+    URL, isId, show, req,
     get user(){ return ses?.user || null; },
     signIn: async (email, password) => { await grant('password', {email, password}); show(); return ses.user; },
     signOut: async () => { try { await req('/auth/v1/logout', {method:'POST'}); } catch {} keep(null); show(); },
