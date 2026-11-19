@@ -190,7 +190,10 @@ html.viewing #savedState,html.viewing #undoBtn,html.viewing #redoBtn,html.viewin
 .dlg.share .pophead h2,.dlg.rv h2{margin:0}
 .dlg.share .chk{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.4}
 .shlink,.shinv{display:flex;gap:8px;margin-top:10px}
-.shlink input{flex:1;font-family:var(--mono);font-size:12px}
+.shlink input{flex:1;min-width:0;font-family:var(--mono);font-size:12px}
+.btn.link{border:0;background:none;padding:0;color:var(--accent,#6b2bd9);text-decoration:underline;font:inherit;cursor:pointer;min-height:0}
+.ordstat{white-space:pre-wrap}
+.ordstat code{display:block;margin-top:6px;padding:8px;border-radius:6px;background:var(--hover);font-size:11.5px;user-select:all}
 .shinv input{flex:1}.shinv select{width:120px;flex:none}
 .shp{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
 .shp span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -1025,9 +1028,9 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
 <dialog class="dlg share" id="shareDlg" aria-labelledby="shareH">
   <div class="pophead"><h2 id="shareH">Share “<span id="shName"></span>”</h2><button class="btn icon" type="button" id="shX" aria-label="Close">✕</button></div>
   <section>
-    <label class="chk"><input type="checkbox" id="shLinkOn"><span><b>Anyone with the link</b> can view the 3D and the dieline, download the print files and say “looks good / needs changes”</span></label>
-    <div class="shlink" id="shLinkRow" hidden><input type="text" id="shLink" readonly aria-label="Share link"><button class="btn pri" type="button" id="shCopy">Copy link</button></div>
-    <p class="note">They don’t need an account. Nothing they change is saved to your project.</p>
+    <div class="f">Link for the print house or client</div>
+    <div class="shlink"><input type="text" id="shLink" readonly placeholder="No link yet — press “Create link”" aria-label="Share link"><button class="btn pri" type="button" id="shCopy" disabled>Create link</button></div>
+    <p class="note">Anyone with the link can view the 3D and the dieline, download the print files and say “looks good / needs changes”. No account needed; nothing they change is saved to your project. <button class="btn link" type="button" id="shOff" hidden>Turn the link off</button></p>
   </section>
   <section>
     <div class="f">Invite people</div>
@@ -4108,19 +4111,19 @@ async function saveProject(){
     $('savedState').textContent = 'Saving to cloud…';
     try { const up = async o => { const r = {}; for (const k in o) r[k] = await SB.upload(o[k]); return r; };
       await SB.patch(S.pid, {name:S.pname || 'Untitled', data:{settings:{...S}, imgs:await up(imgs), elimgs:await up(elimgs)}, thumb:snapThumb() || null, updated_at:new Date().toISOString()});
-      $('savedState').textContent = 'Saved to cloud'; } catch (e){ $('savedState').textContent = 'Not saved — ' + cloudErr(e); }
+      $('savedState').textContent = 'Saved to cloud'; return 'cloud'; } catch (e){ $('savedState').textContent = 'Not saved — ' + cloudErr(e); }
     return; }
   if (pending){ cancelAnimationFrame(pending); doRefresh(); }   // make sure the 3D model matches the settings
   if (SB.user && !SB.isId(S.pid)){ const old = S.pid; S.pid = crypto.randomUUID(); idb.del(old).catch(() => {}); }   // cloud ids are uuids
   const seq = ++saveSeq, imgs = {}, elimgs = {}; for (const k in IMGS) imgs[k] = IMGS[k].src; for (const e of S.els) if (ELIMG[e.id]) elimgs[e.id] = ELIMG[e.id].src;
   const rec = {id:S.pid, name:S.pname || 'Untitled', updated:Date.now(), settings:{...S}, imgs, elimgs, thumb:snapThumb(), cloud:false};
-  let local = true; try { await idb.put(rec); } catch { local = false; }
+  let local = true; try { await Promise.race([idb.put(rec), new Promise((_, no) => setTimeout(() => no(new Error('idb timeout')), 4000))]); } catch { local = false; }   // a stuck IndexedDB must not block the cloud save
   if (!SB.user){ $('savedState').textContent = local ? 'Saved on this computer' : 'Not saving: the browser blocked storage. Use “Export → Project file .json”.'; return; }
   $('savedState').textContent = 'Saving to cloud…';
   try { const done = await cloudPut(rec);
     for (const k in IMGS) if (done.imgs[k] && IMGS[k].src === imgs[k]) IMGS[k].src = done.imgs[k];       // next saves skip the upload
     for (const id in ELIMG) if (done.elimgs[id] && ELIMG[id].src === elimgs[id]) ELIMG[id].src = done.elimgs[id];
-    await idb.put(done).catch(() => {}); if (seq === saveSeq) $('savedState').textContent = 'Saved to cloud'; }
+    await idb.put(done).catch(() => {}); if (seq === saveSeq) $('savedState').textContent = 'Saved to cloud'; return 'cloud'; }
   catch (e){ if (seq === saveSeq) $('savedState').textContent = local ? `Saved on this computer — cloud: ${cloudErr(e)}` : `Not saved — cloud: ${cloudErr(e)}`; }
 }
 function autosave(){ if (!S.pid) return; $('savedState').textContent = 'Saving…'; clearTimeout(saveT); saveT = setTimeout(saveProject, 1200); }
@@ -4183,7 +4186,8 @@ async function shareRefresh(){
   if (!S.pid || !SB.isId(S.pid)) return;
   const [sh, rv] = await Promise.all([SB.req(`/rest/v1/shares?project_id=eq.${S.pid}&select=*&order=created_at`), SB.req(`/rest/v1/reviews?project_id=eq.${S.pid}&select=*&order=created_at.desc`)]);
   const link = sh.find(x => !x.email), ppl = sh.filter(x => x.email);
-  $('shLinkOn').checked = !!link; $('shLinkRow').hidden = !link; $('shLink').value = link ? shareUrl(link.token) : ''; $('shLinkOn').dataset.id = link?.id || '';
+  $('shLink').value = link ? shareUrl(link.token) : ''; $('shOff').hidden = !link; $('shOff').dataset.id = link?.id || '';
+  $('shCopy').textContent = link ? 'Copy link' : 'Create link'; $('shCopy').disabled = false;
   $('shPeople').innerHTML = ppl.map(p => `<div class="shp" data-sid="${p.id}"><span>${esc(p.email)}</span><select data-role aria-label="Access"><option value="view"${p.role === 'view' ? ' selected' : ''}>Can view</option><option value="edit"${p.role === 'edit' ? ' selected' : ''}>Can edit</option></select><button type="button" data-unshare title="Remove access" aria-label="Remove access for ${esc(p.email)}">✕</button></div>`).join('');
   $('shReviews').innerHTML = rv.length ? rv.map(r => `<div class="rvi"><b class="${r.verdict === 'ok' ? 'ok' : 'no'}">${r.verdict === 'ok' ? '✓ Looks good' : '✎ Needs changes'}</b> — ${esc(r.who || 'someone')}<small>${fdt(r.created_at)}</small>${r.comment ? `<p>${esc(r.comment)}</p>` : ''}</div>`).join('') : '<p class="note">No feedback yet. People with the link can press “Looks good” or “Needs changes”.</p>';
   store.set('skladka-rvseen-' + S.pid, rv.length); $('rvBadge').textContent = '';
@@ -4191,19 +4195,38 @@ async function shareRefresh(){
 async function openShare(){
   if (!SB.user){ toast('Sign in to share.'); return; }
   if (viewOnly){ toast('Only the owner can share this project.'); return; }
-  $('shName').textContent = S.pname || 'Untitled'; $('shStat').textContent = ''; $('shareDlg').showModal();
-  clearTimeout(saveT); await saveProject();   // a share needs the project in the cloud
-  if (!/cloud$/i.test($('savedState').textContent)){ $('shStat').textContent = 'The project is not in the cloud yet: ' + $('savedState').textContent; $('shStat').className = 'ordstat bad'; return; }
-  try { await shareRefresh(); } catch (e){ $('shStat').textContent = /relation|42P01|schema cache/i.test(e.message + e.code) ? 'Sharing is not set up in the database yet — run the sharing SQL.' : 'Error: ' + e.message; $('shStat').className = 'ordstat bad'; }
+  $('shName').textContent = S.pname || 'Untitled'; $('shStat').textContent = 'Saving the project to the cloud…'; $('shStat').className = 'ordstat';
+  $('shLink').value = ''; $('shCopy').disabled = true; $('shOff').hidden = true; $('shPeople').innerHTML = ''; $('shareDlg').showModal();
+  if (!S.pid) S.pid = crypto.randomUUID();
+  clearTimeout(saveT); const ok = await saveProject();   // a share needs the project in the cloud
+  if (ok !== 'cloud'){ shErr(Object.assign(new Error('The project could not be saved to the cloud: ' + $('savedState').textContent), {code:'SAVE'})); return; }
+  $('shStat').textContent = '';
+  try { await shareRefresh(); } catch (e){ shErr(e); }
 }
 $('shareBtn').addEventListener('click', openShare);
 $('shX').addEventListener('click', () => $('shareDlg').close());
-const shErr = e => { $('shStat').textContent = 'Error: ' + e.message; $('shStat').className = 'ordstat bad'; };
-$('shLinkOn').addEventListener('change', async e => { try {
-    if (e.target.checked) await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, role:'view'})});
-    else if (e.target.dataset.id) await SB.req(`/rest/v1/shares?id=eq.${e.target.dataset.id}`, {method:'DELETE'});
-    await shareRefresh(); if (e.target.checked){ $('shLink').select(); } } catch (x){ shErr(x); } });
-$('shCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('shLink').value); } catch { $('shLink').select(); document.execCommand('copy'); } toast('Link copied — send it to the print house.'); });
+const SH_SQL = `grant select, insert, update, delete on public.shares to authenticated;
+grant select on public.reviews to authenticated;
+grant select, insert, update, delete on public.projects to authenticated;
+grant execute on function shared_project(text) to anon, authenticated;
+grant execute on function add_review(text, text, text, text) to anon, authenticated;`;
+const shErr = e => { const c = String(e.code || ''), m = String(e.message || e);
+  const hint = c === '42501' || /permission denied/i.test(m) ? 'The database doesn’t give signed-in users access to sharing. In Supabase → SQL Editor run:'
+    : c === '42P01' || c === 'PGRST205' || /relation|schema cache/i.test(m) ? 'Sharing tables are missing in the database — run the sharing SQL from the setup.'
+    : c === '42P17' ? 'A database policy loops on itself (infinite recursion) — send this text to the developer.'
+    : /row-level security/i.test(m) ? 'A row-level security policy blocked this — the project must belong to you. Send this text to the developer.'
+    : c === 'SAVE' ? '' : 'Send this text to the developer if it repeats.';
+  $('shStat').innerHTML = `<b>Error${c && c !== 'SAVE' ? ' ' + esc(c) : ''}:</b> ${esc(m)}${hint ? '\n' + esc(hint) : ''}${c === '42501' || /permission denied/i.test(m) ? `<code>${esc(SH_SQL)}</code>` : ''}`;
+  $('shStat').className = 'ordstat bad'; console.error('share', e); };
+$('shCopy').addEventListener('click', async () => {
+  if (!$('shLink').value){ $('shCopy').disabled = true; $('shCopy').textContent = 'Creating…';
+    try { await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, role:'view'})}); await shareRefresh(); }
+    catch (x){ shErr(x); $('shCopy').disabled = false; $('shCopy').textContent = 'Create link'; return; }
+    if (!$('shLink').value){ shErr(new Error('The link was created but can’t be read back — check the “owner manages shares” policy.')); return; } }
+  try { await navigator.clipboard.writeText($('shLink').value); } catch { $('shLink').select(); try { document.execCommand('copy'); } catch {} }
+  $('shLink').select(); toast('Link copied — send it to the print house.'); });
+$('shOff').addEventListener('click', async e => { if (!e.target.dataset.id) return;
+  try { await SB.req(`/rest/v1/shares?id=eq.${e.target.dataset.id}`, {method:'DELETE'}); await shareRefresh(); toast('The link is off — it no longer opens the project.'); } catch (x){ shErr(x); } });
 $('shInvite').addEventListener('click', async () => { const em = $('shEmail').value.trim().toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(em)){ $('shEmail').focus(); return; }
   if (em === SB.user.email?.toLowerCase()){ toast('That’s you.'); return; }
   try { await SB.req('/rest/v1/shares', {method:'POST', headers:{'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify({project_id:S.pid, email:em, role:$('shRole').value})});
