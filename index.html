@@ -320,6 +320,15 @@ dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
 #vov .ghost{fill:rgba(13,153,255,.15);stroke:#0d99ff;stroke-width:1.4;stroke-dasharray:3 2;pointer-events:none}
 #vov .gslot{fill:#0d99ff;stroke:#0d99ff;stroke-width:1.5;pointer-events:none}
 #vov .edge{stroke:#0d99ff;stroke-width:4;opacity:.45;pointer-events:none}
+#vov .rg{stroke:#ff2d55;stroke-width:1;fill:none;pointer-events:none}
+#vov .rgd{stroke:#ff2d55;stroke-width:1;stroke-dasharray:3 2;pointer-events:none}
+#vov .rgp{fill:#ff2d55;pointer-events:none}
+#vov .rgp.dk{fill:#1d1d1f}
+#vov .rgt{fill:#fff;font-family:var(--sans);font-weight:600;text-anchor:middle;pointer-events:none}
+.vorig{top:12px;left:12px;display:none;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);font:500 13px var(--sans);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.vorig:hover{border-color:var(--accent);color:var(--accent)}
+.vorig:disabled{opacity:.45;cursor:default;border-color:var(--line);color:var(--fg)}
+#view2d.vmode .vorig{display:flex}
 #vov .mq{fill:rgba(13,153,255,.08);stroke:#0d99ff;stroke-width:1;pointer-events:none}
 .vtools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
 .vtools button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);font:500 12px var(--sans);cursor:pointer}
@@ -861,6 +870,7 @@ html.locked body>*:not(#auth):not(script){visibility:hidden}
         <button id="gridBtn" class="wide" aria-pressed="false" title="10 mm grid">Grid</button><button id="snapBtn" class="wide" aria-pressed="true" title="Snap to panel centre and whole millimetres while dragging">Snap</button>
       </div>
       <p class="board-hint board-ov">Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom</p>
+      <button class="vorig board-ov" id="vOrig" type="button" title="Throw away every hand edit, cut-out and lock — the dieline as the template made it (⌘Z brings it back)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Back to original</button>
       <div class="selbar board-ov" id="selBar" hidden>
         <button type="button" data-a="fx" title="Flip horizontally (Shift+H)" aria-label="Flip horizontally"><svg viewBox="0 0 24 24"><path d="M12 3v18M9 6 3 18h6zM15 6l6 12h-6z"/></svg></button>
         <button type="button" data-a="fy" title="Flip vertically (Shift+V)" aria-label="Flip vertically"><svg viewBox="0 0 24 24"><path d="M3 12h18M6 9 18 3v6zM6 15l12 6v-6z"/></svg></button>
@@ -2966,7 +2976,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- ✎ Edit tab: Figma-style vector editing of the die (clean board, no artwork) ---------- */
-let vMode = false, vTool = 'select', vSel = {k:null, idx:[], lock:null, blk:null}, vAct = null, vHov = null, vMirror = true, vPrevPane = 'build', vFitted = false, vLast = {t:0, x:0, y:0};
+let vGuides = null, vMode = false, vTool = 'select', vSel = {k:null, idx:[], lock:null, blk:null}, vAct = null, vHov = null, vMirror = true, vPrevPane = 'build', vFitted = false, vLast = {t:0, x:0, y:0};
 const vLoop = k => G.V.CLb.get(k);
 const vK = () => 1/(BK*bz);
 const ptKey = p => (p.x ?? p[0]).toFixed(2)+','+(p.y ?? p[1]).toFixed(2);
@@ -3047,6 +3057,17 @@ function vOverlay(){
   if (vHov?.edge){ const e = vHov.edge, t = vTool.slice(5), g = lockGeom({type:t, t:e.t, p:{}}, e.A, e.B, loopArea(vLoop(e.k)) > 0);
     h += `<line class="edge" x1="${X(e.A.x)}" y1="${Y(e.A.y)}" x2="${X(e.B.x)}" y2="${Y(e.B.y)}"/><path class="ghost" d="${d([g.pts[0], ...g.pts])}"/>`;
     const mt = lockMate(G.N, vFoldM(), vkSplit(e.k).n, g, t); if (mt) h += `<path class="gslot" d="${d(mt.hole)}"/>`; }
+  const lbx = [], lab = (x, y, t, dk) => { const fs = 10.5*k, w = (String(t).length*.6 + 1)*fs; let cx = X(x), cy = Y(y);
+    for (let n = 0; n < 6 && lbx.some(b => Math.abs(b[0]-cx) < (b[2]+w)/2 && Math.abs(b[1]-cy) < fs*1.6); n++) cy += fs*1.7;
+    lbx.push([cx, cy, w]); return `<rect class="rgp${dk ? ' dk' : ''}" x="${n3(cx-w/2)}" y="${n3(cy-fs*.78)}" width="${n3(w)}" height="${n3(fs*1.56)}" rx="${n3(fs*.4)}"/><text class="rgt" x="${n3(cx)}" y="${n3(cy+fs*.38)}" font-size="${n3(fs)}">${t}</text>`; };
+  if (vGuides){
+    for (const [x1,y1,x2,y2] of vGuides.lines) h += `<line class="rg" x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}"/>`;
+    for (const [x,y] of vGuides.marks) h += `<path class="rg" d="M${n3(X(x)-3*k)} ${n3(Y(y)-3*k)}l${n3(6*k)} ${n3(6*k)}m0 ${n3(-6*k)}l${n3(-6*k)} ${n3(6*k)}"/>`;
+    for (const [x1,y1,x2,y2,al] of vGuides.gaps){ const dd = Math.hypot(x2-x1, y2-y1); if (dd < .05) continue; if (!al) h += `<line class="rgd" x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}"/>`; h += lab((x1+x2)/2, (y1+y2)/2, +dd.toFixed(1)); }
+    for (const [x,y,t] of vGuides.tags || []) h += lab(x + 14*k*Math.max(1, String(t).length/4), y - 12*k, t, 1); }
+  // while one point moves: the lengths of its two edges
+  if (vAct?.kind === 'pts' && vAct.live && vAct.items.length === 1){ const it = vAct.items[0], L = vLoop(it.k);
+    if (L && L[it.i]){ const P = L[it.i]; for (const Q of [L[(it.i-1+L.length)%L.length], L[(it.i+1)%L.length]]) h += lab((P.x+Q.x)/2, (P.y+Q.y)/2, +Math.hypot(Q.x-P.x, Q.y-P.y).toFixed(1), 1); } }
   if (vAct?.kind === 'mq' && vAct.live){ const [a, b] = [vAct.a, vAct.b]; h += `<rect class="mq" x="${X(Math.min(a[0],b[0]))}" y="${Y(Math.max(a[1],b[1]))}" width="${n3(Math.abs(b[0]-a[0]))}" height="${n3(Math.abs(b[1]-a[1]))}"/>`; }
   if (vAct?.kind === 'draw'){ const [a, b] = [vAct.a, vAct.b], x = X(Math.min(a[0],b[0])), y = Y(Math.max(a[1],b[1])), w = n3(Math.abs(b[0]-a[0])), hh = n3(Math.abs(b[1]-a[1]));
     h += vAct.shape === 'rect' ? `<rect class="ghost" x="${x}" y="${y}" width="${w}" height="${hh}"/>` : `<ellipse class="ghost" cx="${n3(x+w/2)}" cy="${n3(y+hh/2)}" rx="${n3(w/2)}" ry="${n3(hh/2)}"/>`; }
@@ -3059,7 +3080,38 @@ function vSnapshot(){ const m = new Map(); for (const [k, L] of G.V.CLb) m.set(k
 function vStartMove(items, b, e){
   const base = vSnapshot(), mir = new Map(); if (vMirror) for (const it of items){ const m = vMirrorPt(base, it.k, it.i); if (m && !items.some(x => x.k === m.k && x.i === m.i)) mir.set(it.k+'#'+it.i, m); }
   const moving = new Set(); for (const it of items){ const key = ptKey(base.get(it.k)[it.i]); for (const t of vShared().get(key) || [it]) moving.add(t.k+'#'+t.i); }
-  return {kind:'pts', items, base, mir, sh:vShared(), wid:new Map(), moving, b0:b, sx:e?.clientX ?? 0, sy:e?.clientY ?? 0, live:!e};
+  const a = {kind:'pts', items, base, mir, sh:vShared(), wid:new Map(), moving, b0:b, sx:e?.clientX ?? 0, sy:e?.clientY ?? 0, live:!e, cx:[], cy:[], segs:[]};
+  for (const [k, L] of base) L.forEach((q, i) => { if (moving.has(k+'#'+i)) return; a.cx.push({v:q.x, x:q.x, y:q.y}); a.cy.push({v:q.y, x:q.x, y:q.y});
+    const r = L[(i+1)%L.length]; if (!moving.has(k+'#'+((i+1)%L.length))) a.segs.push([q, r]); });
+  // the part's own centre lines (centre a window, a notch, a tip) and, for a whole cut-out, its edges for the gap readout
+  const ks = [...new Set(items.map(it => it.k))], n = vkSplit(ks[0]).n, O = base.get(vk(n, -1));
+  if (O){ const [x0,y0,x1,y1] = bboxOf(O), cx = (x0+x1)/2, cy = (y0+y1)/2; a.cx.push({v:cx, x:cx, y:cy, c:1}); a.cy.push({v:cy, x:cx, y:cy, c:1});
+    if (ks.length === 1 && !ks[0].endsWith('|-1') && items.length === base.get(ks[0]).length) a.part = [x0,y0,x1,y1]; }
+  return a;
+}
+// magnets + red guides while points move: line up with other points (x / y), sit on a point or an edge, centre on the part
+function vSnap(a, dx, dy, e){
+  const g = {lines:[], gaps:[], marks:[]}, mv = a.items.map(it => a.base.get(it.k)[it.i]), xs = mv.map(p => p.x), ys = mv.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), one = mv.length === 1;
+  if (!snapOn || e?.altKey) return {dx, dy, g};
+  const tol = 6*vK(), rX = one ? [x0] : [x0, (x0+x1)/2, x1], rY = one ? [y0] : [y0, (y0+y1)/2, y1];
+  let bx = null, by = null;
+  for (const r of rX) for (const c of a.cx){ const d = c.v - (r + dx); if (Math.abs(d) < tol && (!bx || Math.abs(d) < Math.abs(bx.d) - 1e-9 || (Math.abs(d - bx.d) < 1e-9 && Math.abs(c.y - (y0+dy)) < Math.abs(bx.c.y - (y0+dy))))) bx = {d, c, r}; }
+  for (const r of rY) for (const c of a.cy){ const d = c.v - (r + dy); if (Math.abs(d) < tol && (!by || Math.abs(d) < Math.abs(by.d) - 1e-9 || (Math.abs(d - by.d) < 1e-9 && Math.abs(c.x - (x0+dx)) < Math.abs(by.c.x - (x0+dx))))) by = {d, c, r}; }
+  if (bx) dx += bx.d; if (by) dy += by.d;
+  let onSeg = null;
+  if (one && !(bx && by)){ const P = [x0+dx, y0+dy];
+    for (const [A, B] of a.segs){ const ex = B.x-A.x, ey = B.y-A.y, l2 = ex*ex + ey*ey; if (l2 < 1) continue; const t = clamp(((P[0]-A.x)*ex + (P[1]-A.y)*ey)/l2, 0, 1), q = [A.x+ex*t, A.y+ey*t], d = Math.hypot(q[0]-P[0], q[1]-P[1]);
+      if (d < tol*.8 && (!onSeg || d < onSeg.d)) onSeg = {d, q, A, B}; }
+    if (onSeg && !bx && !by){ dx = onSeg.q[0]-x0; dy = onSeg.q[1]-y0; g.lines.push([onSeg.A.x, onSeg.A.y, onSeg.B.x, onSeg.B.y]); } else onSeg = null; }
+  if (!bx && !onSeg) dx = one ? Math.round((x0+dx)*2)/2 - x0 : Math.round(dx*2)/2;
+  if (!by && !onSeg) dy = one ? Math.round((y0+dy)*2)/2 - y0 : Math.round(dy*2)/2;
+  const P = [(one ? x0 : (x0+x1)/2) + dx, (one ? y0 : (y0+y1)/2) + dy];
+  if (bx){ const X = bx.c.v; g.lines.push([X, bx.c.y, X, P[1]]); g.marks.push([X, bx.c.y]); if (Math.abs(P[1]-bx.c.y) > .6) g.gaps.push([X, bx.c.y, X, P[1], 1]); }
+  if (by){ const Y = by.c.v; g.lines.push([by.c.x, Y, P[0], Y]); g.marks.push([by.c.x, Y]); if (Math.abs(P[0]-by.c.x) > .6) g.gaps.push([by.c.x, Y, P[0], Y, 1]); }
+  if (a.part){ const [px0,py0,px1,py1] = a.part, X0 = x0+dx, X1 = x1+dx, Y0 = y0+dy, Y1 = y1+dy, mx = (X0+X1)/2, my = (Y0+Y1)/2;
+    g.gaps.push([px0, my, X0, my], [X1, my, px1, my], [mx, py0, mx, Y0], [mx, Y1, mx, py1]); }
+  return {dx, dy, g};
 }
 function vApplyMove(a, dx, dy){
   const out = new Map(), done = new Set(), get = k => { if (!out.has(k)) out.set(k, a.base.get(k).map(p => ({...p}))); return out.get(k); };
@@ -3144,6 +3196,8 @@ function vDown(e){
     vSel.idx = [i, (i+1)%L.length]; vRender(); vAct = vStartMove(vSel.idx.map(i => ({k:vSel.k, i})), b, e); return cap(); }
   if (lk || blk){ vSel = {k:null, idx:[], lock: lk ? lk.dataset.lk : null, blk: blk ? blk.dataset.blk : null}; vRender();
     if (lk){ const ul = G.V.locks.find(l => l.id === lk.dataset.lk && l.g); if (ul){ vAct = {kind:'lh', h:'pos', l:ul, g:ul.g, sx:e.clientX, sy:e.clientY, live:false}; return cap(); } } return true; }
+  if (part && vSel.k === part.dataset.k && !part.dataset.k.endsWith('|-1') && !e.shiftKey){ const L = vLoop(vSel.k); vSel.idx = []; vRender();
+    vAct = vStartMove(L.map((_, i) => ({k:vSel.k, i})), b, e); return cap(); }
   if (part){ const k = part.dataset.k; if (vSel.k !== k){ vSel = {k, idx:[], lock:null, blk:null}; vRender(); } else if (!e.shiftKey){ vSel.idx = []; vRender(); }
     vAct = {kind:'mq', a:b, b, sx:e.clientX, sy:e.clientY, live:false, add:e.shiftKey ? [...vSel.idx] : []}; return cap(); }
   if (vSel.k || vSel.lock || vSel.blk){ vSel = {k:null, idx:[], lock:null, blk:null}; vRender(); }
@@ -3154,29 +3208,37 @@ function vMove(e){
   if (a.live === false){ if (Math.hypot(e.clientX-a.sx, e.clientY-a.sy) < 3) return; a.live = true; }
   const sn = v => snapOn && !e.altKey ? Math.round(v*2)/2 : +v.toFixed(2);
   if (a.kind === 'pts'){ let dx = b[0]-a.b0[0], dy = b[1]-a.b0[1]; if (e.shiftKey){ if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
-    const P0 = a.base.get(a.items[0].k)[a.items[0].i]; let tx = P0.x + dx, ty = P0.y + dy;
-    if (snapOn && !e.altKey){ let best = 6*vK(), hit = null;
-      for (const [k, L] of a.base) L.forEach((q, i) => { if (a.moving.has(k+'#'+i)) return; const dd = Math.hypot(q.x-tx, q.y-ty); if (dd < best){ best = dd; hit = q; } });
-      if (hit){ tx = hit.x; ty = hit.y; } else { tx = P0.x + sn(dx); ty = P0.y + sn(dy); } }
-    vApplyMove(a, tx - P0.x, ty - P0.y); return; }
+    const r = vSnap(a, dx, dy, e); vGuides = r.g; vApplyMove(a, r.dx, r.dy); return; }
   if (a.kind === 'hd'){ const L = vLoop(a.k).map(q => ({...q})), P = L[a.i]; if (!P) return; const v = [b[0]-P.x, b[1]-P.y], o = a.which === 'c1' ? 'c2' : 'c1';
     P[a.which] = v; if (!e.altKey && P[o]){ const len = Math.hypot(...P[o]), l2 = Math.hypot(...v) || 1; P[o] = [-v[0]/l2*len, -v[1]/l2*len]; } vCommit(a.k, L); vDone(); return; }
   if (a.kind === 'lh'){ const g = a.g, rx = b[0]-g.c[0], ry = b[1]-g.c[1], pu = rx*g.u[0] + ry*g.u[1], pv = rx*g.v[0] + ry*g.v[1], o = {};
-    if (a.h === 'pos'){ const A = vLoop(vk(a.l.n, -1))[a.l.i], B = vLoop(vk(a.l.n, -1))[(a.l.i+1)%a.l.c], dx = B.x-A.x, dy = B.y-A.y; o.t = clamp(((b[0]-A.x)*dx + (b[1]-A.y)*dy)/(dx*dx+dy*dy || 1), 0, 1); }
+    if (a.h === 'pos'){ const A = vLoop(vk(a.l.n, -1))[a.l.i], B = vLoop(vk(a.l.n, -1))[(a.l.i+1)%a.l.c], dx = B.x-A.x, dy = B.y-A.y, len = Math.hypot(dx, dy) || 1;
+      let t = clamp(((b[0]-A.x)*dx + (b[1]-A.y)*dy)/(len*len), 0, 1), cen = false;
+      if (snapOn && !e.altKey){ if (Math.abs(t - .5)*len < 6*vK()){ t = .5; cen = true; } else t = Math.round(t*len*2)/2/len; }
+      const half = g.p.w/2 + (g.p.b||0), hs = clamp(t, half/len, 1 - half/len), c = [A.x + dx*hs, A.y + dy*hs], ux = dx/len, uy = dy/len, n0 = {hook:2.5, arrow:2}[a.l.type] || 0, dep = (n0 + g.p.D)*(a.l.type === 'notch' ? -1 : 1);
+      vGuides = {lines: cen ? [[c[0] - g.v[0]*4, c[1] - g.v[1]*4, c[0] + g.v[0]*(dep + 4), c[1] + g.v[1]*(dep + 4)]] : [], marks:[],
+        gaps:[[A.x, A.y, c[0] - ux*half, c[1] - uy*half], [c[0] + ux*half, c[1] + uy*half, B.x, B.y]]};
+      o.t = t; }
     else if (a.h === 'D') o.D = clamp(sn(a.l.type === 'notch' ? -pv : pv - ({hook:2.5, arrow:2}[a.l.type] || 0)), 1, 60);
     else if (a.h === 'w') o.w = clamp(sn(2*Math.abs(pu)), 3, 120);
     else o.b = clamp(sn(Math.abs(pu) - g.p.w/2), 0, 10);
+    if (a.h !== 'pos') vGuides = {lines:[], gaps:[], marks:[], tags:[[b[0], b[1], (a.h === 'w' ? 'width ' : a.h === 'D' ? 'length ' : 'hook ') + (+(o.w ?? o.D ?? o.b)).toFixed(1)]]};
     vLockSet(a.l.id, o); refresh(true); return; }
   if (a.kind === 'blh'){ const lk = a.lk, q = lk.q, o = {};
     if (a.h === 'D') o.D = clamp(sn(lk.s*(b[0] - lk.xc)), 2, 30); else if (a.h === 'w') o.w = clamp(sn(2*Math.abs(b[1] - lk.ym)), 4, 60);
     else if (a.h === 'b') o.b = clamp(sn(Math.abs(b[1] - lk.ym) - q.w/2), 0, 8); else o.pos = sn(b[1] - a.off - lk.ym0);
     vLockBSet(lk.grp, o); refresh(true); return; }
-  if (a.kind === 'draw'){ a.b = b; vOv(); return; }
+  if (a.kind === 'draw'){ const n = G.N.find(x => x.id === a.n), [px0,py0,px1,py1] = bboxOf(G.V.CLb.get(vk(a.n,-1)) || n.poly), cx = (px0+px1)/2, cy = (py0+py1)/2, tol = 6*vK(), g = {lines:[], gaps:[], marks:[]};
+    let bx = b[0], by = b[1];
+    if (snapOn && !e.altKey){ if (Math.abs((a.a[0]+bx)/2 - cx) < tol){ bx = 2*cx - a.a[0]; g.lines.push([cx, py0, cx, py1]); } else bx = Math.round(bx*2)/2;
+      if (Math.abs((a.a[1]+by)/2 - cy) < tol){ by = 2*cy - a.a[1]; g.lines.push([px0, cy, px1, cy]); } else by = Math.round(by*2)/2; }
+    a.b = [bx, by]; const X0 = Math.min(a.a[0], bx), X1 = Math.max(a.a[0], bx), Y0 = Math.min(a.a[1], by), Y1 = Math.max(a.a[1], by), mx = (X0+X1)/2, my = (Y0+Y1)/2;
+    g.gaps.push([px0, my, X0, my], [X1, my, px1, my], [mx, py0, mx, Y0], [mx, Y1, mx, py1]); g.tags = [[X1, Y0, (X1-X0).toFixed(1)+' × '+(Y1-Y0).toFixed(1)]]; vGuides = g; vOv(); return; }
   if (a.kind === 'mq'){ a.b = b; const L = vLoop(vSel.k), x0 = Math.min(a.a[0], b[0]), x1 = Math.max(a.a[0], b[0]), y0 = Math.min(a.a[1], b[1]), y1 = Math.max(a.a[1], b[1]);
     vSel.idx = [...new Set([...a.add, ...L.map((q, i) => q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1 ? i : -1).filter(i => i >= 0)])]; vRender(); }
 }
 function vUp(){
-  const a = vAct; vAct = null; if (!a) return;
+  const a = vAct; vAct = null; vGuides = null; if (!a) return;
   if (a.kind === 'draw'){ const w = Math.abs(a.b[0]-a.a[0]), h = Math.abs(a.b[1]-a.a[1]);
     if (w > 2 && h > 2){ const [x0,y0,x1,y1] = bboxOf(G.V.CL0.get(vk(a.n,-1))), W = x1-x0, H = y1-y0, u0 = (Math.min(a.a[0],a.b[0])-x0)/W, u1 = (Math.max(a.a[0],a.b[0])-x0)/W, v0 = (Math.min(a.a[1],a.b[1])-y0)/H, v1 = (Math.max(a.a[1],a.b[1])-y0)/H;
       const id = uid(), r5 = v => +v.toFixed(5); let pts;
@@ -3236,7 +3298,7 @@ function vInspRender(){
   else h = `<p class="note">Click a part on the dieline to see its points, or pick a lock above and click an edge.</p>`;
   box.innerHTML = h;
   const n = (S.vec||[]).length + (S.vadd||[]).length + (S.locks||[]).length + Object.keys(S.lk||{}).length;
-  $('vReset').disabled = !n; $('vReset').textContent = n ? `Reset all hand edits (${n})` : 'Reset all hand edits';
+  $('vReset').disabled = !n; $('vReset').textContent = n ? `Reset all hand edits (${n})` : 'Reset all hand edits'; $('vOrig').disabled = !n;
   $('vStale').hidden = !G.V.stale;
 }
 $('vInsp').addEventListener('change', e => {
@@ -3259,7 +3321,9 @@ $('vInsp').addEventListener('click', e => { const b = e.target.closest('button')
 $('vTools').addEventListener('click', e => { const b = e.target.closest('[data-vt]'); if (b) vToolSet(b.dataset.vt); });
 $('vLocks').addEventListener('click', e => { const b = e.target.closest('[data-vl]'); if (b) vToolSet(vTool === 'lock:'+b.dataset.vl ? 'select' : 'lock:'+b.dataset.vl); });
 $('vMirror').addEventListener('change', e => { vMirror = e.target.checked; });
-$('vReset').addEventListener('click', () => { S.vec = []; S.vadd = []; S.locks = []; S.lk = {}; vSel = {k:null, idx:[], lock:null, blk:null}; vDone(); });
+const vOriginal = () => { S.vec = []; S.vadd = []; S.locks = []; S.lk = {}; vSel = {k:null, idx:[], lock:null, blk:null}; vDone(); toast('Back to the original dieline — ⌘Z to undo.'); };
+$('vReset').addEventListener('click', vOriginal);
+$('vOrig').addEventListener('click', vOriginal);
 function vSetMode(on){
   if (on === vMode) return; vMode = on; $('view2d').classList.toggle('vmode', on);
   document.querySelector('.board-hint').textContent = on ? 'Click a part — drag points and edges · double-click an edge to add a point · V select · R window · O round hole · Esc' : 'Click an element to edit it · drag empty space or wheel — pan · Ctrl/⌘ + wheel — zoom';
