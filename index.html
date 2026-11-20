@@ -185,6 +185,20 @@ html.ro #tEd,html.ro #vOrig,html.ro #selBar,html.ro .rail [data-pane=mine],html.
 html.ro #aside > section :is(button,input,select,textarea,label.btn){opacity:.5;cursor:not-allowed}
 html.ro #aside::before{content:"View only — you can look around and export the files. Ask the owner for an edit link to make changes.";display:block;margin:12px 16px 0;padding:10px 12px;border-radius:8px;background:var(--hover);font-size:12.5px;line-height:1.4;color:var(--muted,#666)}
 .shlink select{flex:none;width:auto}
+.dlg.die{width:min(680px,calc(100vw - 32px))}
+.diewrap{background:#fff;border:1px solid var(--line);border-radius:10px;height:min(300px,40vh);margin:10px 0;overflow:hidden}
+.diewrap svg{width:100%;height:100%;display:block}
+#dieGroups{max-height:200px;overflow:auto;margin:4px 0 8px}
+.dierow{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+.dierow .sw{width:22px;height:0;border-top:2px solid;flex:none}
+.dierow .sw.dash{border-top-style:dashed}
+.dierow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dierow em{font-style:normal;color:var(--muted);font-size:12px;white-space:nowrap}
+.dierow select{width:auto;flex:none}
+.dieimp{display:flex;flex-direction:column;gap:2px;width:100%;margin:0 0 12px;padding:12px 14px;border:1px dashed var(--line);border-radius:10px;cursor:pointer;position:relative;text-align:left}
+.dieimp:hover{border-color:var(--accent);background:var(--accent-soft)}
+.dieimp b{font-size:13.5px}.dieimp span{font-size:12px;color:var(--muted)}
+.dieimp input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .dlg.rv{padding:22px}
 .shbar .btn.ok{background:#1f9d55;border-color:#1f9d55;color:#fff}
 @media (max-width:900px){.shbar #shWho{display:none}}
@@ -554,6 +568,7 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
         <div class="acts">
           <button class="btn" id="homeContinue" hidden>Continue last →</button>
           <button class="btn" type="button" id="openTpls">Browse templates</button>
+          <label class="btn" style="position:relative;overflow:hidden" title="DXF, PDF, AI or SVG from the print house">Import dieline<input id="dieFileHome" type="file" accept=".dxf,.pdf,.ai,.svg,application/pdf,image/svg+xml" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Import a dieline file"></label>
           <label class="btn" style="position:relative;overflow:hidden">Import .json<input id="openProjHome" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Import a project file"></label>
         </div>
       </div>
@@ -643,6 +658,10 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
         <h3 class="psub" id="vPresetsH">Standard containers</h3>
         <div class="presets" id="vPresets"></div>
         <h3 class="psub">Label sizes</h3>
+      </div>
+      <div class="sub" style="padding:0" data-size="die" id="dieBox">
+        <p class="note" id="dieInfo"></p>
+        <label class="dieimp"><b>Replace the dieline</b><span>DXF, PDF, AI or SVG from the print house — your design stays</span><input type="file" id="dieReplace" accept=".dxf,.pdf,.ai,.svg,application/pdf,image/svg+xml" aria-label="Replace the dieline"></label>
       </div>
       <div class="presets" id="presets"></div>
       <div class="presets" id="myPresets"></div>
@@ -792,6 +811,7 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
 
     <section data-pane="mine">
       <h2>Templates</h2>
+      <label class="dieimp"><b>+ Import a dieline from the print house</b><span>DXF, PDF, AI or SVG — cut, crease and perforation lines are read from the file</span><input type="file" id="dieFile" accept=".dxf,.pdf,.ai,.svg,application/pdf,image/svg+xml" aria-label="Import a dieline file"></label>
       <div class="presets" id="tplCats"></div>
       <div class="tpls" id="tpls"></div>
       <p class="note">Picking a template in a project you have already changed asks whether to keep it and start a new one, or to apply the new structure here.</p>
@@ -1039,6 +1059,21 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
   <div class="presets" id="homeCats"></div>
   <div class="popbody"><div class="home-grid tgrid" id="tplGrid"></div></div>
 </dialog>
+<dialog class="dlg die" id="dieDlg" aria-labelledby="dieH">
+  <form method="dialog">
+    <h2 id="dieH">Import a dieline</h2>
+    <p class="note" id="dieSrc"></p>
+    <div class="diewrap"><svg id="diePrev" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="f">What each line in the file is</div>
+    <div id="dieGroups"></div>
+    <div class="row2">
+      <label class="f" id="dieUnitWrap">Units in the file<select id="dieUnit"><option value="mm">mm</option><option value="cm">cm</option><option value="in">inches</option><option value="pt">points (1/72″)</option><option value="px">pixels (1/96″)</option></select></label>
+      <label class="f">Project name<input id="dieName" type="text" maxlength="120"></label>
+    </div>
+    <p class="note" id="dieSize"></p>
+    <div class="acts"><button class="btn" value="cancel">Cancel</button><button class="btn pri" id="dieImpGo" type="button">Create project</button></div>
+  </form>
+</dialog>
 <dialog class="dlg" id="tplDlg">
   <form method="dialog">
     <h2>Switch to “<span id="tplDlgName"></span>”?</h2>
@@ -1219,7 +1254,7 @@ const TPL_DESC = {
   c_top:'Folds over the top of a plastic bag and is stapled, with a euro hole for hanging.',
   c_env:'C6 envelope 162×114 mm for A6 cards, with side flaps and a curved seal flap.'
 };
-const TYPE_NAMES = {tube:'Folding carton', tray:'Tray', lidbase:'Lid and base', mailer:'Mailer box', bakery:'Bakery box', drawer:'Drawer box', pouch:'Stand-up pouch', label:'Label / sticker', cup:'Paper cup', card:'Card / leaflet'};
+const TYPE_NAMES = {tube:'Folding carton', tray:'Tray', lidbase:'Lid and base', mailer:'Mailer box', bakery:'Bakery box', drawer:'Drawer box', pouch:'Stand-up pouch', label:'Label / sticker', cup:'Paper cup', card:'Card / leaflet', die:'Custom dieline'};
 const SIZE_CHIPS = {
   tube:[['Tea','70,70,110'],['Cream','50,50,130'],['Bottle','60,40,160'],['Soap','90,30,60'],['Candle','85,85,95'],['Wine','90,90,330']],
   tray:[['Sweets','160,110,40'],['Cookies','200,140,50'],['Gift','250,200,60']],
@@ -1952,11 +1987,51 @@ function vecApply(N, P){
   return V;
 }
 
+/* ---------- imported dieline (S.type 'die') ----------
+   S.die = {name, w, h, cut:[x0,y0,x1,y1, …], crease:[…], perf:[…]} in mm, y up, origin at the lower-left corner.
+   Cut lines are kept exactly as drawn; closed cut loops become the sheet outline(s) and holes (for bleed, 3D and the artwork clip). */
+const segsOf = a => { const r = []; for (let i = 0; i+3 < (a?.length || 0); i += 4) r.push([[a[i],a[i+1]],[a[i+2],a[i+3]]]); return r; };
+const sArea = p => p.reduce((a,[x,y],i) => { const [u,v] = p[(i+1)%p.length]; return a + x*v - u*y; }, 0)/2;
+function chainSegs(segs, tol = .15){
+  const cell = p => [Math.floor(p[0]/tol), Math.floor(p[1]/tol)], grid = new Map(), used = new Uint8Array(segs.length);
+  segs.forEach((sg, i) => { for (const e of [0,1]){ const [cx,cy] = cell(sg[e]), k = cx+','+cy; let l = grid.get(k); if (!l) grid.set(k, l = []); l.push([i,e]); } });
+  const find = p => { const [cx,cy] = cell(p); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++){ const l = grid.get((cx+dx)+','+(cy+dy));
+    if (l) for (const [i,e] of l) if (!used[i] && Math.hypot(segs[i][e][0]-p[0], segs[i][e][1]-p[1]) <= tol) return [i,e]; } return null; };
+  const out = [];
+  for (let s0 = 0; s0 < segs.length; s0++){ if (used[s0]) continue; used[s0] = 1; const pts = [segs[s0][0], segs[s0][1]];
+    for (const back of [false, true]) for (;;){ const h = find(back ? pts[0] : pts[pts.length-1]); if (!h) break; used[h[0]] = 1; const q = segs[h[0]][1-h[1]]; back ? pts.unshift(q) : pts.push(q); }
+    const closed = pts.length > 3 && Math.hypot(pts[0][0]-pts[pts.length-1][0], pts[0][1]-pts[pts.length-1][1]) <= tol;
+    if (closed) pts.pop(); out.push({pts, closed}); }
+  return out;
+}
+function hullOf(P){ const p = [...P].sort((a,b) => a[0]-b[0] || a[1]-b[1]), cr = (o,a,b) => (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]), lo = [], up = [];
+  for (const q of p){ while (lo.length > 1 && cr(lo[lo.length-2], lo[lo.length-1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of p.reverse()){ while (up.length > 1 && cr(up[up.length-2], up[up.length-1], q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0,-1).concat(up.slice(0,-1)); }
+const DIEC = new WeakMap();
+function dieParts(D){
+  if (DIEC.has(D)) return DIEC.get(D);
+  const cut = segsOf(D.cut), all = cut.flat(), loops = chainSegs(cut).filter(c => c.closed && c.pts.length > 2 && Math.abs(sArea(c.pts)) > 1).sort((a,b) => Math.abs(sArea(b.pts)) - Math.abs(sArea(a.pts)));
+  const ccw = (p, want) => (sArea(p) > 0) === want ? p : [...p].reverse(), parts = [];
+  for (const l of loops){ const host = parts.find(o => inPoly(...l.pts[0], o.poly) && inPoly(...l.pts[Math.floor(l.pts.length/2)], o.poly));
+    if (host) host.holes.push(ccw(l.pts, false)); else parts.push({poly:ccw(l.pts, true), holes:[]}); }
+  const bb = all.length ? bboxOf(all) : [0,0,100,100], pb = parts.length ? bboxOf(parts.flatMap(p => p.poly)) : null;
+  // outline not closed in the file (gaps, open ends): fall back to the convex hull of the cut lines
+  const hull = !pb || pb[0]-bb[0] > 2 || pb[1]-bb[1] > 2 || bb[2]-pb[2] > 2 || bb[3]-pb[3] > 2;
+  const r = {cut, crease:segsOf(D.crease), perf:segsOf(D.perf), parts: hull ? [{poly:ccw(all.length > 2 ? hullOf(all) : rect(0,0,100,100), true), holes:parts.flatMap(p => p.holes)}] : parts, bb, hull};
+  DIEC.set(D, r); return r;
+}
+function buildDie(P, B){
+  const d = dieParts(P.die || {cut:[0,0,100,0, 100,0,100,100, 100,100,0,100, 0,100,0,0]});
+  d.parts.forEach((p, i) => B.add(i ? 'die'+i : 'die', null, [0,0], null, 0, null, p.poly, {holes:p.holes, final:{p:[0,0,0], q:Q_LID}}));
+  B.face('front', d.bb);
+  return {die:d, perfs:d.perf, noCrease:true};
+}
 function build(P){
   P = {...P}; for (const k of NUM) P[k] = +P[k];
   const Pin = {...P}; Object.assign(P, prodDims(P));
   const B = maker(); LOCKS = [];
-  const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, bakery:buildBakery, drawer:buildDrawer, pouch:buildPouch, label:buildLabel, cup:buildCup, card:buildCard}[P.type] || buildTube)(P,B) || {};
+  const extra = ({tube:buildTube, tray:buildTray, lidbase:buildLidBase, mailer:buildMailer, bakery:buildBakery, drawer:buildDrawer, pouch:buildPouch, label:buildLabel, cup:buildCup, card:buildCard, die:buildDie}[P.type] || buildTube)(P,B) || {};
   const locks = LOCKS, V = vecApply(B.N, P);
   const perfs = [...(BOX.has(P.type) ? constructionExtras(P, B) : ['label','card'].includes(P.type) ? constructionExtras({cornerR:P.cornerR}, B) : []), ...(extra.perfs || [])];
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -1970,6 +2045,7 @@ function build(P){
   const cuts=[], creases=[];
   for (const e of m.values()){ if (e.c<2) cuts.push([e.a,e.b]); else if (!extra.noCrease) creases.push([e.a,e.b]); }
   if (extra.slits) cuts.push(...extra.slits);
+  if (extra.die){ cuts.length = 0; cuts.push(...extra.die.cut); creases.push(...extra.die.crease); }   // the print house's lines, exactly as drawn
   const vl = [];   // S.vlines: hand-drawn lines, ends normalised to the part's outline bbox
   for (const l of P.vlines || []){ const O = V.CL0.get(vk(l.n, -1)); if (!O) continue; const [x0,y0,x1,y1] = bboxOf(O), W = x1-x0, H = y1-y0;
     const a = [x0 + l.a[0]*W, y0 + l.a[1]*H], b = [x0 + l.b[0]*W, y0 + l.b[1]*H]; (l.t === 'cut' ? cuts : l.t === 'perf' ? perfs : creases).push([a, b]); vl.push({id:l.id, n:l.n, t:l.t, a, b}); }
@@ -3747,6 +3823,9 @@ function syncUI(){
   for (const [a,k] of Object.entries(ALIAS)){ const el=$(a); if (el.type==='checkbox') el.checked=!!S[k]; else el.value=S[k]; }
   const dl = DIM_LABELS[S.type] || ['Length','Width','Height']; ['lL','lW','lH'].forEach((id,i)=>{ $(id).textContent = dl[i] || ''; $(id).closest('label').hidden = dl[i]===null; });
   $('dimModeWrap').hidden = !BOX.has(S.type); syncTypeUI();
+  const die = S.type==='die'; $('L').closest('.row').hidden = die; $('presets').hidden = $('myPresets').hidden = die;
+  if (die){ $('dimTitle').textContent = 'Dieline from a file'; const D = S.die || {};
+    $('dieInfo').textContent = `${D.name ? '“' + D.name + '” · ' : ''}${fmtU(D.w)} × ${fmtU(D.h)} ${UNAME[S.unit]} · ${(D.cut?.length||0)/4|0} cut, ${(D.crease?.length||0)/4|0} crease${D.perf?.length ? `, ${D.perf.length/4|0} perforation` : ''} lines. The size comes from the file — to change it, ask the print house for a new dieline.`; }
   for (const id of SEL) $(id).value = S[id];
   for (const id of CHK) $(id).checked = !!S[id];
   document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== S.type);
@@ -3757,7 +3836,8 @@ function syncUI(){
 }
 // ---------- Size pane: standard sizes, the template original and my own sizes
 const chipDims = d => d.split(',').map(Number);
-const dimTxt = (d, t) => { const [l,w,h] = chipDims(d); return t==='label' || t==='card' ? `${l}×${h}` : t==='cup' ? `Ø${l}/${w}×${h}` : `${l}×${w}×${h}`; };
+const fmtU = v => +((+v || 0)/UF()).toFixed(S.unit==='mm' ? 1 : 2);
+const dimTxt = (d, t) => { const [l,w,h] = chipDims(d); return t==='label' || t==='card' || t==='die' ? `${l}×${h}` : t==='cup' ? `Ø${l}/${w}×${h}` : `${l}×${w}×${h}`; };
 const sizeChips = () => S.type==='card' ? CARD_CHIPS[S.fold] || SIZE_CHIPS.card : SIZE_CHIPS[S.type] || [];
 const hitDims = d => { const [l,w,h] = chipDims(d); return +S.L===l && +S.H===h && (S.type==='label' || S.type==='card' || +S.W===w); };
 const myPresets = () => store.get('skladka-sizes', {});
@@ -3867,12 +3947,256 @@ function startFromTpl(id, pid){
   selectTpl(id); if (t.els) S.els = t.els.map(e => ({id:uid(), side:'out', x:.5, y:.5, rot:0, color:S.ink, ...e}));
   newProject(t.name, pid); markBase(); syncEl(); renderEls();
 }
+/* ---------- dieline import: DXF / PDF / AI / SVG → line groups (by layer, colour, dash) → the user says which is cut / crease / perforation ---------- */
+const ACI = {1:'#ff0000',2:'#e0c000',3:'#00b000',4:'#00b0b0',5:'#0000ff',6:'#ff00ff',7:'#000000',8:'#808080',9:'#a0a0a0',30:'#ff7f00',40:'#ffbf00',94:'#008000',140:'#0080ff',200:'#8000ff'};
+const UNIT_MM = {mm:1, cm:10, in:25.4, pt:25.4/72, px:25.4/96};
+const mulM = (m, n) => [m[0]*n[0]+m[2]*n[1], m[1]*n[0]+m[3]*n[1], m[0]*n[2]+m[2]*n[3], m[1]*n[2]+m[3]*n[3], m[0]*n[4]+m[2]*n[5]+m[4], m[1]*n[4]+m[3]*n[5]+m[5]];
+const apM = (m, x, y) => [m[0]*x + m[2]*y + m[4], m[1]*x + m[3]*y + m[5]];
+function dieRole(name, dashed){
+  const n = name.toLowerCase();
+  if (/bleed|safe|dim|annot|text|note|title|frame|border|info|glue|print|graphic|image|\bart(work)?\b|вылет|размер|текст|клей|печат|дизайн|рамк/.test(n)) return 'skip';
+  if (/perf|tear|перф|отрыв/.test(n)) return 'perf';
+  if (/creas|fold|score|rill|ritz|\bbig\b|биг|рилл|сгиб|фальц/.test(n)) return 'crease';
+  if (/cut|knife|trim|die|contour|kontur|outline|рез|высеч|контур|нож/.test(n)) return 'cut';
+  return dashed ? 'crease' : 'cut';
+}
+function arcPts(cx, cy, r, a0, a1){   // degrees, counter-clockwise
+  while (a1 <= a0) a1 += 360; const n = Math.max(2, Math.min(180, Math.ceil((a1-a0)/4))), p = [];
+  for (let i = 0; i <= n; i++){ const a = (a0 + (a1-a0)*i/n)*PI/180; p.push([cx + r*Math.cos(a), cy + r*Math.sin(a)]); } return p;
+}
+function bulgePoly(v, closed){
+  if (!v.length) return []; const p = [[v[0].x, v[0].y]], n = closed ? v.length : v.length-1;
+  for (let i = 0; i < n; i++){ const A = v[i], Bv = v[(i+1)%v.length], b = A.b || 0;
+    if (Math.abs(b) < 1e-9){ p.push([Bv.x, Bv.y]); continue; }
+    const th = 4*Math.atan(b), dx = Bv.x-A.x, dy = Bv.y-A.y, d = Math.hypot(dx,dy); if (!d){ continue; }
+    const r = d/(2*Math.sin(th/2)), h = r*Math.cos(th/2), cx = (A.x+Bv.x)/2 - h*dy/d, cy = (A.y+Bv.y)/2 + h*dx/d, a0 = Math.atan2(A.y-cy, A.x-cx), R = Math.abs(r);
+    const k = Math.max(2, Math.ceil(Math.abs(th)/(PI/45))); for (let j = 1; j <= k; j++){ const a = a0 + th*j/k; p.push([cx + R*Math.cos(a), cy + R*Math.sin(a)]); } }
+  return p;
+}
+function bspline(ctrl, kn, deg, w){
+  const n = ctrl.length; if (n < 2 || kn.length !== n + deg + 1) return ctrl;
+  const lo = kn[deg], hi = kn[n], N = Math.min(400, Math.max(12, n*10)), out = [];
+  for (let s = 0; s <= N; s++){ const t = lo + (hi-lo)*s/N; let k = deg; while (k < n-1 && t >= kn[k+1]) k++;
+    let d = []; for (let j = 0; j <= deg; j++){ const p = ctrl[k-deg+j], ww = w?.[k-deg+j] ?? 1; d.push([p[0]*ww, p[1]*ww, ww]); }
+    for (let r = 1; r <= deg; r++) for (let j = deg; j >= r; j--){ const i = k-deg+j, den = kn[i+deg-r+1] - kn[i], a = den ? (t - kn[i])/den : 0; d[j] = [0,1,2].map(q => (1-a)*d[j-1][q] + a*d[j][q]); }
+    out.push([d[deg][0]/d[deg][2], d[deg][1]/d[deg][2]]); }
+  return out;
+}
+function dieCollector(){
+  const groups = new Map();
+  return { groups,
+    group(key, name, color, dashed, extra = {}){ let g = groups.get(key); if (!g) groups.set(key, g = {name, color, dashed, segs:[], ...extra}); return g; },
+    add(g, pts, closed){ for (let i = 0; i+1 < pts.length; i++) g.segs.push(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]);
+      if (closed && pts.length > 2){ const a = pts[pts.length-1], b = pts[0]; g.segs.push(a[0], a[1], b[0], b[1]); } } };
+}
+function parseDXF(txt){
+  if (txt.startsWith('AutoCAD Binary DXF')) throw new Error('This is a binary DXF. Save it as an ASCII (text) DXF and import again.');
+  const L = txt.split(/\r\n|\r|\n/), R = []; let sec = '', cur = null;
+  for (let i = 0; i+1 < L.length; i += 2){ const c = parseInt(L[i], 10), v = L[i+1].trim(); if (Number.isNaN(c)) continue;
+    if (c === 0){ cur = {t:v, c:[], sec}; R.push(cur); if (v === 'ENDSEC') sec = ''; continue; }
+    if (cur?.t === 'SECTION' && !cur.named && c === 2){ sec = v; cur.named = 1; continue; }
+    cur?.c.push([c, v]); }
+  const g = (r, code) => { for (const [c,v] of r.c) if (c === code) return v; return undefined; };
+  const hd = R.find(r => r.t === 'SECTION' && r.named && r.c.some(([c,v]) => c === 9)), units = {1:'in', 4:'mm', 5:'cm'};
+  let ins = 0; if (hd) for (let i = 0; i < hd.c.length-1; i++) if (hd.c[i][0] === 9 && hd.c[i][1] === '$INSUNITS'){ ins = +hd.c[i+1][1]; break; }
+  const layers = {}; for (const r of R) if (r.t === 'LAYER' && r.sec === 'TABLES'){ const n = g(r,2); if (n != null) layers[n] = {col:+(g(r,62) ?? 7), lt:g(r,6) || ''}; }
+  const blocks = {}; let blk = null;
+  for (const r of R){ if (r.sec !== 'BLOCKS') continue; if (r.t === 'BLOCK'){ blk = {x:+(g(r,10) || 0), y:+(g(r,20) || 0), ents:[]}; blocks[g(r,2)] = blk; } else if (r.t === 'ENDBLK') blk = null; else blk?.ents.push(r); }
+  const ents = R.filter(r => r.sec === 'ENTITIES' && r.t !== 'ENDSEC'), C = dieCollector();
+  const grp = (lay, col, lt) => { const Ly = layers[lay] || {col:7, lt:''}, ltx = !lt || /^bylayer$/i.test(lt) ? Ly.lt : lt, dashed = !!ltx && !/^(continuous|bylayer|byblock|solid)$/i.test(ltx);
+    const own = col && col !== 256 && col !== 0 && col !== Math.abs(Ly.col), aci = own ? col : Math.abs(Ly.col) || 7;
+    return C.group(lay+'|'+(own ? col : '')+'|'+dashed, lay + (own ? ` · colour ${col}` : '') + (dashed && !Ly.lt ? ' · dashed' : ''), ACI[aci] || '#888888', dashed, {off: Ly.col < 0}); };
+  const emit = (G, m, pts, closed) => C.add(G, pts.map(p => apM(m, p[0], p[1])), closed);
+  const walk = (list, m, inh, depth) => {
+    for (let i = 0; i < list.length; i++){ const r = list[i], t = r.t;
+      let lay = g(r,8) ?? '0', col = +(g(r,62) ?? 256), lt = g(r,6) || '';
+      if (inh){ if (lay === '0') lay = inh.lay; if (col === 0) col = inh.col; if (/^byblock$/i.test(lt)) lt = inh.lt; }
+      const mm = +(g(r,230) ?? 1) < 0 ? mulM(m, [-1,0,0,1,0,0]) : m, G = () => grp(lay, col, lt), num = c => +(g(r,c) ?? 0);
+      if (t === 'LINE') emit(G(), m, [[num(10), num(20)], [num(11), num(21)]]);
+      else if (t === 'LWPOLYLINE'){ const v = []; for (const [c, val] of r.c){ if (c === 10) v.push({x:+val, y:0, b:0}); else if (c === 20 && v.length) v[v.length-1].y = +val; else if (c === 42 && v.length) v[v.length-1].b = +val; }
+        emit(G(), mm, bulgePoly(v, (num(70) & 1) === 1)); }
+      else if (t === 'POLYLINE'){ const v = []; let j = i+1;
+        for (; j < list.length && list[j].t !== 'SEQEND'; j++) if (list[j].t === 'VERTEX' && !(+(g(list[j],70) ?? 0) & 16)) v.push({x:+(g(list[j],10) ?? 0), y:+(g(list[j],20) ?? 0), b:+(g(list[j],42) ?? 0)});
+        i = j; emit(G(), mm, bulgePoly(v, (num(70) & 1) === 1)); }
+      else if (t === 'ARC') emit(G(), mm, arcPts(num(10), num(20), num(40), num(50), num(51)));
+      else if (t === 'CIRCLE') emit(G(), mm, arcPts(num(10), num(20), num(40), 0, 360));
+      else if (t === 'ELLIPSE'){ const cx = num(10), cy = num(20), mx = num(11), my = num(21), k = +(g(r,40) ?? 1); let t0 = +(g(r,41) ?? 0), t1 = +(g(r,42) ?? 2*PI); while (t1 <= t0) t1 += 2*PI;
+        const n = Math.max(8, Math.ceil((t1-t0)/(PI/45))), p = []; for (let j = 0; j <= n; j++){ const a = t0 + (t1-t0)*j/n; p.push([cx + mx*Math.cos(a) - k*my*Math.sin(a), cy + my*Math.cos(a) + k*mx*Math.sin(a)]); } emit(G(), m, p); }
+      else if (t === 'SPLINE'){ const ctrl = [], fit = [], kn = [], w = []; for (const [c, val] of r.c){ if (c === 10) ctrl.push([+val, 0]); else if (c === 20 && ctrl.length) ctrl[ctrl.length-1][1] = +val;
+          else if (c === 11) fit.push([+val, 0]); else if (c === 21 && fit.length) fit[fit.length-1][1] = +val; else if (c === 40) kn.push(+val); else if (c === 41) w.push(+val); }
+        const p = ctrl.length >= 2 ? bspline(ctrl, kn, num(71) || 3, w.length === ctrl.length ? w : null) : fit; if (p.length > 1) emit(G(), m, p, (num(70) & 1) === 1); }
+      else if (t === 'INSERT' && depth < 8){ const b = blocks[g(r,2)]; if (!b) continue; const sx = +(g(r,41) ?? 1), sy = +(g(r,42) ?? 1), a = num(50)*PI/180, c = Math.cos(a), s = Math.sin(a);
+        walk(b.ents, mulM(mm, mulM([c*sx, s*sx, -s*sy, c*sy, num(10), num(20)], [1,0,0,1,-b.x,-b.y])), {lay, col, lt}, depth+1); }
+    } };
+  walk(ents, [1,0,0,1,0,0], null, 0);
+  return {groups:[...C.groups.values()], unit:units[ins] || 'mm', unitKnown: !!units[ins]};
+}
+function svgPathPts(d){
+  const tk = d.match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g) || [], out = []; let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0, q = null, cur = null;
+  const num = () => +tk[i++], isNum = () => i < tk.length && !/^[a-zA-Z]$/.test(tk[i]);
+  const to = (X, Y) => { if (!cur){ cur = {pts:[[x,y]], closed:false}; out.push(cur); } cur.pts.push([X,Y]); };
+  const cubic = (a,b,c,e,X,Y) => { for (let k = 1; k <= 16; k++){ const t = k/16, u = 1-t; to(u*u*u*x + 3*u*u*t*a + 3*u*t*t*c + t*t*t*X, u*u*u*y + 3*u*u*t*b + 3*u*t*t*e + t*t*t*Y); } };
+  const arc = (rx, ry, phi, fa, fs, X, Y) => { if (!rx || !ry){ to(X,Y); return; } rx = Math.abs(rx); ry = Math.abs(ry); const p = phi*PI/180, cp = Math.cos(p), sp = Math.sin(p);
+    const dx = (x-X)/2, dy = (y-Y)/2, x1 = cp*dx + sp*dy, y1 = -sp*dx + cp*dy; let l = x1*x1/(rx*rx) + y1*y1/(ry*ry); if (l > 1){ l = Math.sqrt(l); rx *= l; ry *= l; }
+    let co = Math.sqrt(Math.max(0, (rx*rx*ry*ry - rx*rx*y1*y1 - ry*ry*x1*x1)/(rx*rx*y1*y1 + ry*ry*x1*x1 || 1))); if (fa === fs) co = -co;
+    const cxp = co*rx*y1/ry, cyp = -co*ry*x1/rx, cx = cp*cxp - sp*cyp + (x+X)/2, cy = sp*cxp + cp*cyp + (y+Y)/2, an = (ux,uy,vx,vy) => Math.atan2(ux*vy - uy*vx, ux*vx + uy*vy);
+    const t1 = an(1, 0, (x1-cxp)/rx, (y1-cyp)/ry); let dt = an((x1-cxp)/rx, (y1-cyp)/ry, (-x1-cxp)/rx, (-y1-cyp)/ry);
+    if (!fs && dt > 0) dt -= 2*PI; else if (fs && dt < 0) dt += 2*PI;
+    const n = Math.max(4, Math.ceil(Math.abs(dt)/(PI/36))); for (let k = 1; k <= n; k++){ const t = t1 + dt*k/n; to(cx + rx*Math.cos(t)*cp - ry*Math.sin(t)*sp, cy + rx*Math.cos(t)*sp + ry*Math.sin(t)*cp); } };
+  while (i < tk.length){ if (!isNum()) cmd = tk[i++]; const rel = cmd !== cmd.toUpperCase(), C = cmd.toUpperCase(), ox = rel ? x : 0, oy = rel ? y : 0;
+    if (C === 'M'){ const X = num()+ox, Y = num()+oy; cur = {pts:[[X,Y]], closed:false}; out.push(cur); x = sx = X; y = sy = Y; cmd = rel ? 'l' : 'L'; q = null; }
+    else if (C === 'L'){ const X = num()+ox, Y = num()+oy; to(X,Y); x = X; y = Y; q = null; }
+    else if (C === 'H'){ const X = num()+ox; to(X,y); x = X; q = null; }
+    else if (C === 'V'){ const Y = num()+oy; to(x,Y); y = Y; q = null; }
+    else if (C === 'C'){ const a = num()+ox, b = num()+oy, c = num()+ox, e = num()+oy, X = num()+ox, Y = num()+oy; cubic(a,b,c,e,X,Y); q = ['C',c,e]; x = X; y = Y; }
+    else if (C === 'S'){ const [a,b] = q?.[0] === 'C' ? [2*x-q[1], 2*y-q[2]] : [x,y], c = num()+ox, e = num()+oy, X = num()+ox, Y = num()+oy; cubic(a,b,c,e,X,Y); q = ['C',c,e]; x = X; y = Y; }
+    else if (C === 'Q' || C === 'T'){ const [a,b] = C === 'Q' ? [num()+ox, num()+oy] : q?.[0] === 'Q' ? [2*x-q[1], 2*y-q[2]] : [x,y], X = num()+ox, Y = num()+oy;
+      cubic(x + 2/3*(a-x), y + 2/3*(b-y), X + 2/3*(a-X), Y + 2/3*(b-Y), X, Y); q = ['Q',a,b]; x = X; y = Y; }
+    else if (C === 'A'){ const rx = num(), ry = num(), ph = num(), fa = num(), fs = num(), X = num()+ox, Y = num()+oy; arc(rx, ry, ph, fa, fs, X, Y); x = X; y = Y; q = null; }
+    else if (C === 'Z'){ if (cur) cur.closed = true; x = sx; y = sy; cur = null; q = null; }
+    else i++; }
+  return out;
+}
+function parseSVG(txt){
+  const doc = new DOMParser().parseFromString(txt, 'image/svg+xml'), root = doc.documentElement;
+  if (root.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) throw new Error('This SVG file could not be read.');
+  const vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number), W = root.getAttribute('width') || '', ai = /Adobe Illustrator/i.test(txt);
+  const len = v => { const m = /^([\d.]+)\s*(mm|cm|in|pt|pc|px)?$/.exec(v.trim()); return m ? +m[1] * ({mm:1, cm:10, in:25.4, pt:25.4/72, pc:25.4/6, px:25.4/96}[m[2] || 'px']) : 0; };
+  let unit = ai ? 'pt' : 'px', f = 0;
+  if (/(mm|cm|in|pt|pc)\s*$/.test(W)) f = vb.length === 4 && vb[2] > 0 ? len(W)/vb[2] : 25.4/96;
+  if (f){ const best = Object.entries(UNIT_MM).find(([, v]) => Math.abs(v/f - 1) < .01); if (best) unit = best[0]; }
+  const host = document.createElement('div'); host.style.cssText = 'position:absolute;left:-99999px;top:0;width:10px;height:10px;overflow:hidden;visibility:hidden';
+  const svg = document.importNode(root, true); if (vb.length === 4){ svg.setAttribute('width', vb[2]); svg.setAttribute('height', vb[3]); } else { svg.removeAttribute('width'); svg.removeAttribute('height'); }
+  host.appendChild(svg); document.body.appendChild(host); const C = dieCollector(), INK = 'http://www.inkscape.org/namespaces/inkscape';
+  try {
+    for (const el of svg.querySelectorAll('path,line,polyline,polygon,rect,circle,ellipse')){
+      if (el.closest('defs,clipPath,mask,symbol,pattern,marker')) continue; const cs = getComputedStyle(el); if (cs.stroke === 'none' || cs.display === 'none') continue;
+      let lay = ''; for (let p = el.parentElement; p && p !== svg; p = p.parentElement) if (p.tagName.toLowerCase() === 'g'){ const lb = p.getAttributeNS(INK, 'label') || p.getAttribute('id'); if (lb) lay = lb; }
+      const dashed = !!cs.strokeDasharray && cs.strokeDasharray !== 'none', col = cs.stroke, m = el.getCTM(); if (!m) continue;
+      const M = [m.a, m.b, m.c, m.d, m.e, m.f], hex = (/rgb\((\d+),\s*(\d+),\s*(\d+)/.exec(col) || []).slice(1).map(v => (+v).toString(16).padStart(2,'0')).join('');
+      const G = C.group(lay+'|'+col+'|'+dashed, (lay || 'Lines') + (hex ? ` · #${hex}` : '') + (dashed ? ' · dashed' : ''), hex ? '#'+hex : '#888888', dashed);
+      const A = n => +el.getAttribute(n) || 0, t = el.tagName.toLowerCase(); let subs = [];
+      if (t === 'path') subs = svgPathPts(el.getAttribute('d') || '');
+      else if (t === 'line') subs = [{pts:[[A('x1'),A('y1')],[A('x2'),A('y2')]]}];
+      else if (t === 'polyline' || t === 'polygon'){ const n = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number), p = []; for (let k = 0; k+1 < n.length; k += 2) p.push([n[k], n[k+1]]); subs = [{pts:p, closed:t === 'polygon'}]; }
+      else if (t === 'rect'){ const x = A('x'), y = A('y'), w = A('width'), h = A('height'); subs = [{pts:[[x,y],[x+w,y],[x+w,y+h],[x,y+h]], closed:true}]; }
+      else { const cx = A('cx'), cy = A('cy'), rx = t === 'circle' ? A('r') : A('rx'), ry = t === 'circle' ? A('r') : A('ry'); subs = [{pts:arcPts(0,0,1,0,360).map(([u,v]) => [cx+u*rx, cy+v*ry])}]; }
+      for (const sp of subs) C.add(G, sp.pts.map(([x,y]) => { const [X,Y] = apM(M, x, y); return [X, -Y]; }), sp.closed);
+    }
+  } finally { host.remove(); }
+  return {groups:[...C.groups.values()], unit, unitKnown:!!f || ai};
+}
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+let pdfjsP = null;
+const loadPdfJs = () => pdfjsP ??= new Promise((res, rej) => { if (window.pdfjsLib) return res(window.pdfjsLib); const sc = document.createElement('script'); sc.src = PDFJS + 'pdf.min.js';
+  sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; res(window.pdfjsLib); };
+  sc.onerror = () => { pdfjsP = null; rej(new Error('Could not load the PDF reader. Check your connection and try again.')); }; document.head.appendChild(sc); });
+async function parsePDF(buf){
+  const lib = await loadPdfJs(), doc = await lib.getDocument({data:new Uint8Array(buf), isEvalSupported:false}).promise, page = await doc.getPage(1), ol = await page.getOperatorList(), O = lib.OPS;
+  const C = dieCollector(), stack = []; let st = {m:[1,0,0,1,0,0], col:'#000000', dash:false}, path = [];
+  const hex = a => typeof a[0] === 'string' ? a[0] : '#' + [...a].slice(0,3).map(v => Math.round(+v).toString(16).padStart(2,'0')).join('');
+  for (let k = 0; k < ol.fnArray.length; k++){ const fn = ol.fnArray[k], a = ol.argsArray[k];
+    if (fn === O.save) stack.push({...st}); else if (fn === O.restore) st = stack.pop() || st;
+    else if (fn === O.transform) st.m = mulM(st.m, a);
+    else if (fn === O.paintFormXObjectBegin){ stack.push({...st}); if (a?.[0]) st.m = mulM(st.m, a[0]); }
+    else if (fn === O.paintFormXObjectEnd) st = stack.pop() || st;
+    else if (fn === O.setStrokeRGBColor) st.col = hex(a);
+    else if (fn === O.setDash) st.dash = !!(a?.[0]?.length);
+    else if (fn === O.constructPath){ const [ops, args] = a; let j = 0, cur = null, x = 0, y = 0, sx = 0, sy = 0; const T = (u,v) => apM(st.m, u, v);
+      const to = (u,v) => { if (!cur){ cur = {pts:[T(x,y)], closed:false}; path.push(cur); } cur.pts.push(T(u,v)); x = u; y = v; };
+      const cub = (a1,b1,a2,b2,X,Y) => { const x0 = x, y0 = y; for (let s = 1; s <= 16; s++){ const t = s/16, u = 1-t; to(u*u*u*x0 + 3*u*u*t*a1 + 3*u*t*t*a2 + t*t*t*X, u*u*u*y0 + 3*u*u*t*b1 + 3*u*t*t*b2 + t*t*t*Y); } x = X; y = Y; };
+      for (const op of ops){
+        if (op === O.moveTo){ x = sx = args[j++]; y = sy = args[j++]; cur = {pts:[T(x,y)], closed:false}; path.push(cur); }
+        else if (op === O.lineTo) to(args[j++], args[j++]);
+        else if (op === O.curveTo){ const v = args.slice(j, j += 6); cub(...v); }
+        else if (op === O.curveTo2){ const v = args.slice(j, j += 4); cub(x, y, v[0], v[1], v[2], v[3]); }
+        else if (op === O.curveTo3){ const v = args.slice(j, j += 4); cub(v[0], v[1], v[2], v[3], v[2], v[3]); }
+        else if (op === O.closePath){ if (cur) cur.closed = true; x = sx; y = sy; cur = null; }
+        else if (op === O.rectangle){ const [rx, ry, w, h] = args.slice(j, j += 4); path.push({pts:[T(rx,ry), T(rx+w,ry), T(rx+w,ry+h), T(rx,ry+h)], closed:true}); cur = null; } } }
+    else if ([O.stroke, O.closeStroke, O.fillStroke, O.eoFillStroke, O.closeFillStroke, O.closeEOFillStroke].includes(fn)){
+      const G = C.group(st.col+'|'+st.dash, `Colour ${st.col}${st.dash ? ' · dashed' : ''}`, st.col, st.dash);
+      for (const p of path) C.add(G, p.pts, p.closed || fn === O.closeStroke || fn === O.closeFillStroke || fn === O.closeEOFillStroke); path = []; }
+    else if ([O.fill, O.eoFill, O.endPath, O.shadingFill].includes(fn)) path = [];
+  }
+  const gs = [...C.groups.values()];
+  return {groups:gs, unit:'pt', unitKnown:true, pages:doc.numPages};
+}
+async function readDieFile(file){
+  const buf = await file.arrayBuffer(), ext = (file.name.split('.').pop() || '').toLowerCase(), head = new TextDecoder('latin1').decode(buf.slice(0, 2048));
+  if (ext === 'cdr') throw new Error('CorelDRAW files can’t be read directly. In CorelDRAW: File → Export → DXF or PDF, then import that.');
+  if (head.includes('%PDF')) return {...await parsePDF(buf), kind:ext === 'ai' ? 'Illustrator' : 'PDF'};
+  if (ext === 'ai') throw new Error('This .ai file was saved without PDF compatibility. In Illustrator: File → Save As → tick “Create PDF Compatible File”, or export a PDF or DXF.');
+  let txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('�')) txt = new TextDecoder('windows-1251').decode(buf);
+  if (ext === 'svg' || /<svg[\s>]/i.test(txt.slice(0, 4000))) return {...parseSVG(txt), kind:'SVG'};
+  if (ext === 'dxf' || /^\s*0\s*[\r\n]+\s*SECTION/.test(txt)) return {...parseDXF(txt), kind:'DXF'};
+  throw new Error('Use a DXF, PDF, AI or SVG file.');
+}
+// groups + chosen roles + units → S.die
+function dieFrom(res, roles, unit){
+  const f = UNIT_MM[unit] || 1, keep = {cut:[], crease:[], perf:[]}; let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  res.groups.forEach((g, i) => { const r = roles[i]; if (!keep[r]) return; const a = g.segs;
+    for (let k = 0; k+3 < a.length; k += 4){ const p = [a[k]*f, a[k+1]*f, a[k+2]*f, a[k+3]*f]; if (Math.hypot(p[2]-p[0], p[3]-p[1]) < .005) continue; keep[r].push(p);
+      x0 = Math.min(x0, p[0], p[2]); y0 = Math.min(y0, p[1], p[3]); x1 = Math.max(x1, p[0], p[2]); y1 = Math.max(y1, p[1], p[3]); } });
+  const out = {w:+(x1-x0).toFixed(2), h:+(y1-y0).toFixed(2)}, R = v => Math.round(v*100)/100;
+  for (const r of ['cut','crease','perf']){ const seen = new Set(), a = [];
+    for (const p of keep[r]){ const q = [R(p[0]-x0), R(p[1]-y0), R(p[2]-x0), R(p[3]-y0)], k = q[0] < q[2] || (q[0] === q[2] && q[1] <= q[3]) ? q.join() : [q[2],q[3],q[0],q[1]].join();
+      if (seen.has(k)) continue; seen.add(k); a.push(...q); }
+    out[r] = a; }
+  return out;
+}
+let dieRes = null, dieMode = 'new';
+const DIE_ROLE = {cut:['Cut','var(--cut)'], crease:['Crease','var(--crease)'], perf:['Perforation','#e8890c'], skip:['Ignore','#bbbbbb']};
+async function openDieFile(file, mode){
+  if (!file) return; toast('Reading the dieline…');
+  try { dieRes = await readDieFile(file); } catch (e){ console.error('die import', e); toast(e.message || 'Could not read this file.'); return; }
+  dieRes.groups = dieRes.groups.filter(g => g.segs.length).sort((a,b) => b.segs.length - a.segs.length);
+  if (!dieRes.groups.length){ toast('No lines found in this file. Dielines must be drawn as lines (strokes), not filled shapes.'); return; }
+  if (dieRes.groups.length > 40) dieRes.groups.length = 40;
+  dieMode = mode; dieRes.file = file.name.replace(/\.[^.]+$/, '');
+  $('dieSrc').textContent = `${dieRes.kind} · ${file.name}${dieRes.pages > 1 ? ` · page 1 of ${dieRes.pages}` : ''}. Check that red = cut and blue = crease; change any line group below.`;
+  $('dieGroups').innerHTML = dieRes.groups.map((g, i) => `<label class="dierow"><span class="sw${g.dashed ? ' dash' : ''}" style="border-color:${g.color}"></span><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span><em>${g.segs.length/4} lines</em>
+    <select data-g="${i}">${Object.entries(DIE_ROLE).map(([k,[n]]) => `<option value="${k}"${(g.off ? 'skip' : dieRole(g.name, g.dashed)) === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>`).join('');
+  $('dieUnit').value = dieRes.unit; $('dieUnitWrap').hidden = dieRes.kind !== 'DXF' && dieRes.kind !== 'SVG';
+  $('dieName').value = mode === 'new' ? dieRes.file : S.pname || dieRes.file; $('dieName').closest('label').hidden = mode !== 'new';
+  $('dieImpGo').textContent = mode === 'new' ? 'Create project' : 'Use this dieline';
+  diePreview(); $('dieDlg').showModal();
+}
+const dieRoles = () => [...$('dieGroups').querySelectorAll('select')].map(s => s.value);
+function diePreview(){
+  if (!dieRes) return; const d = dieFrom(dieRes, dieRoles(), $('dieUnit').value), pad = Math.max(d.w, d.h)*.04 + 1;
+  const pathOf = a => { let p = ''; for (let k = 0; k+3 < a.length; k += 4) p += `M${a[k]} ${-a[k+1]}L${a[k+2]} ${-a[k+3]}`; return p; };
+  $('diePrev').setAttribute('viewBox', `${-pad} ${-d.h-pad} ${d.w+2*pad} ${d.h+2*pad}`);
+  $('diePrev').innerHTML = `<path d="${pathOf(d.crease)}" fill="none" stroke="#2f6fdb" stroke-width="1.2" stroke-dasharray="5 3" vector-effect="non-scaling-stroke"/>`
+    + `<path d="${pathOf(d.perf)}" fill="none" stroke="#e8890c" stroke-width="1.2" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>`
+    + `<path d="${pathOf(d.cut)}" fill="none" stroke="#ff445d" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`;
+  const n = r => d[r].length/4, big = Math.max(d.w, d.h), warn = !n('cut') ? ' Mark at least one group as Cut.' : big > 2000 ? ' That is very large — check the units.' : big < 10 ? ' That is very small — check the units.' : '';
+  $('dieSize').textContent = n('cut') ? `Size ${+d.w.toFixed(1)} × ${+d.h.toFixed(1)} mm · ${n('cut')} cut, ${n('crease')} crease${n('perf') ? `, ${n('perf')} perforation` : ''} lines.${warn}` : warn.trim();
+  $('dieSize').className = 'note' + (warn ? ' bad' : ''); $('dieImpGo').disabled = !n('cut');
+}
+$('dieGroups').addEventListener('change', diePreview); $('dieUnit').addEventListener('change', diePreview);
+$('dieImpGo').addEventListener('click', async () => {
+  const die = {name:dieRes.file, ...dieFrom(dieRes, dieRoles(), $('dieUnit').value)}; $('dieDlg').close();
+  if (dieMode === 'replace'){ S.die = die; S.L = Math.round(die.w); S.H = Math.round(die.h); fitNext = true; syncUI(); refresh(true); toast('Dieline replaced — check where your design sits.'); return; }
+  if (S.pid && customized()){ clearTimeout(saveT); await saveProject(); }
+  startFromDie(die, $('dieName').value.trim() || die.name || 'Custom dieline'); openEditor();
+  const p = dieParts(die); if (p.hull) toast('The outer cut line is not closed in the file — the sheet shape is approximated. Check the dieline.');
+});
+function startFromDie(die, name){
+  const keep = {}; for (const k of ['scBg','scBgColor','light','lInt','lAng','shadow','unit','bleed','safe','method','sheetFmt','sheetW','sheetH','grip','impGap']) keep[k] = S[k];
+  for (const k in IMGS) delete IMGS[k]; for (const k in ELIMG) delete ELIMG[k]; selId = null;
+  Object.assign(S, DEFAULTS, keep, {els:[]}, {type:'die', tpl:'', tplOrig:'', die, L:Math.round(die.w), H:Math.round(die.h), showText:false});
+  fitNext = true; T = 1; $('t').value = 1000; anim = null; syncUI(); refresh(true);
+  newProject(name); markBase(); syncEl(); renderEls();
+}
+for (const [id, mode] of [['dieFile','new'], ['dieFileHome','new'], ['dieReplace','replace']])
+  $(id).addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; openDieFile(f, mode); });
 let tplCat = store.get('skladka-tplcat', 'all'), pendingTpl = null;
 const tplP = t => ({...DEFAULTS, ...TYPE_DIMS[t.type], type:t.type, ...t.set});
 function tplSize(P){
   if (P.type==='label') return P.vessel==='none' ? `${labelL(P)}×${P.lshape==='circle' ? labelL(P) : P.H} mm` : `${labelL(P)}×${P.lshape==='circle' ? labelL(P) : P.H} mm · Ø ${P.W}`;
   if (P.type==='cup') return `Ø ${P.L} / ${P.W} × ${P.H} mm`;
   if (P.type==='card') return `${P.L}×${P.H} mm`;
+  if (P.type==='die') return `dieline ${Math.round(P.die?.w || P.L)}×${Math.round(P.die?.h || P.H)} mm`;
   return `${P.L}×${P.W}×${P.H} mm`;
 }
 const TPL_THUMB = {};
