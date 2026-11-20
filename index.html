@@ -2423,10 +2423,10 @@ function clipFace(ctx, G, f, s, side){
 // o.oy/o.hpx: render one horizontal strip; o.text:'skip' leaves text out; o.rec:[] records text runs instead of drawing them
 function drawArt(canvas, G, s, lines, side='out', hl=null, warn=null, o={}){
   const {minX,maxX,maxY,w,h} = G.b, FW = Math.max(1,Math.round(w*s)), FH = Math.max(1,Math.round(h*s));
-  canvas.width = o.rec ? 1 : FW; canvas.height = o.rec ? 1 : (o.hpx || FH);
+  canvas.width = o.rec ? 1 : (o.wpx || FW); canvas.height = o.rec ? 1 : (o.hpx || FH);
   const ctx = canvas.getContext('2d'), X = side==='in' ? x=>(maxX-x)*s : x=>(x-minX)*s, Y = y=>(maxY-y)*s;
   ctx.fillStyle = side==='in' ? insideColor() : S.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
-  if (o.oy) ctx.translate(0,-o.oy);
+  if (o.oy || o.ox) ctx.translate(-(o.ox || 0), -(o.oy || 0));
   if (side==='out' && S.bgMode && S.bgMode!=='solid') bgPaint(ctx, FW, FH, s);
   if (o.text==='skip') ctx.fillText = () => {};
   if (o.rec) ctx.fillText = (t,x,y) => o.rec.push({t:String(t), x, y, el:curElId, m:ctx.getTransform(), font:ctx.font, fill:ctx.fillStyle, align:ctx.textAlign, base:ctx.textBaseline, clip:lastClip});
@@ -3176,7 +3176,7 @@ function applyDieEls(){
     const seg = [toD(g.cx - h*c, g.cy - h*s), toD(g.cx + h*c, g.cy + h*s)];
     (el.line==='crease' ? G.creases : el.line==='cut' ? G.cuts : G.perfs).push(seg); }
   const sig = JSON.stringify(S.els.filter(e => e.kind==='dieline' && !e.hidden).map(e => [e.side,e.face,e.x,e.y,e.size,e.rot,e.line]));
-  if (sig !== dieSig){ dieSig = sig; gen++; }
+  if (sig !== dieSig){ dieSig = sig; dieDirty = true; }
 }
 function doRefresh(){
   pending = 0;
@@ -3204,7 +3204,7 @@ function doRefresh(){
   $('insideBgWrap').hidden = S.inside!=='color';
   if (!$('view2d').hidden) render2D();
 }
-let gen = 0, sig2d = '';
+let gen = 0, sig2d = '', dieDirty = false, boardKey = '';
 function render2D(){
   if (vMode){ sig2d = 'v'; $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">✎ Edit · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm · cut — black, fold — blue dashed</p>${vSvg()}</div>`;
     if (!vFitted){ vFitted = true; fitBoard(); } else drawRulers(); vInspRender(); return; }
@@ -3215,14 +3215,45 @@ function render2D(){
   if (sig === sig2d && v.querySelector('[data-side=out] image')){
     v.querySelector('[data-side=out] image').setAttribute('href', out);
     if (inn) v.querySelector('[data-side=in] image').setAttribute('href', inn);
-    drawSel(); return;
+    if (dieDirty) swapDieLayers();
+    hdQueue(); drawSel(); return;
   }
+  dieDirty = false;
   sig2d = sig;
   const grid = `<g class="gridl" stroke="#7d5cff" stroke-opacity=".5" stroke-width="0.3">${Array.from({length:Math.floor(G.b.w/10)+1},(_,i)=>`<line x1="${i*10+BLEED}" y1="0" x2="${i*10+BLEED}" y2="${f2(G.b.h)}"/>`).join('')}${Array.from({length:Math.floor(G.b.h/10)+1},(_,i)=>`<line x1="0" y1="${i*10+BLEED}" x2="${f2(G.b.w)}" y2="${i*10+BLEED}"/>`).join('')}</g>`;
   const sz = svg => svg.replace('<svg ', `<svg style="width:${(G.b.w*BK).toFixed(1)}px;height:${(G.b.h*BK).toFixed(1)}px" `).replace('</svg>', grid+'</svg>');
   $('boardInner').innerHTML = `<div class="sheetwrap" data-side="out"><p class="cap">Outside · ${G.b.w.toFixed(0)}×${G.b.h.toFixed(0)} mm</p>${sz(svgDoc(G, out, false, true, '', false))}</div>` +
     (inside ? `<div class="sheetwrap" data-side="in"><p class="cap">Reverse, inside of the box · mirrored, as printed</p>${sz(svgDoc(G, inn, true, true, '', false))}</div>` : '');
-  fitBoard(); drawSel();
+  if (act) act.svg = v.querySelector(`[data-side=${act.el.side}] svg`) || act.svg;
+  const key = G.b.w.toFixed(1) + 'x' + G.b.h.toFixed(1) + inside; if (key !== boardKey){ boardKey = key; fitBoard(); } else applyBoard();
+  hdQueue(); drawSel();
+}
+function swapDieLayers(){ dieDirty = false;
+  for (const wrap of document.querySelectorAll('#boardInner [data-side]')){ const svg = wrap.querySelector('svg'); if (!svg) continue;
+    const doc = new DOMParser().parseFromString(svgDoc(G, '', wrap.dataset.side === 'in', false, '', false), 'image/svg+xml');
+    for (const id of ['CREASE','CUT','PERF']){ const nu = doc.getElementById(id), old = svg.querySelector(`g[id="${id}"]`);
+      if (old && nu) old.replaceWith(document.importNode(nu, true)); else if (old) old.remove();
+      else if (nu){ const sel = svg.querySelector('.selov, .gridl'); svg.insertBefore(document.importNode(nu, true), sel); } } }
+}
+/* sharp when zoomed in: the visible part of the sheet is drawn again at screen resolution on top of the overview picture */
+let hdT = 0, hdTok = 0;
+function hdQueue(){ clearTimeout(hdT); document.querySelectorAll('#boardInner image.hd').forEach(n => n.style.display = 'none'); hdTok++;
+  if (!dragging && !vMode) hdT = setTimeout(hdRender, 140); }
+function hdRender(){
+  const v = $('view2d'); if (!G || v.hidden || vMode || dragging) return; const tok = ++hdTok, vr = v.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  for (const wrap of v.querySelectorAll('#boardInner [data-side]')){ const svg = wrap.querySelector('svg'), base = svg?.querySelector('image'); if (!base) continue;
+    let hd = svg.querySelector('image.hd');
+    const sr = svg.getBoundingClientRect(), ppm = sr.width / G.b.w, s = Math.min(60, ppm*dpr), s0 = Math.min(4, 1600/Math.max(G.b.w, G.b.h));
+    if (s <= s0*1.2){ if (hd) hd.style.display = 'none'; continue; }
+    const x0 = Math.max(0, (vr.left - sr.left)/ppm), y0 = Math.max(0, (vr.top - sr.top)/ppm), x1 = Math.min(G.b.w, (vr.right - sr.left)/ppm), y1 = Math.min(G.b.h, (vr.bottom - sr.top)/ppm);
+    if (x1 <= x0 || y1 <= y0) continue;
+    const c = document.createElement('canvas'), ox = Math.floor(x0*s), oy = Math.floor(y0*s), wpx = Math.ceil(x1*s) - ox, hpx = Math.ceil(y1*s) - oy;
+    try { drawArt(c, G, s, false, wrap.dataset.side, null, null, {ox, oy, wpx, hpx}); } catch { continue; }
+    if (!hd){ hd = document.createElementNS('http://www.w3.org/2000/svg', 'image'); hd.setAttribute('class', 'hd'); hd.setAttribute('preserveAspectRatio', 'none'); base.after(hd); }
+    c.toBlob(b => { if (!b || tok !== hdTok) return; const u = URL.createObjectURL(b), old = hd.getAttribute('href');
+      hd.setAttribute('x', ox/s); hd.setAttribute('y', oy/s); hd.setAttribute('width', wpx/s); hd.setAttribute('height', hpx/s);
+      hd.onload = () => { if (tok === hdTok) hd.style.display = ''; if (old?.startsWith('blob:')) URL.revokeObjectURL(old); };
+      hd.setAttribute('href', u); }, 'image/jpeg', .93); }
 }
 // ---------- board: select, move, scale, crop, rotate and flip elements right on the sheet
 // sheet coordinates = the board SVG's user units (mm, y down, the inside sheet already mirrored)
@@ -3409,7 +3440,7 @@ $('view2d').addEventListener('pointermove', e => {
   if (vMode){ if (e.pointerType === 'mouse') vHover(e); return; }
   if (e.pointerType === 'mouse'){ const over = !e.target.closest('.board-ov, .selov [data-h]') && !!hitEl(e)?.el; v.classList.toggle('overel', over); }
 });
-const endAct = () => { if (vAct) vUp(); if (act && dragging) renderEls(); act = null; GUIDES = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
+const endAct = () => { if (vAct) vUp(); if (act && dragging){ renderEls(); setTimeout(hdQueue); } act = null; GUIDES = null; dragging = false; pan = null; $('view2d').classList.remove('panning'); drawSel(); };
 $('view2d').addEventListener('pointerup', e => { const h = pan?.hit && Math.hypot(e.clientX - pan.x, e.clientY - pan.y) < 4 ? pan.hit : null; endAct(); if (h && !vMode) showFaceBar(h, e); });
 $('view2d').addEventListener('pointercancel', endAct);
 $('view2d').addEventListener('dblclick', e => { if (isRO()) return; const el = curEl(); if (!el || !['text','barcode','qr'].includes(el.kind) || e.target.closest('.board-ov')) return;
@@ -5032,7 +5063,8 @@ window.addEventListener('hashchange', showView);
 /* ---------- board: zoom & pan ---------- */
 const BK = 2;                 // px per mm at 100 %
 let bz = 1, bx = 0, by = 0, pan = null;
-function applyBoard(){ $('boardInner').style.transform = `translate(${bx}px,${by}px) scale(${bz})`; $('zVal').textContent = Math.round(bz*100)+'%'; drawRulers(); drawSel(); }
+function applyBoard(){ $('boardInner').style.transform = `translate(${bx}px,${by}px) scale(${bz})`; $('zVal').textContent = Math.round(bz*100)+'%'; drawRulers(); drawSel();
+  clearTimeout(hdT); if (typeof hdRender === 'function' && !dragging) hdT = setTimeout(hdRender, 160); }
 function drawRulers(){
   const v = $('view2d'), svg = v.querySelector('[data-side=out] svg'); if (!svg || v.hidden || !G) return;
   const vr = v.getBoundingClientRect(), sr = svg.getBoundingClientRect(), ppm = sr.width / G.b.w, dpr = devicePixelRatio || 1;
