@@ -942,7 +942,6 @@ window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(ne
 
     <section data-pane="build">
       <h2>Structure</h2>
-      <button class="btn" type="button" id="dieGo" style="width:100%;margin-bottom:12px" title="Open the vector editor">✎ Edit the dieline by hand — points, cut-outs, locks</button>
       <div data-for="bakery" class="sub" style="padding-left:0">
         <div class="f" style="margin-bottom:6px">Lid closure</div>
         <div class="lockgrid" id="bkLidCards">
@@ -4414,7 +4413,7 @@ function vSetMode(on){
   else { setPane(vPrevPane === 'vedit' ? 'product' : vPrevPane); sig2d = ''; }
   vToolSet('select');
 }
-$('dieGo').addEventListener('click', () => $('tEd').click());
+
 
 /* ---------- UI ---------- */
 /* ---------- colour picker, Figma-style: one popover for every colour in the app ---------- */
