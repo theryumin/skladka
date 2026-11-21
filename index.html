@@ -91,9 +91,9 @@ h3.psub{margin:14px 0 8px}
 .uchip .chip{border:0;border-radius:0}
 .uchip .chip+.chip{border-left:1px solid var(--line);padding:5px 8px;color:var(--muted)}
 .uchip:has(.chip[aria-pressed=true]){border-color:var(--accent)}
-.lockgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lockc{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--fg);cursor:pointer;font:inherit}
-.lockc svg{grid-row:1/3;width:44px;height:34px;color:var(--muted)}
+.lockgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.lockc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;text-align:left;padding:9px 10px 10px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--fg);cursor:pointer;font:inherit;overflow-wrap:break-word}
+.lockc svg{width:40px;height:30px;color:var(--muted);margin-bottom:2px}
 .lockc b{font:600 12.5px var(--sans)} .lockc span{font:400 11px var(--sans);color:var(--muted);line-height:1.25}
 .lockc:hover{border-color:var(--accent)} .lockc[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset} .lockc[aria-pressed="true"] svg{color:var(--accent)}
 .chip{border:1px solid var(--line);background:var(--field);color:var(--fg);border-radius:99px;padding:5px 11px;font:500 12px var(--sans);cursor:pointer}
