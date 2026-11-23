@@ -1215,7 +1215,7 @@ function moveItemTo(it, x, z, free){
   const D = DEF[it.kind]; if (!free){ x = snapv(x); z = snapv(z); }
   it.x = x; it.z = z;
   if (D.place === 'wall' || (D.snap && !free)){ const s = wallSnap(it, x, z, D.place === 'wall' ? 99 : .3); if (s){ it.x = s.x; it.z = s.z; it.rot = s.rot; } }
-  if (!free) unclash(it);
+  if (!free && !xHeld) unclash(it);
   const g = itemObj.get(it.id); if (g){ g.position.set(it.x, baseY(it), it.z); g.rotation.y = it.rot || 0; } needShadow(); }
 /* things do not go inside each other: a moved item is pushed out to stand flush next to what it hits.
    Height counts — a machine on a counter does not hit a stool below; chairs may slide under tables and counters. Alt = no push. */
@@ -1233,6 +1233,11 @@ function unclash(it){ if (!solid(it)) return; const skip = new Set([it.id, ...ri
       if ((SEATS.has(it.kind) && isSup(o)) || (SEATS.has(o.kind) && isSup(it))) continue;   // a chair tucks under a table
       const m = mtv(obb(it), obb(o)); if (m && (!worst || m.ov > worst.ov)) worst = m; }
     if (!worst) return; it.x += worst.x * (worst.ov + .002); it.z += worst.z * (worst.ov + .002); } }
+// hold X (Ч on the Russian layout) while dragging: items may go into each other
+let xHeld = false;
+addEventListener('keydown', e => { if (e.code === 'KeyX' && !e.ctrlKey && !e.metaKey && !isTyping() && !xHeld){ xHeld = true; if (drag || placing) toast('X зажата — предметы заезжают друг в друга'); } });
+addEventListener('keyup', e => { if (e.code === 'KeyX') xHeld = false; });
+addEventListener('blur', () => xHeld = false);
 function moveOpTo(op, x, z){ const n = nearestWall(x, z); if (!n) return; op.wall = n.W.id;
   op.pos = clamp(snapv(n.s), Math.min(op.w / 2 + .05, n.L / 2), Math.max(n.L - op.w / 2 - .05, n.L / 2)); }
 
@@ -1481,7 +1486,7 @@ function roomPanel(){ const L = roomLoop(), area = L ? polyArea(L) : null, per =
       <div><kbd>R</kbd> повернуть на 90° · <kbd>Q</kbd>/<kbd>E</kbd> на 15°</div>
       <div><kbd>Del</kbd> удалить · <kbd>Ctrl</kbd>+<kbd>D</kbd> дублировать</div>
       <div>Стрелки — сдвиг на 1 см, с <kbd>Shift</kbd> — на 10 см</div>
-      <div>Предметы упираются друг в друга и встают вплотную, технику можно ставить на шкафы и холодильники. <kbd>Alt</kbd> при перетаскивании — свободно, без упора и привязки</div>
+      <div>Предметы упираются друг в друга и встают вплотную. Зажмите <kbd>X</kbd> при перетаскивании — заедут друг в друга</div><div><kbd>Alt</kbd> при перетаскивании — без привязки к сетке и стенам</div>
       <div>3D: левая кнопка — вращать, правая — двигать вид, колесо — зум</div></div></div>`; }
 const FPREV = new Map();
 function floorPrev(k){ if (FPREV.has(k)) return FPREV.get(k); const F = FLOORS[k], t = TEX(F.tex, F.c), c = document.createElement('canvas'); c.width = 96; c.height = 48;
@@ -1582,7 +1587,7 @@ addEventListener('keydown', e => {
 function hintUpdate(){ const t = $('hintT');
   if (placing) t.innerHTML = placing.t === 'op' ? '<b>Ведите вдоль стены</b> и кликните, чтобы поставить. Esc — отмена.' : '<b>Кликните по полу</b>, чтобы поставить. <b>R</b> — повернуть, Esc — отмена. Возле стены предмет прилипает к ней.';
   else if (tool === 'wall') t.innerHTML = chain ? '<b>Кликайте</b> — следующий угол. Двойной клик, Enter или правая кнопка — закончить. Shift — любой угол.' : '<b>Кликните по полу</b> — первый угол стены. Шаг 5 см, концы липнут к другим стенам.';
-  else if (sel?.t === 'item') t.innerHTML = '<b>Тяните</b>, чтобы двигать. R — повернуть, Del — удалить, Ctrl+D — копия.';
+  else if (sel?.t === 'item') t.innerHTML = '<b>Тяните</b>, чтобы двигать, с зажатой <b>X</b> — заедет в другой предмет. R — повернуть, Del — удалить, Ctrl+D — копия.';
   else if (sel?.t === 'wall') t.innerHTML = view === 'plan' ? '<b>Тяните стену</b>, чтобы сдвинуть, или кружок на конце. Справа — длина и проёмы.' : 'Длину, цвет и проёмы стены меняйте справа.';
   else t.innerHTML = view === 'plan' ? 'План сверху. <b>Тяните</b> — двигать вид, колесо — зум. Выберите предмет в каталоге слева.' : 'Выберите предмет в каталоге слева и <b>кликните по полу</b>. Или перетащите.';
   $('hint').hidden = false; }
