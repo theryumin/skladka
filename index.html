@@ -749,11 +749,14 @@ window.SB = (() => {
   };
 })();
 window.SHARE_T = new URLSearchParams(location.search).get('share');
+// came from a section that needs an account (Café 3D): go back there after signing in
+window.NEXT_URL = (n => /^cafe\.html(\?id=[\w-]+)?$/.test(n || '') ? n : null)(new URLSearchParams(location.search).get('next'));
+try { if (window.NEXT_URL && JSON.parse(localStorage.getItem('skladka-sb'))?.user) location.replace(window.NEXT_URL); } catch {}
 if (window.SHARE_T) document.documentElement.classList.add('shared'); else SB.show();
 document.getElementById('authForm').addEventListener('submit', async e => { e.preventDefault();
   const err = document.getElementById('authErr'), go = document.getElementById('authGo'), pw = document.getElementById('authPass');
   go.disabled = true; go.textContent = 'Signing in…'; err.textContent = '';
-  try { await SB.signIn(document.getElementById('authLogin').value.trim(), pw.value); pw.value = ''; window.dispatchEvent(new Event('sb-auth')); }
+  try { await SB.signIn(document.getElementById('authLogin').value.trim(), pw.value); pw.value = ''; if (window.NEXT_URL) return location.replace(window.NEXT_URL); window.dispatchEvent(new Event('sb-auth')); }
   catch (x){ err.textContent = /invalid/i.test(x.message) ? 'Wrong email or password.' : /confirm/i.test(x.message) ? 'Confirm your email first — check the inbox.' : 'Could not sign in: ' + x.message; pw.select(); }
   go.disabled = false; go.textContent = 'Sign in'; });
 window.skladkaLogout = async () => { await SB.signOut(); window.dispatchEvent(new Event('sb-auth')); document.getElementById('authLogin').focus(); };

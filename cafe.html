@@ -356,7 +356,7 @@ const SB = (() => {
     del: id => req(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}`, {method:'DELETE'}),
   };
 })();
-if (!SB.user){ location.replace('./'); }
+if (!SB.user){ location.replace('./?next=' + encodeURIComponent('cafe.html' + location.search)); }
 
 /* ---------- materials and procedural textures ---------- */
 const MC = new Map();
