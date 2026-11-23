@@ -278,6 +278,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {CSS2DRenderer, CSS2DObject} from 'three/addons/renderers/CSS2DRenderer.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* =====================================================================
    Кофейня 3D — room and equipment planner (part of Skladka).
@@ -616,7 +617,7 @@ const DEF = {
     build(g, o, ctx){ const S = finSide(o.fin); cy(g, S, 0, 0, 0, .05, .17, .2, 32, true); cy(g, finMat(o.fin), 0, .2, 0, .05, .05, .015, 24);
       cy(g, DARK, 0, .215, 0, .004, .004, Math.max(.05, (ctx?.H || 3) - o.elev - .215), 6);
       const b = mesh(g, new THREE.SphereGeometry(.045, 16, 12), matC('#fff4d6', .3, 0, {emissive:'#ffdca0', emissiveIntensity:2}), 0, .05, 0); b.castShadow = false;
-      if (ctx?.lights && ctx.lights.length < 12){ const L = new THREE.PointLight('#ffd49a', 2, 6, 2); L.position.set(0, -.05, 0); L.userData.nopick = true; g.add(L); ctx.lights.push(L); } }},
+      if (ctx?.lights && ctx.eve && ctx.lights.length < 8){ const L = new THREE.PointLight('#ffd49a', 2, 6, 2); L.position.set(0, -.05, 0); L.userData.nopick = true; g.add(L); ctx.lights.push(L); } }},
   rug:{cat:'decor', n:'Ковёр', w:2.0, d:1.4, h:.01, rs:'wd', fins:['fabric', 'mustard', 'rose', 'navy', 'terra', 'cream', 'velvet'], fin:'mustard',
     build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, o.w, .008, o.d); bx(g, matC(shade(FIN[o.fin]?.c || '#999', .25), .95), 0, .0005, 0, o.w - .16, .0085, o.d - .16); }},
   slats:{cat:'decor', n:'Перегородка из реек', w:1.2, d:.05, h:1.8, rs:'wh', fins:['oak', 'walnut', 'black', 'white', 'green'], fin:'oak',
@@ -731,8 +732,8 @@ async function save(){
 /* ---------- three.js stage ---------- */
 const stage = $('stage');
 const R3 = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:false});
-R3.setPixelRatio(Math.min(2, devicePixelRatio)); R3.outputColorSpace = THREE.SRGBColorSpace; R3.toneMapping = THREE.ACESFilmicToneMapping; R3.toneMappingExposure = 1.0;
-R3.shadowMap.enabled = true; R3.shadowMap.type = THREE.PCFSoftShadowMap; stage.appendChild(R3.domElement);
+const DPR = Math.min(1.5, devicePixelRatio); R3.setPixelRatio(DPR); R3.outputColorSpace = THREE.SRGBColorSpace; R3.toneMapping = THREE.ACESFilmicToneMapping; R3.toneMappingExposure = 1.0;
+R3.shadowMap.enabled = true; R3.shadowMap.type = THREE.PCFSoftShadowMap; R3.shadowMap.autoUpdate = false; stage.appendChild(R3.domElement);
 const LR = new CSS2DRenderer({element:$('labels')});
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(R3), envDay = pmrem.fromScene(new RoomEnvironment(), .04).texture; scene.environment = envDay;
@@ -755,6 +756,18 @@ function bgColor(){ return getComputedStyle(document.documentElement).getPropert
 scene.background = new THREE.Color(bgColor());
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => scene.background = new THREE.Color(bgColor()));
 
+function bake(g){
+  g.updateMatrixWorld(true); const inv = g.matrixWorld.clone().invert(), by = new Map(), drop = [];
+  g.traverse(o => { if (!o.isMesh || o.userData.keep || Array.isArray(o.material)) return;
+    const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    for (const k of Object.keys(geo.attributes)) if (!['position', 'normal', 'uv'].includes(k)) geo.deleteAttribute(k);
+    if (!geo.attributes.uv || !geo.attributes.normal) return geo.dispose();
+    geo.clearGroups(); geo.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+    if (!by.has(o.material)) by.set(o.material, []); by.get(o.material).push(geo); drop.push(o); });
+  for (const o of drop){ o.geometry.dispose(); o.parent.remove(o); }
+  for (const [m, list] of by){ const geo = list.length === 1 ? list[0] : mergeGeometries(list, false); if (list.length > 1) list.forEach(x => x.dispose()); if (!geo) continue;
+    const me = new THREE.Mesh(geo, m); me.castShadow = !m.transparent && m.visible !== false; me.receiveShadow = true; if (m.depthTest === false) me.renderOrder = 5; g.add(me); }
+  return g; }
 function disposeTree(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map && o.material.userData?.own) o.material.map.dispose(); });
   while (g.children.length) g.remove(g.children[0]); }
 
@@ -790,7 +803,7 @@ function buildFloor(){
   grid.position.x = Math.round(cx); grid.position.z = Math.round(cz);
 }
 function buildWalls(){
-  disposeTree(roots.walls); wallObj.clear();
+  needShadow(); disposeTree(roots.walls); wallObj.clear();
   const [cx, cz] = centroid(), plan = view === 'plan';
   for (const W of P.walls){
     const {L, dx, dz} = wallInfo(W), H = W.h || P.H, t = W.t || .15;
@@ -801,7 +814,7 @@ function buildWalls(){
     let x = -t / 2;
     for (const o of ops){ const a = o.pos - o.w / 2, b = o.pos + o.w / 2, top = Math.min(H, (o.sill || 0) + o.h);
       piece(x, a, 0, H); piece(a, b, 0, o.sill || 0); piece(a, b, top, H); x = Math.max(x, b);
-      const og = new THREE.Group(); og.position.set(o.pos, 0, 0); og.userData.sel = {t:'op', id:o.id}; buildOp(og, {...o, h:top - (o.sill || 0)}, t); g.add(og); og.userData.box = [o.w, top - (o.sill || 0), t + .06, o.sill || 0]; }
+      const og = new THREE.Group(); og.position.set(o.pos, 0, 0); og.userData.sel = {t:'op', id:o.id}; buildOp(og, {...o, h:top - (o.sill || 0)}, t); bake(og); g.add(og); og.userData.box = [o.w, top - (o.sill || 0), t + .06, o.sill || 0]; }
     piece(x, L + t / 2, 0, H);
     g.userData.box = [L + t, H, t, 0, L / 2];
     // which side is the room: the normal pointing to the middle of the room
@@ -812,16 +825,16 @@ function buildWalls(){
   buildLabels();
 }
 function buildItems(){
-  disposeTree(roots.items); itemObj.clear(); ctx = {H:P.H, lights:[]};
+  disposeTree(roots.items); itemObj.clear(); ctx = {H:P.H, lights:[], eve:P.light === 'eve'};
   for (const it of P.items){ const D = DEF[it.kind]; if (!D) continue;
     const g = new THREE.Group();
     if (view === 'plan' && D.place === 'hang'){ const rm = new THREE.Mesh(new THREE.RingGeometry(.13, .17, 32), new THREE.MeshBasicMaterial({color:'#e0a43a', side:THREE.DoubleSide, transparent:true, opacity:.9, depthTest:false}));
       rm.rotation.x = -Math.PI / 2; rm.position.y = .2; rm.renderOrder = 5; g.add(rm); const dot = new THREE.Mesh(new THREE.CircleGeometry(.05, 20), rm.material); dot.rotation.x = -Math.PI / 2; dot.position.y = .2; dot.renderOrder = 5; g.add(dot);
       const hit = new THREE.Mesh(new THREE.CircleGeometry(.17, 20), new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide})); hit.rotation.x = -Math.PI / 2; hit.position.y = .2; g.add(hit); }
-    else D.build(g, it, ctx); g.userData.sel = {t:'item', id:it.id}; g.userData.box = [it.w, D.full ? P.H : it.h, it.d, 0];
+    else { D.build(g, it, ctx); bake(g); } g.userData.sel = {t:'item', id:it.id}; g.userData.box = [it.w, D.full ? P.H : it.h, it.d, 0];
     g.rotation.y = it.rot || 0; g.position.set(it.x, baseY(it), it.z); roots.items.add(g); itemObj.set(it.id, g); }
   applyLight(); }
-function rebuild(){ ctx.H = P.H; buildFloor(); buildWalls(); buildItems(); drawSel(); }
+function rebuild(){ ctx.H = P.H; buildFloor(); buildWalls(); buildItems(); drawSel(); needShadow(); }
 
 /* support: things that stand on counters, tables and fridges */
 function toLocal(o, x, z){ const dx = x - o.x, dz = z - o.z, c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0); return [dx * c - dz * s, dx * s + dz * c]; }
@@ -833,12 +846,14 @@ function supportAt(x, z, skip){ let y = 0;
 function baseY(it){ const D = DEF[it.kind]; return D.place === 'on' ? supportAt(it.x, it.z, it.id) : D.place === 'wall' || D.place === 'hang' ? (it.elev ?? D.elev ?? 1.5) : 0; }
 
 /* walls: fade the ones between the camera and the room */
+let dirty = true, shadowDirty = true;
+const need = () => { dirty = true; }, needShadow = () => { dirty = shadowDirty = true; };
 const _v = new THREE.Vector3();
 function fadeWalls(){
   for (const g of wallObj.values()){ const w = g.userData.wall; let f = false;
     if (view !== 'plan' && P.fade){ _v.copy(persp.position).sub(w.mid); f = _v.dot(w.out) > .05; }
     if (g.userData.faded !== f){ g.userData.faded = f; w.m.transparent = f; w.m.opacity = f ? .1 : 1; w.m.depthWrite = !f; w.m.needsUpdate = true;
-      g.traverse(o => { if (o.userData.wallPiece) o.castShadow = !f; }); } } }
+      g.traverse(o => { if (o.userData.wallPiece) o.castShadow = !f; }); shadowDirty = true; } } }
 
 /* labels on the plan: wall lengths, size of the selected thing */
 function lbl(text, cls = ''){ const d = document.createElement('div'); d.className = 'lbl ' + cls; d.textContent = text; return new CSS2DObject(d); }
@@ -856,6 +871,7 @@ let selLine = null, selLbl = null, handles = [];
 function findOp(id){ let r = null; roots.walls.traverse(o => { if (o.userData.sel?.t === 'op' && o.userData.sel.id === id) r = o; }); return r; }
 function selData(){ if (!sel) return null; return sel.t === 'item' ? P.items.find(i => i.id === sel.id) : sel.t === 'op' ? P.ops.find(o => o.id === sel.id) : P.walls.find(w => w.id === sel.id); }
 function drawSel(){
+  need();
   if (selLine){ selLine.parent?.remove(selLine); selLine.geometry.dispose(); selLine = null; }
   if (selLbl){ selLbl.parent?.remove(selLbl); selLbl = null; }
   for (const h of handles){ h.parent?.remove(h); h.geometry.dispose(); } handles = [];
@@ -899,7 +915,7 @@ function moveItemTo(it, x, z, free){
   const D = DEF[it.kind]; if (!free){ x = snapv(x); z = snapv(z); }
   it.x = x; it.z = z;
   if (D.place === 'wall' || (D.snap && !free)){ const s = wallSnap(it, x, z, D.place === 'wall' ? 99 : .3); if (s){ it.x = s.x; it.z = s.z; it.rot = s.rot; } }
-  const g = itemObj.get(it.id); if (g){ g.position.set(it.x, baseY(it), it.z); g.rotation.y = it.rot || 0; } }
+  const g = itemObj.get(it.id); if (g){ g.position.set(it.x, baseY(it), it.z); g.rotation.y = it.rot || 0; } needShadow(); }
 function moveOpTo(op, x, z){ const n = nearestWall(x, z); if (!n) return; op.wall = n.W.id;
   op.pos = clamp(snapv(n.s), Math.min(op.w / 2 + .05, n.L / 2), Math.max(n.L - op.w / 2 - .05, n.L / 2)); }
 
@@ -914,7 +930,7 @@ function pick(e){ setRay(e);
     while (o){ if (o.userData.faded) faded = true; if (!s && o.userData.sel) s = o.userData.sel; o = o.parent; }
     if (faded || !s) continue; return {s, point:h.point}; }
   return null; }
-let tool = 'select', placing = null, drag = null, down = null, chain = null;
+let hoverT = 0, tool = 'select', placing = null, drag = null, down = null, chain = null;
 const isTyping = () => /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || '') && document.activeElement.type !== 'checkbox';
 
 stage.addEventListener('pointerdown', e => {
@@ -951,7 +967,7 @@ stage.addEventListener('pointermove', e => {
     else if (drag.t === 'wall'){ const {dx, dz} = wallInfo(drag.W), nx = -dz, nz = dx; let dd = (hit.x - drag.hx) * nx + (hit.z - drag.hz) * nz; if (!e.altKey) dd = snapv(dd);
       for (const [V, end, o] of drag.linked) V[end] = [o[0] + nx * dd, o[1] + nz * dd]; buildWalls(); buildFloor(); drawSel(); }
     return; }
-  if (e.buttons === 0){ const p = pick(e); stage.style.cursor = p && (p.s.t === 'item' || p.s.t === 'op' || p.s.t === 'wend' || (p.s.t === 'wall' && view === 'plan')) ? 'grab' : ''; }
+  if (e.buttons === 0 && performance.now() - (hoverT || 0) > 80){ hoverT = performance.now(); const p = pick(e); stage.style.cursor = p && (p.s.t === 'item' || p.s.t === 'op' || p.s.t === 'wend' || (p.s.t === 'wall' && view === 'plan')) ? 'grab' : ''; }
 });
 stage.addEventListener('pointerup', e => {
   if (placing && placing.fromLib && placing.moved){ finishPlace(); return; }
@@ -1012,6 +1028,7 @@ document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click'
 
 /* ---------- views and camera ---------- */
 function fit(aspect){
+  need();
   const b = bounds(), cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2, sx = b.x1 - b.x0 + 1.2, sz = b.z1 - b.z0 + 1.2, r = R3.domElement.getBoundingClientRect(), asp = typeof aspect === 'number' ? aspect : r.width / Math.max(1, r.height);
   if (view === 'plan'){ const hh = Math.max(sz / 2, sx / 2 / asp) * 1.08; ortho.userData.hh = hh; ortho.zoom = 1; sizeOrtho(); ortho.position.set(cx, 60, cz); ctlP.target.set(cx, 0, cz); ortho.lookAt(cx, 0, cz); ctlP.update(); return; }
   if (view === 'eye'){ const ent = P.ops.find(o => o.kind === 'entrance') || P.ops.find(o => o.kind === 'door' || o.kind === 'door2');
@@ -1031,13 +1048,18 @@ function setView(v){ if (view === v) return fit();
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 $('fitBtn').addEventListener('click', fit);
 new ResizeObserver(() => { const r = stage.getBoundingClientRect(); if (!r.width) return; R3.setSize(r.width, r.height, false); LR.setSize(r.width, r.height); persp.aspect = r.width / r.height; persp.updateProjectionMatrix(); sizeOrtho(); }).observe(stage);
+for (const t of ['pointermove', 'pointerdown', 'pointerup', 'wheel']) stage.addEventListener(t, need, {passive:true});
+addEventListener('keydown', () => need());
 
-function applyLight(){ const eve = P.light === 'eve';
+function applyLight(){ const eve = P.light === 'eve'; needShadow();
   hemi.intensity = eve ? .12 : .9; hemi.color.set(eve ? '#9fb0d8' : '#ffffff'); sun.intensity = eve ? .12 : 1.8; sun.color.set(eve ? '#8fa2d6' : '#fff4e6');
   R3.toneMappingExposure = eve ? .62 : 1.0; scene.environment = eve ? envEve : envDay;
   for (const L of ctx.lights){ L.intensity = eve ? 14 : 1.2; L.distance = eve ? 7 : 6; } }
 
-function loop(){ requestAnimationFrame(loop); if ($('app').hidden) return; ctl().update(); fadeWalls(); R3.render(scene, cam()); LR.render(scene, cam()); }
+function loop(){ requestAnimationFrame(loop); if ($('app').hidden) return;
+  if (ctl().update()) dirty = true; if (!dirty) return; dirty = false; fadeWalls();
+  if (shadowDirty){ R3.shadowMap.needsUpdate = true; shadowDirty = false; }
+  R3.render(scene, cam()); LR.render(scene, cam()); }
 
 /* ---------- catalogue panel ---------- */
 let cat = 'all';
@@ -1170,7 +1192,7 @@ $('inspIn').addEventListener('click', e => {
   if (!d){
     if (ds.rcol){ snap(); P.wallCol = ds.rcol; return changed(); }
     if (ds.floor){ snap(); P.floor = ds.floor; return changed(); }
-    if (ds.light){ snap(); P.light = ds.light; applyLight(); return changed(false); }
+    if (ds.light){ snap(); P.light = ds.light; return changed(); }
     if (ds.a === 'rect'){ const W = +$('inspIn').querySelector('[data-f="rw"]').value / 100, D = +$('inspIn').querySelector('[data-f="rd"]').value / 100;
       if (!(W >= 1 && D >= 1)) return toast('Нужно хотя бы 100 × 100 см.'); snap(); const [ox, oz] = origin(), old = P.walls.map(w => w.id);
       P.walls = rectWalls(W, D).map(w => ({...w, a:[w.a[0] + ox, w.a[1] + oz], b:[w.b[0] + ox, w.b[1] + oz]}));
@@ -1220,7 +1242,7 @@ addEventListener('keydown', e => {
     if (k === 'r' || k === 'q' || k === 'e'){ snap(); d.rot = (d.rot || 0) + (k === 'r' ? (e.shiftKey ? 1 : -1) * Math.PI / 2 : k === 'q' ? 15 * DEG : -15 * DEG); changed(); return; }
     const st = e.shiftKey ? .1 : .01, mv = {arrowleft:[-st, 0], arrowright:[st, 0], arrowup:[0, -st], arrowdown:[0, st]}[k];
     if (mv){ e.preventDefault(); if (!e.repeat) snap(); d.x += mv[0]; d.z += mv[1]; const g = itemObj.get(d.id); g.position.set(d.x, baseY(d), d.z);
-      for (const o of P.items) if (DEF[o.kind].place === 'on'){ const gg = itemObj.get(o.id); if (gg) gg.position.y = baseY(o); } renderInspPos(); autosave(); } }
+      for (const o of P.items) if (DEF[o.kind].place === 'on'){ const gg = itemObj.get(o.id); if (gg) gg.position.y = baseY(o); } needShadow(); renderInspPos(); autosave(); } }
   if (sel.t === 'op'){ const mv = {arrowleft:-1, arrowright:1}[k]; if (mv){ e.preventDefault(); if (!e.repeat) snap(); d.pos += mv * (e.shiftKey ? .1 : .01); changed(); } }
 });
 
@@ -1239,7 +1261,7 @@ $('toHome').addEventListener('click', async () => { if (saveT){ clearTimeout(sav
 function snapThumb(){ try { if ($('app').hidden) return null; R3.render(scene, cam()); const c = document.createElement('canvas'), s = R3.domElement, w = 480, h = Math.round(w * s.height / s.width) || 300;
   c.width = w; c.height = Math.min(h, 340); const x = c.getContext('2d'); x.fillStyle = bgColor(); x.fillRect(0, 0, w, c.height); x.drawImage(s, 0, (c.height - h) / 2, w, h); return c.toDataURL('image/jpeg', .72); } catch { return null; } }
 $('shotBtn').addEventListener('click', () => { if (selLine) selLine.visible = false; R3.setPixelRatio(2); const r = stage.getBoundingClientRect(); R3.setSize(r.width, r.height, false); R3.render(scene, cam());
-  const url = R3.domElement.toDataURL('image/png'); if (selLine) selLine.visible = true; R3.setPixelRatio(Math.min(2, devicePixelRatio)); R3.setSize(r.width, r.height, false);
+  const url = R3.domElement.toDataURL('image/png'); if (selLine) selLine.visible = true; R3.setPixelRatio(DPR); R3.setSize(r.width, r.height, false); need();
   const a = document.createElement('a'); a.href = url; a.download = (P.name || 'кофейня') + '.png'; a.click(); toast('Картинка сохранена'); });
 $('moreBtn').addEventListener('click', e => { e.stopPropagation(); $('moreMenu').hidden = !$('moreMenu').hidden; });
 addEventListener('pointerdown', e => { if (!e.target.closest('#moreMenu, #moreBtn')) $('moreMenu').hidden = true; });
@@ -1281,7 +1303,7 @@ async function renderHome(){
 const STPIC = new Map();
 function starterShot(fn){   // render a starter layout off screen for its card
   const keep = P; P = fn(); view = '3d'; rebuild(); R3.setSize(480, 300, false); persp.aspect = 1.6; persp.updateProjectionMatrix(); fit(1.6); ctl3.update(); fadeWalls();
-  R3.render(scene, persp); const u = R3.domElement.toDataURL('image/jpeg', .8); P = keep; return u; }
+  R3.shadowMap.needsUpdate = true; R3.render(scene, persp); const u = R3.domElement.toDataURL('image/jpeg', .8); P = keep; needShadow(); return u; }
 function starterPics(){ for (const [k, , , fn] of STARTERS){ if (!fn) continue; const img = document.querySelector(`img[data-sth="${k}"]`); if (!img) continue;
   let u = STPIC.get(k); if (!u) try { u = starterShot(fn); STPIC.set(k, u); } catch (e){ console.warn(e); }
   if (u){ img.src = u; img.hidden = false; img.nextElementSibling?.remove(); } } }
