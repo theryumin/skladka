@@ -6,6 +6,9 @@
 <title>Кофейня 3D — Skladka</title>
 <script>try{const th=localStorage.getItem('skladka-theme');if(th==='light'||th==='dark')document.documentElement.dataset.theme=th}catch{}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/environments/RoomEnvironment.js" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -149,6 +152,11 @@ main{position:relative;min-width:0;min-height:0;background:var(--stage);overflow
 .sw label{width:28px;height:28px;border-radius:50%;border:1px dashed var(--muted);display:grid;place-items:center;cursor:pointer;position:relative;overflow:hidden;color:var(--muted);font-size:16px}
 .sw label input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .swn{font-size:12px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.boot{position:fixed;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;color:var(--muted);font-size:13px;background:var(--bg);z-index:40}
+.boot i,.stload i{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(1turn)}}
+.stload{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;color:var(--muted);font-size:13px;background:var(--stage);z-index:4}
 .acts2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .acts2 .btn{justify-content:center}
 .chk{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
@@ -188,6 +196,7 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
 </style>
 </head>
 <body>
+<div class="boot" id="boot"><i></i>Загружаю Кофейню 3D…</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div id="home" hidden>
@@ -250,6 +259,7 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
 
   <main>
     <div id="stage"></div>
+    <div class="stload" id="stLoad" hidden><i></i>Готовлю 3D…</div>
     <div id="labels"></div>
     <div class="seg views" role="tablist" aria-label="Вид">
       <button class="tab" role="tab" data-view="plan" aria-selected="false">План</button>
@@ -429,7 +439,7 @@ const MENU = [['Эспрессо', '150'], ['Американо', '180'], ['Ка
 const NEON = {pink:'#ff4fa3', warm:'#fff0cf', blue:'#59c8ff', orange:'#ffa040', green:'#6dff9e'};
 
 /* ---------- catalogue: every item is built from simple shapes at real sizes ---------- */
-const CATS = [['open', 'Входы и окна'], ['bar', 'Бар'], ['coffee', 'Кофе'], ['cold', 'Холод'], ['wash', 'Мойка'], ['hall', 'Зал'], ['decor', 'Декор и свет']];
+const CATS = [['open', 'Входы и окна'], ['bar', 'Бар и стойки'], ['coffee', 'Кофе'], ['kitchen', 'Кухня'], ['cold', 'Холод и витрины'], ['store', 'Шкафы и хранение'], ['wash', 'Мойка и санузел'], ['hall', 'Зал'], ['decor', 'Декор и свет']];
 const BODY = ['white', 'black', 'oak', 'walnut', 'green', 'terra', 'grey', 'mint', 'cream', 'navy', 'concrete', 'terrazzo'];
 const TOPS = ['marble', 'oak', 'walnut', 'terrazzo', 'concrete', 'steel', 'black', 'white'];
 const MACH = ['steel', 'black', 'white', 'red', 'mint', 'sky', 'cream'];
@@ -442,8 +452,35 @@ function counterBody(g, o, cx, cz, w, d, h, F, T, carcass){
   bx(g, carcass || F, cx, kick, cz, w, h - tk - kick, d);
   bx(g, T, cx, h - tk, cz + .015, w + .02, tk, d + .03);
 }
+const PW = ws => ws.map(w => [cm(w) + ' см', {w}]);
+const LIGHT = matC('#fff6dc', .3, 0, {emissive:'#fff0c8', emissiveIntensity:1});
+const BULB = matC('#fff4d6', .3, 0, {emissive:'#ffdca0', emissiveIntensity:2});
+const CAKES = () => ['#6b3b24', '#f2d6dc', '#f4ecd8', '#d8a24a', '#8f2a3a', '#c7d9a3'].map(c => matC(c, .7));
+function lampLight(g, ctx, x, y, z){ if (!ctx?.lights || !ctx.eve || ctx.lights.length >= 8) return; const L = new THREE.PointLight('#ffd49a', 2, 6, 2); L.position.set(x, y, z); L.userData.nopick = true; g.add(L); ctx.lights.push(L); }
+function goods(g, kind, w, z, y, seed = 1){
+  const C = CAKES(), dr = kind === 'drinks', n = Math.max(1, Math.floor((w - .1) / (dr ? .085 : .21)));
+  spread(n, w - (dr ? .12 : .26)).forEach((x, i) => { const m = C[(i + seed) % C.length];
+    if (dr){ cy(g, m, x, y, z, .03, .03, .19, 12); cy(g, DARK, x, y + .19, z, .014, .014, .03, 8); }
+    else if (kind === 'sandwich'){ const b = matC('#e7c48f', .8); bx(g, b, x, y, z, .16, .02, .09); bx(g, m, x, y + .02, z, .155, .022, .085); bx(g, b, x, y + .042, z, .16, .02, .09); }
+    else { cy(g, m, x, y, z, .085, .085, .075, 24); cy(g, matC('#ffffff', .4), x, y + .075, z, .085, .085, .012, 24); } }); }
+function glassCase(g, w, d, y0, gh, F){
+  for (const sz of [-1, 1]) bx(g, GLASS, 0, y0, sz * (d / 2 - .006), w - .02, gh, .012);
+  for (const sx of [-1, 1]) bx(g, GLASS, sx * (w / 2 - .006), y0, 0, .012, gh, d - .02);
+  bx(g, GLASS, 0, y0 + gh - .012, 0, w - .02, .012, d - .02);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) bx(g, F, sx * (w / 2 - .01), y0, sz * (d / 2 - .01), .02, gh, .02); }
+function curveGlass(g, w, d, y0, r){
+  const az = d / 2 - .01 - r, cg = mesh(g, new THREE.CylinderGeometry(r, r, w - .02, 28, 1, true, 0, Math.PI / 2), GLASS, 0, y0, az); cg.rotation.z = Math.PI / 2;
+  const back = -d / 2 + .02; bx(g, GLASS, 0, y0 + r - .006, (az + back) / 2, w - .02, .012, az - back);
+  for (const sx of [-1, 1]) bx(g, GLASS, sx * (w / 2 - .006), y0, (d / 2 - .01 + back) / 2 - .0, .012, r, d / 2 - .01 - back);
+  bx(g, GLASS, 0, y0, back, w - .02, r, .01); for (const sx of [-1, 1]) bx(g, STEEL, sx * (w / 2 - .012), y0, back, .024, r, .024); }
+function showBase(g, o){ const {w, d} = o; bx(g, DARK, 0, 0, 0, w - .04, .08, d - .06); bx(g, finMat(o.fin), 0, .08, 0, w, .79, d); bx(g, finMat(o.top || 'steel'), 0, .87, 0, w + .01, .03, d + .01); }
+function doorsFront(g, w, d, y0, y1, low){ const n = Math.max(1, Math.round(w / .45)), dw = w / n;
+  for (let i = 0; i < n; i++){ const x = -w / 2 + dw * (i + .5); if (i) bx(g, DARK, -w / 2 + dw * i, y0 + .01, d / 2 + .001, .006, y1 - y0 - .02, .004);
+    const hx = n > 1 && i % 2 === 0 ? x + dw / 2 - .05 : x - dw / 2 + .05; bx(g, STEEL, n === 1 ? x + dw / 2 - .06 : hx, low ? y1 - .2 : y0 + .03, d / 2 + .012, .014, .14, .014); } }
+function capsule(w, d){ const r = d / 2, hw = Math.max(0, w / 2 - r), s = new THREE.Shape(); s.moveTo(-hw, -r); s.lineTo(hw, -r); s.absarc(hw, 0, r, -Math.PI / 2, Math.PI / 2, false); s.lineTo(-hw, r); s.absarc(-hw, 0, r, Math.PI / 2, Math.PI * 1.5, false); return s; }
+function slab(g, m, shape, y0, h){ const geo = new THREE.ExtrudeGeometry(shape, {depth:h, bevelEnabled:false, curveSegments:20}); geo.rotateX(-Math.PI / 2); return mesh(g, geo, m, 0, y0, 0); }
 const DEF = {
-  bar:{cat:'bar', n:'Барная стойка', w:2.4, d:.6, h:.9, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'marble', sty:'slats', ledge:true, sup:true, snap:true,
+  bar:{cat:'bar', n:'Барная стойка', presets:PW([1.2, 1.8, 2.4, 3.0, 3.6]), w:2.4, d:.6, h:.9, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'marble', sty:'slats', ledge:true, sup:true, snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), T = finMat(o.top), kick = .1, tk = .04, slats = o.sty === 'slats', flut = o.sty === 'fluted';
       counterBody(g, o, 0, 0, w, d, h, F, T, slats ? DARK : null);
       if (slats) for (let x = -w / 2 + .03; x <= w / 2 - .03 + 1e-6; x += .055) bx(g, F, x, kick, d / 2 + .008, .036, h - tk - kick, .022);
@@ -452,7 +489,7 @@ const DEF = {
   corner:{cat:'bar', n:'Угловая стойка', w:2.2, d:1.6, h:.9, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'marble', sup:true, snap:true,
     rects: o => [[0, -o.d / 2 + .3, o.w, .6], [-o.w / 2 + .3, .3, .6, o.d - .6]],
     build(g, o){ const F = finMat(o.fin), T = finMat(o.top); for (const [cx, cz, w, d] of DEF.corner.rects(o)) counterBody(g, o, cx, cz, w, d, o.h, F, T); }},
-  backbar:{cat:'bar', n:'Задний бар со шкафами', w:2.4, d:.6, h:.9, rs:'wdh', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true,
+  backbar:{cat:'bar', n:'Задний бар со шкафами', presets:PW([1.2, 1.8, 2.4, 3.0]), w:2.4, d:.6, h:.9, rs:'wdh', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), T = finMat(o.top); counterBody(g, o, 0, 0, w, d, h, F, T);
       const n = Math.max(1, Math.round(w / .5)), dw = w / n;
       for (let i = 0; i < n; i++){ const x = -w / 2 + dw * (i + .5);
@@ -487,7 +524,7 @@ const DEF = {
       const s = new THREE.Group(); s.position.set(-.04, .2, 0); s.rotation.x = -.35; g.add(s); bx(s, F, 0, -.11, 0, .3, .21, .016, .006);
       const scr = mesh(s, new THREE.PlaneGeometry(.28, .19), matC('#2c5e8c', .3, 0, {emissive:'#1b4166', emissiveIntensity:.8}), 0, 0, .0085); scr.castShadow = false;
       bx(g, F, .13, 0, .05, .075, .03, .15, .01); bx(g, matC('#3a8a5c', .4, 0, {emissive:'#1d5c38'}), .13, .03, .07, .05, .002, .05); }},
-  pastry:{cat:'bar', n:'Витрина для десертов', w:1.2, d:.7, h:1.35, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'marble', snap:true,
+  pastry:{cat:'bar', n:'Витрина для десертов', presets:PW([.9, 1.2, 1.5]), w:1.2, d:.7, h:1.35, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'marble', snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), T = finMat(o.top), gh = h - .91;
       bx(g, DARK, 0, 0, 0, w - .04, .08, d - .06); bx(g, F, 0, .08, 0, w, .8, d); bx(g, T, 0, .88, 0, w, .03, d);
       bx(g, GLASS, 0, .91, 0, w - .02, gh, d - .04);
@@ -534,7 +571,7 @@ const DEF = {
     build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, 0, .18, .13, .2, .02); cy(g, GLASS, 0, .13, 0, .08, .06, .27); cy(g, DARK, 0, .4, 0, .082, .082, .03); }},
   milk:{cat:'coffee', n:'Холодильник для молока', w:.3, d:.48, h:.45, place:'on', fins:['steel', 'black', 'white'], fin:'steel',
     build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, .3, .45, .48, .01); bx(g, GLASS_T, 0, .05, .241, .24, .34, .005); }},
-  fridge:{cat:'cold', n:'Холодильный шкаф со стеклом', w:.6, d:.62, h:2.0, rs:'wh', fins:['white', 'black', 'steel'], fin:'black', snap:true,
+  fridge:{cat:'cold', n:'Холодильный шкаф со стеклом', presets:PW([.6, .7]), w:.6, d:.62, h:2.0, rs:'wh', fins:['white', 'black', 'steel'], fin:'black', snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), t = .04, nd = w > .9 ? 2 : 1;
       bx(g, F, -w / 2 + t / 2, 0, 0, t, h, d); bx(g, F, w / 2 - t / 2, 0, 0, t, h, d); bx(g, F, 0, h - .16, 0, w, .16, d); bx(g, DARK, 0, 0, 0, w, .1, d); bx(g, F, 0, 0, -d / 2 + t / 2, w, h, t);
       bx(g, matC('#f3f3f1', .6), 0, .1, -d / 2 + t + .006, w - 2 * t, h - .26, .01);
@@ -549,7 +586,7 @@ const DEF = {
         bx(g, GLASS, x, .15, z, dw - .1, h - .36, .008);
         const hx = nd === 2 ? x + (k ? -1 : 1) * (dw / 2 - .07) : x + dw / 2 - .07; bx(g, STEEL, hx, h * .35, z + .03, .02, h * .3, .02, .008); } }},
   fridge2:{cat:'cold', n:'Холодильный шкаф, 2 двери', w:1.2, d:.7, h:2.0, rs:'wh', fins:['white', 'black', 'steel'], fin:'steel', snap:true, build:(g, o) => DEF.fridge.build(g, o)},
-  under:{cat:'cold', n:'Холодильный стол', w:1.35, d:.7, h:.85, rs:'wd', fins:['steel', 'black', 'white'], fin:'steel', sup:true, snap:true,
+  under:{cat:'cold', n:'Холодильный стол', presets:PW([.9, 1.35, 1.8]), w:1.35, d:.7, h:.85, rs:'wd', fins:['steel', 'black', 'white'], fin:'steel', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), n = Math.max(1, Math.round(w / .6)), dw = w / n;
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, STEEL, sx * (w / 2 - .06), 0, sz * (d / 2 - .06), .02, .02, .12, 10);
       bx(g, F, 0, .12, 0, w, h - .16, d); bx(g, STEEL, 0, h - .04, .01, w + .01, .04, d + .02);
@@ -561,7 +598,7 @@ const DEF = {
   freezer:{cat:'cold', n:'Морозильный ларь', w:1.0, d:.65, h:.85, rs:'w', fins:['white', 'steel'], fin:'white', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o; bx(g, finMat(o.fin), 0, .04, 0, w, h - .08, d, .02); bx(g, DARK, 0, 0, 0, w - .06, .04, d - .06);
       bx(g, GLASS_T, 0, h - .04, 0, w - .06, .03, d - .06); bx(g, finMat(o.fin), 0, h - .04, d / 2 - .03, w, .04, .06); }},
-  sink:{cat:'wash', n:'Мойка', w:.6, d:.6, h:.85, rs:'w', fins:['steel', 'white', 'black'], fin:'steel', sup:true, snap:true,
+  sink:{cat:'wash', n:'Мойка', presets:[['1 чаша · 60', {w:.6}], ['2 чаши · 100', {w:1.0}], ['с полкой · 120', {w:1.2}]], w:.6, d:.6, h:.85, rs:'w', fins:['steel', 'white', 'black'], fin:'steel', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin);
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, STEEL, sx * (w / 2 - .05), 0, sz * (d / 2 - .05), .02, .02, .12, 10);
       bx(g, F, 0, .12, 0, w, h - .16, d); bx(g, STEEL, 0, h - .04, 0, w + .01, .04, d + .01);
@@ -573,13 +610,13 @@ const DEF = {
       bx(g, STEEL, 0, .67, .32, .4, .02, .02, .006); bx(g, DARK, 0, 0, .0, .56, .03, .56); }},
   trash:{cat:'wash', n:'Бак для мусора', w:.4, d:.3, h:.7, fins:['black', 'steel', 'white'], fin:'black',
     build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, .4, .62, .3, .02); bx(g, finMat(o.fin), 0, .62, 0, .4, .08, .3, .02); bx(g, DARK, 0, .64, .151, .3, .04, .004); }},
-  tableR:{cat:'hall', n:'Стол круглый', w:.7, d:.7, h:.75, rs:'wh', round:true, tops:TOPS, top:'marble', fins:['black', 'white', 'steel', 'oak'], fin:'black', sup:true,
+  tableR:{cat:'hall', n:'Стол круглый', presets:[['Ø60', {w:.6, d:.6}], ['Ø70', {w:.7, d:.7}], ['Ø80', {w:.8, d:.8}], ['Ø100', {w:1, d:1}]], w:.7, d:.7, h:.75, rs:'wh', round:true, tops:TOPS, top:'marble', fins:['black', 'white', 'steel', 'oak'], fin:'black', sup:true,
     build(g, o){ const r = o.w / 2, F = finMat(o.fin); cy(g, finMat(o.top), 0, o.h - .03, 0, r, r, .03, 48);
       cy(g, F, 0, .03, 0, .03, .03, o.h - .06, 16); cy(g, F, 0, 0, 0, Math.min(.24, r * .75), Math.min(.25, r * .78), .03, 32); }},
   tableS:{cat:'hall', n:'Стол квадратный', w:.7, d:.7, h:.75, rs:'wdh', tops:TOPS, top:'oak', fins:['black', 'white', 'steel', 'oak', 'walnut'], fin:'black', sup:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin); bx(g, finMat(o.top), 0, h - .03, 0, w, .03, d);
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) bx(g, F, sx * (w / 2 - .05), 0, sz * (d / 2 - .05), .035, h - .03, .035); }},
-  table4:{cat:'hall', n:'Стол на 4 персоны', w:1.2, d:.7, h:.75, rs:'wdh', tops:TOPS, top:'walnut', fins:['black', 'white', 'steel', 'oak', 'walnut'], fin:'black', sup:true,
+  table4:{cat:'hall', n:'Стол на 4 персоны', presets:[['120×70', {w:1.2, d:.7}], ['140×80', {w:1.4, d:.8}], ['180×90', {w:1.8, d:.9}]], w:1.2, d:.7, h:.75, rs:'wdh', tops:TOPS, top:'walnut', fins:['black', 'white', 'steel', 'oak', 'walnut'], fin:'black', sup:true,
     build:(g, o) => DEF.tableS.build(g, o)},
   tableH:{cat:'hall', n:'Барный стол высокий', w:.6, d:.6, h:1.05, rs:'wh', round:true, tops:TOPS, top:'oak', fins:['black', 'white', 'steel'], fin:'black', sup:true,
     build:(g, o) => DEF.tableR.build(g, o)},
@@ -599,12 +636,12 @@ const DEF = {
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, L, sx * .3, 0, sz * .3, .018, .014, .12, 10);
       bx(g, F, 0, .12, 0, .75, .26, .75, .05); bx(g, F, 0, .38, .06, .5, .1, .58, .04);
       bx(g, F, 0, .38, -.29, .75, .42, .17, .06); for (const sx of [-1, 1]) bx(g, F, sx * .3, .38, .03, .15, .22, .69, .05); }},
-  sofa:{cat:'hall', n:'Диван-банкетка', w:1.8, d:.6, h:.85, rs:'w', fins:SOFT, fin:'leather', snap:true,
+  sofa:{cat:'hall', n:'Диван-банкетка', presets:PW([1.2, 1.8, 2.4, 3.0]), w:1.8, d:.6, h:.85, rs:'w', fins:SOFT, fin:'leather', snap:true,
     build(g, o){ const {w, d} = o, F = finMat(o.fin); bx(g, DARK, 0, 0, .01, w - .06, .08, d - .08);
       bx(g, F, 0, .08, .03, w, .37, d - .06, .03);
       const n = Math.max(1, Math.round(w / .5)), sw = w / n;
       for (let i = 0; i < n; i++) bx(g, F, -w / 2 + sw * (i + .5), .45, -d / 2 + .085, sw - .012, .4, .16, .05); }},
-  wbar:{cat:'hall', n:'Стойка у окна', w:2.0, d:.4, h:1.05, rs:'wdh', tops:TOPS, top:'oak', snap:true, sup:true,
+  wbar:{cat:'hall', n:'Стойка у окна', presets:PW([1.2, 2.0, 3.0]), w:2.0, d:.4, h:1.05, rs:'wdh', tops:TOPS, top:'oak', snap:true, sup:true,
     build(g, o){ const {w, d, h} = o; bx(g, finMat(o.top), 0, h - .04, 0, w, .04, d);
       spread(Math.max(2, Math.ceil(w / 1.0) + 1), w - .2).forEach(x => { bx(g, DARK, x, h - .3, -d / 2 + .02, .02, .26, .04); bx(g, DARK, x, h - .055, -.0, .02, .015, d - .06); }); }},
   plant:{cat:'decor', n:'Растение в кашпо', w:.45, d:.45, h:1.3, fins:['terra', 'white', 'black', 'concrete', 'grey'], fin:'terra',
@@ -618,13 +655,146 @@ const DEF = {
       cy(g, DARK, 0, .215, 0, .004, .004, Math.max(.05, (ctx?.H || 3) - o.elev - .215), 6);
       const b = mesh(g, new THREE.SphereGeometry(.045, 16, 12), matC('#fff4d6', .3, 0, {emissive:'#ffdca0', emissiveIntensity:2}), 0, .05, 0); b.castShadow = false;
       if (ctx?.lights && ctx.eve && ctx.lights.length < 8){ const L = new THREE.PointLight('#ffd49a', 2, 6, 2); L.position.set(0, -.05, 0); L.userData.nopick = true; g.add(L); ctx.lights.push(L); } }},
-  rug:{cat:'decor', n:'Ковёр', w:2.0, d:1.4, h:.01, rs:'wd', fins:['fabric', 'mustard', 'rose', 'navy', 'terra', 'cream', 'velvet'], fin:'mustard',
+  rug:{cat:'decor', n:'Ковёр', presets:[['140×200', {w:2, d:1.4}], ['200×300', {w:3, d:2}], ['Дорожка', {w:2.5, d:.8}]], w:2.0, d:1.4, h:.01, rs:'wd', fins:['fabric', 'mustard', 'rose', 'navy', 'terra', 'cream', 'velvet'], fin:'mustard',
     build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, o.w, .008, o.d); bx(g, matC(shade(FIN[o.fin]?.c || '#999', .25), .95), 0, .0005, 0, o.w - .16, .0085, o.d - .16); }},
   slats:{cat:'decor', n:'Перегородка из реек', w:1.2, d:.05, h:1.8, rs:'wh', fins:['oak', 'walnut', 'black', 'white', 'green'], fin:'oak',
     build(g, o){ const F = finMat(o.fin); bx(g, DARK, 0, 0, 0, o.w, .03, o.d + .03);
       for (let x = -o.w / 2 + .02; x <= o.w / 2 - .02 + 1e-6; x += .07) bx(g, F, x, .03, 0, .035, o.h - .03, o.d); }},
   column:{cat:'decor', n:'Колонна', w:.4, d:.4, h:3, rs:'wd', fins:['white', 'concrete', 'black', 'terrazzo', 'oak'], fin:'white', full:true,
     build(g, o, ctx){ bx(g, finMat(o.fin), 0, 0, 0, o.w, ctx?.H || 3, o.d); }},
+  // ---- worktops, bars of other shapes ----
+  worktop:{cat:'bar', n:'Столешница', w:1.2, d:.6, h:.04, rs:'wdh', place:'on', sup:true, snap:true, tops:TOPS, top:'oak', presets:PW([.6, .9, 1.2, 1.5, 1.8, 2.4]),
+    build(g, o){ bx(g, finMat(o.top), 0, 0, 0, o.w, o.h, o.d); }},
+  island:{cat:'bar', n:'Стойка островная', w:2.4, d:1.0, h:1.05, rs:'wdh', fins:BODY, fin:'black', tops:TOPS, top:'oak', sup:true, presets:PW([1.6, 2.0, 2.4, 3.0]),
+    build(g, o){ const {w, d, h} = o, F = finMat(o.fin), bd = Math.min(.6, d - .3);
+      bx(g, DARK, 0, 0, 0, w - .1, .1, bd - .06); bx(g, F, 0, .1, 0, w - .06, h - .14, bd); bx(g, finMat(o.top), 0, h - .04, 0, w, .04, d);
+      for (const sz of [-1, 1]) bx(g, STEEL, 0, .22, sz * (bd / 2 + .07), w - .2, .025, .025, .008); }},
+  barRound:{cat:'bar', n:'Стойка со скруглёнными краями', w:2.6, d:.6, h:.95, rs:'wdh', fins:BODY, fin:'terrazzo', tops:TOPS, top:'white', sup:true, snap:true, presets:PW([1.8, 2.4, 3.0, 3.6]),
+    build(g, o){ const {w, d, h} = o; slab(g, DARK, capsule(w - .08, d - .1), 0, .1); slab(g, finMat(o.fin), capsule(w, d), .1, h - .14); slab(g, finMat(o.top), capsule(w + .03, d + .03), h - .04, .04); }},
+  barU:{cat:'bar', n:'П-образная стойка', w:3.0, d:2.0, h:.9, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'marble', sup:true,
+    rects: o => [[0, -o.d / 2 + .3, o.w, .6], [-o.w / 2 + .3, .3, .6, o.d - .6], [o.w / 2 - .3, .3, .6, o.d - .6]],
+    build(g, o){ const F = finMat(o.fin), T = finMat(o.top); for (const [cx, cz, w, d] of DEF.barU.rects(o)) counterBody(g, o, cx, cz, w, d, o.h, F, T); }},
+  // ---- cabinets and storage ----
+  cabD:{cat:'store', n:'Тумба с ящиками', w:.6, d:.6, h:.86, rs:'wdh', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true, presets:PW([.4, .6, .8, 1.0]),
+    build(g, o){ const {w, d, h} = o; counterBody(g, o, 0, 0, w, d, h, finMat(o.fin), finMat(o.top));
+      for (let i = 0; i < 3; i++){ const y = .1 + (h - .14) * i / 3; if (i) bx(g, DARK, 0, y, d / 2 + .001, w - .02, .006, .004); bx(g, STEEL, 0, y + (h - .14) / 3 - .07, d / 2 + .012, Math.min(.2, w * .5), .012, .014); } }},
+  cabDoor:{cat:'store', n:'Тумба с дверцами', w:.8, d:.6, h:.86, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'white', sup:true, snap:true, presets:PW([.4, .6, .8, 1.0, 1.2]),
+    build(g, o){ const {w, d, h} = o; counterBody(g, o, 0, 0, w, d, h, finMat(o.fin), finMat(o.top)); doorsFront(g, w, d, .1, h - .04, true); }},
+  wallCab:{cat:'store', n:'Шкаф навесной', w:.8, d:.35, h:.7, rs:'wdh', place:'wall', elev:1.5, fins:BODY, fin:'white', presets:PW([.6, .8, 1.2, 1.6]),
+    build(g, o){ const {w, d, h} = o; bx(g, finMat(o.fin), 0, 0, 0, w, h, d, .004); doorsFront(g, w, d, 0, h, false); }},
+  tallCab:{cat:'store', n:'Шкаф-пенал', w:.6, d:.6, h:2.1, rs:'wdh', fins:BODY, fin:'white', snap:true, presets:PW([.4, .6, .8]),
+    build(g, o){ const {w, d, h} = o, F = finMat(o.fin); bx(g, DARK, 0, 0, -.02, w - .04, .1, d - .06); bx(g, F, 0, .1, 0, w, h - .1, d, .004);
+      bx(g, DARK, 0, .1 + (h - .1) * .55, d / 2 + .001, w - .02, .006, .004); doorsFront(g, w, d, .1, h, true); }},
+  rack:{cat:'store', n:'Стеллаж с зерном и товаром', w:1.0, d:.4, h:1.8, rs:'wdh', fins:['black', 'oak', 'walnut', 'white', 'steel'], fin:'black', snap:true, presets:PW([.6, 1.0, 1.4]),
+    build(g, o){ const {w, d, h} = o, F = finMat(o.fin), S = finMat(o.fin === 'black' || o.fin === 'steel' ? 'oak' : o.fin), kraft = matC('#b98a57', .85), lab = ['#1f1f22', '#ffffff', '#2e5a47', '#c0643e'].map(c => matC(c, .6));
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) bx(g, F, sx * (w / 2 - .015), 0, sz * (d / 2 - .015), .025, h, .025);
+      for (let i = 0; i < 5; i++){ const y = .08 + i * (h - .12) / 4; bx(g, S, 0, y, 0, w, .025, d);
+        if (i && i < 4) spread(Math.max(1, Math.floor((w - .1) / .13)), w - .16).forEach((x, j) => { if ((i + j) % 4 === 3) cy(g, GLASS, x, y + .025, 0, .05, .05, .16); else { bx(g, kraft, x, y + .025, 0, .1, .17, .06, .006); bx(g, lab[(i + j) % 4], x, y + .08, .031, .07, .05, .002); } }); } }},
+  // ---- cold: showcases and fridges ----
+  showSq:{cat:'cold', n:'Витрина холодильная, прямое стекло', w:1.2, d:.8, h:1.3, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'marble', goods:'cakes', snap:true, presets:PW([.9, 1.2, 1.5, 1.8, 2.4]),
+    build(g, o){ const {w, d, h} = o, gh = h - .9; showBase(g, o); glassCase(g, w, d, .9, gh, STEEL);
+      bx(g, GLASS, 0, .9 + gh * .5, -.03, w - .06, .01, d - .16); goods(g, o.goods, w, .08, .9, 1); goods(g, o.goods, w, -.04, .9 + gh * .5 + .01, 3); bx(g, LIGHT, 0, h - .03, 0, w - .1, .008, .04); }},
+  showCurve:{cat:'cold', n:'Витрина холодильная, гнутое стекло', w:1.5, d:.9, h:1.3, rs:'w', fins:BODY, fin:'black', tops:TOPS, top:'steel', goods:'cakes', snap:true, presets:PW([.9, 1.2, 1.5, 1.8, 2.4]),
+    build(g, o){ const {w, d, h} = o, r = Math.min(h - .9, d * .55); showBase(g, o); curveGlass(g, w, d, .9, r); goods(g, o.goods, w, .02, .9, 2); bx(g, GLASS, 0, .9 + r * .5, -.1, w - .06, .01, d * .45); goods(g, o.goods, w, -.12, .9 + r * .5 + .01, 4); }},
+  showVert:{cat:'cold', n:'Витрина кондитерская вертикальная', w:.9, d:.7, h:1.85, rs:'w', fins:['black', 'white', 'steel', 'oak'], fin:'black', snap:true, presets:PW([.7, .9]),
+    build(g, o){ const {w, d, h} = o, F = finMat(o.fin), gh = h - .37; bx(g, F, 0, 0, 0, w, .25, d, .01); bx(g, F, 0, h - .12, 0, w, .12, d, .01); bx(g, LIGHT, 0, h - .126, 0, w - .1, .006, d - .1);
+      glassCase(g, w, d, .25, gh, F); const C = CAKES();
+      for (let i = 0; i < 4; i++){ const y = .3 + i * gh / 4, r = Math.min(w, d) / 2 - .06; cy(g, GLASS, 0, y, 0, r, r, .01, 32);
+        for (let k = 0; k < 3; k++){ const a = k * 2.1 + i; cy(g, C[(i + k) % C.length], Math.cos(a) * r * .55, y + .01, Math.sin(a) * r * .55, .075, .075, .07, 20); } } }},
+  showTop:{cat:'cold', n:'Витрина настольная', w:.9, d:.5, h:.45, rs:'w', place:'on', fins:['black', 'white', 'steel'], fin:'black', goods:'cakes', presets:PW([.6, .9, 1.2]),
+    build(g, o){ const {w, d, h} = o, F = finMat(o.fin); bx(g, F, 0, 0, 0, w, .07, d, .01); glassCase(g, w, d, .07, h - .07, F); bx(g, GLASS, 0, .07 + (h - .07) / 2, 0, w - .05, .008, d - .05);
+      goods(g, o.goods, w, 0, .07, 5); goods(g, o.goods, w, 0, .07 + (h - .07) / 2 + .008, 6); }},
+  multideck:{cat:'cold', n:'Горка холодильная открытая', w:1.2, d:.7, h:2.0, rs:'w', fins:['black', 'white', 'steel', 'oak'], fin:'black', snap:true, presets:PW([.9, 1.2, 1.5, 1.8]),
+    build(g, o){ const {w, d, h} = o, F = finMat(o.fin), tag = matC('#efe9de', .6);
+      for (const sx of [-1, 1]) bx(g, F, sx * (w / 2 - .025), 0, 0, .05, h, d); bx(g, F, 0, 0, -d / 2 + .03, w, h, .06); bx(g, F, 0, h - .2, 0, w, .2, d); bx(g, LIGHT, 0, h - .21, d / 2 - .1, w - .12, .008, .05);
+      bx(g, F, 0, 0, 0, w, .4, d); goods(g, 'drinks', w - .1, .1, .4, 2);
+      for (let i = 0; i < 4; i++){ const y = .62 + i * (h - .9) / 4, sd = d * .62 - i * .06, z = -d / 2 + .06 + sd / 2; bx(g, STEEL, 0, y, z, w - .1, .015, sd); bx(g, tag, 0, y - .03, z + sd / 2, w - .1, .03, .006);
+        goods(g, i % 2 ? 'sandwich' : 'drinks', w - .1, z + .04, y + .015, i + 3); } }},
+  gelato:{cat:'cold', n:'Витрина для мороженого', w:1.2, d:1.0, h:1.3, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'steel', snap:true, presets:PW([1.0, 1.2, 1.5, 1.8]),
+    build(g, o){ const {w, d, h} = o; showBase(g, o); curveGlass(g, w, d, .9, Math.min(h - .9, .42)); const R = rnd(5), cols = ['#f7d6e0', '#a8d5ba', '#6b3b24', '#fff3c4', '#f4a259', '#c9b1ff', '#ffffff'];
+      const n = Math.max(1, Math.floor((w - .12) / .17)); for (const z of [-.12, .14]) spread(n, w - .25).forEach((x, i) => { bx(g, STEEL, x, .83, z, .16, .07, .24); bx(g, matC(cols[(i + (z > 0 ? 3 : 0)) % cols.length], .8), x, .9, z, .15, .025, .23);
+        mesh(g, new THREE.SphereGeometry(.05, 10, 8), matC(cols[(i + (z > 0 ? 3 : 0)) % cols.length], .8), x + (R() - .5) * .05, .925, z + (R() - .5) * .08).scale.y = .6; }); }},
+  barFridge:{cat:'cold', n:'Барный холодильник со стеклом (под стойку)', w:.9, d:.55, h:.86, rs:'w', fins:['black', 'steel', 'white'], fin:'black', sup:true, snap:true, presets:[['1 дверь · 60', {w:.6}], ['2 двери · 90', {w:.9}], ['3 двери · 135', {w:1.35}]],
+    build(g, o){ const {w, d, h} = o, F = finMat(o.fin), n = Math.max(1, Math.round(w / .45)), dw = w / n;
+      bx(g, F, 0, 0, 0, w, h, d - .02, .004); bx(g, matC('#f3f3f1', .6), 0, .08, .0, w - .06, h - .16, d - .1); bx(g, LIGHT, 0, h - .09, 0, w - .1, .006, d - .12);
+      for (const y of [.1, .1 + (h - .2) / 2]){ bx(g, matC('#e2e8ea', .2, .1), 0, y, 0, w - .08, .008, d - .14); goods(g, 'drinks', w - .06, .02, y + .008, Math.round(y * 10)); }
+      for (let i = 0; i < n; i++){ const x = -w / 2 + dw * (i + .5); for (const [y0, hh] of [[.04, .04], [h - .06, .04]]) bx(g, F, x, y0, d / 2, dw - .008, hh, .03);
+        for (const sx of [-1, 1]) bx(g, F, x + sx * (dw / 2 - .02), .04, d / 2, .04, h - .08, .03); bx(g, GLASS, x, .08, d / 2, dw - .08, h - .14, .006); bx(g, STEEL, x, h - .1, d / 2 + .03, dw * .5, .014, .014); } }},
+  builtFridge:{cat:'cold', n:'Холодильник встраиваемый под столешницу', w:.6, d:.6, h:.86, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true, presets:PW([.6, .9, 1.2]),
+    build(g, o){ const {w, d, h} = o; counterBody(g, o, 0, 0, w, d, h, finMat(o.fin), finMat(o.top)); doorsFront(g, w, d, .1, h - .04, false);
+      bx(g, matC('#2d6cdf', .4, 0, {emissive:'#2d6cdf', emissiveIntensity:.5}), w / 2 - .06, h - .1, d / 2 + .004, .03, .012, .004); }},
+  // ---- kitchen and other machines ----
+  superauto:{cat:'coffee', n:'Кофемашина-автомат', w:.34, d:.5, h:.58, place:'on', fins:MACH, fin:'black',
+    build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, -.04, .34, .58, .42, .03); bx(g, STEEL, 0, 0, .16, .28, .03, .16, .008); bx(g, DARK, 0, .03, .17, .26, .005, .14);
+      bx(g, F, 0, .3, .16, .16, .07, .14, .02); for (const sx of [-1, 1]) cy(g, STEEL, sx * .02, .27, .2, .008, .008, .03, 8);
+      const s = mesh(g, new THREE.PlaneGeometry(.18, .1), matC('#cfe9ff', .3, 0, {emissive:'#4a90c8', emissiveIntensity:.6}), 0, .46, .171); s.castShadow = false; cy(g, DARK, 0, .58, -.12, .07, .07, .01); }},
+  oven:{cat:'kitchen', n:'Конвекционная печь для выпечки', w:.62, d:.6, h:.58, place:'on', fins:['steel', 'black'], fin:'steel',
+    build(g, o){ const F = finMat(o.fin); for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, DARK, sx * .26, 0, sz * .24, .015, .015, .04, 8);
+      bx(g, F, 0, .04, 0, .62, .54, .6, .01); bx(g, GLASS_T, -.06, .1, .301, .44, .4, .006); bx(g, STEEL, -.06, .47, .32, .36, .02, .02, .006); bx(g, DARK, .245, .1, .301, .1, .4, .004);
+      for (let i = 0; i < 3; i++) cy(g, STEEL, .245, .38 - i * .1, .31, .018, .018, .02, 12).rotation.x = Math.PI / 2; }},
+  micro:{cat:'kitchen', n:'Микроволновая печь', w:.5, d:.4, h:.3, place:'on', fins:['steel', 'black', 'white'], fin:'black',
+    build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, .5, .3, .4, .01); bx(g, GLASS_T, -.06, .04, .201, .32, .22, .004); bx(g, DARK, .19, .04, .201, .08, .22, .004); }},
+  panini:{cat:'kitchen', n:'Контактный гриль', w:.36, d:.42, h:.22, place:'on', fins:['steel', 'black'], fin:'steel',
+    build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, 0, .36, .1, .38, .01); bx(g, DARK, 0, .1, 0, .32, .02, .34); bx(g, F, 0, .12, -.01, .34, .07, .34, .01); bx(g, DARK, 0, .16, .2, .26, .02, .03, .008); }},
+  juicer:{cat:'kitchen', n:'Соковыжималка для цитрусов', w:.24, d:.3, h:.46, place:'on', fins:['steel', 'black', 'white'], fin:'steel',
+    build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, 0, .22, .05, .28, .01); bx(g, F, 0, .05, -.1, .06, .38, .06, .01); cy(g, F, 0, .2, .03, .07, .05, .06); bx(g, DARK, 0, .41, -.02, .03, .03, .2, .01); cy(g, GLASS, 0, .05, .06, .04, .035, .11); }},
+  boiler:{cat:'kitchen', n:'Кипятильник', w:.3, d:.32, h:.5, place:'on', fins:['steel', 'black'], fin:'steel',
+    build(g, o){ const F = finMat(o.fin); cy(g, F, 0, .02, 0, .14, .14, .42, 32); cy(g, DARK, 0, .44, 0, .12, .14, .03, 32); cy(g, DARK, 0, .47, 0, .02, .02, .03, 10); bx(g, DARK, 0, .08, .15, .03, .04, .05, .01); for (const sx of [-1, 1]) cy(g, DARK, sx * .1, 0, 0, .015, .015, .02, 8); }},
+  coldbrew:{cat:'coffee', n:'Колд-брю башня', w:.3, d:.3, h:1.0, place:'on', fins:['walnut', 'oak', 'black'], fin:'walnut',
+    build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, 0, .3, .03, .3); for (const sx of [-1, 1]) bx(g, F, sx * .12, .03, -.1, .03, .97, .03); bx(g, F, 0, .95, -.1, .27, .03, .1); bx(g, F, 0, .62, -.1, .27, .025, .1);
+      cy(g, GLASS, 0, .72, 0, .09, .05, .22); cy(g, matC('#4a2c1a', .5), 0, .3, 0, .05, .05, .2); cy(g, GLASS, 0, .03, 0, .07, .08, .2); cy(g, matC('#3a2416', .3), 0, .03, 0, .065, .075, .1); }},
+  scales:{cat:'coffee', n:'Весы бариста', w:.16, d:.16, h:.03, place:'on', fins:['black', 'white'], fin:'black',
+    build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, .16, .025, .16, .008); }},
+  // ---- hall ----
+  sofa2:{cat:'hall', n:'Диван двухместный', w:1.5, d:.85, h:.8, rs:'w', fins:SOFT, fin:'fabric', snap:true, presets:PW([1.3, 1.5, 1.9]),
+    build(g, o){ const {w, d} = o, F = finMat(o.fin), L = finMat('walnut'); for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, L, sx * (w / 2 - .08), 0, sz * (d / 2 - .08), .018, .014, .12, 10);
+      bx(g, F, 0, .12, 0, w, .26, d, .05); for (const sx of [-1, 1]){ bx(g, F, sx * (w / 2 - .075), .38, .03, .15, .22, d - .06, .05); bx(g, F, sx * (w - .3) / 4, .38, .06, (w - .3) / 2 - .01, .1, d - .22, .04); }
+      bx(g, F, 0, .38, -d / 2 + .09, w, .42, .18, .06); }},
+  pouf:{cat:'hall', n:'Пуф', w:.45, d:.45, h:.42, fins:SOFT, fin:'mustard', build(g, o){ cy(g, finMat(o.fin), 0, 0, 0, .22, .22, .42, 32); }},
+  lowTable:{cat:'hall', n:'Кофейный столик низкий', w:.7, d:.7, h:.45, rs:'wh', round:true, tops:TOPS, top:'terrazzo', fins:['black', 'white', 'oak'], fin:'black', sup:true, build:(g, o) => DEF.tableR.build(g, o)},
+  bench:{cat:'hall', n:'Скамья', w:1.4, d:.38, h:.45, rs:'w', fins:['oak', 'walnut', 'black', 'white'], fin:'oak', snap:true, presets:PW([1.0, 1.4, 1.8]),
+    build(g, o){ const F = finMat(o.fin); bx(g, F, 0, .41, 0, o.w, .04, o.d); for (const sx of [-1, 1]) for (const sz of [-1, 1]) bx(g, DARK, sx * (o.w / 2 - .08), 0, sz * (o.d / 2 - .05), .03, .41, .03); }},
+  tableHR:{cat:'hall', n:'Барный стол прямоугольный', w:1.4, d:.5, h:1.05, rs:'wdh', tops:TOPS, top:'oak', fins:['black', 'white', 'steel'], fin:'black', sup:true, build:(g, o) => DEF.tableS.build(g, o)},
+  kiosk:{cat:'hall', n:'Терминал самообслуживания', w:.5, d:.4, h:1.7, fins:['white', 'black'], fin:'white',
+    build(g, o){ const F = finMat(o.fin); cy(g, F, 0, 0, 0, .22, .24, .03, 32); bx(g, F, 0, .03, -.05, .12, 1.1, .08, .02);
+      const s = new THREE.Group(); s.position.set(0, 1.35, 0); s.rotation.x = -.18; g.add(s); bx(s, F, 0, -.33, 0, .42, .66, .05, .02);
+      const scr = mesh(s, new THREE.PlaneGeometry(.38, .6), matC('#f4f0e6', .4, 0, {emissive:'#b9c7d6', emissiveIntensity:.5}), 0, 0, .026); scr.castShadow = false; }},
+  tvMenu:{cat:'bar', n:'Экраны меню (3 ТВ)', w:2.9, d:.05, h:.56, place:'wall', elev:1.9,
+    build(g, o){ spread(3, 1.95).forEach((x, i) => { bx(g, DARK, x, 0, 0, .95, .56, .045, .006);
+      const tex = canvasTex(512, 288, (c, W, H) => { c.fillStyle = ['#2b3a2f', '#3a2a22', '#22303a'][i]; c.fillRect(0, 0, W, H); c.fillStyle = '#f4efe6'; c.font = '700 34px Manrope, sans-serif'; c.fillText(['КОФЕ', 'АВТОРСКОЕ', 'ДЕСЕРТЫ'][i], 28, 52);
+        c.font = '500 22px Manrope, sans-serif'; MENU.slice(i * 2, i * 2 + 5).forEach(([a, b], k) => { c.fillText(a, 28, 100 + k * 36); c.textAlign = 'right'; c.fillText(b, W - 28, 100 + k * 36); c.textAlign = 'left'; }); });
+      const p = mesh(g, new THREE.PlaneGeometry(.92, .52), new THREE.MeshBasicMaterial({map:tex, toneMapped:false}), x, .28, .024); p.castShadow = false; }); }},
+  // ---- light and decor ----
+  floorLamp:{cat:'decor', n:'Торшер', w:.4, d:.4, h:1.6, fins:['black', 'white', 'steel', 'terra', 'mustard'], fin:'black',
+    build(g, o, ctx){ const F = finMat(o.fin); cy(g, F, 0, 0, 0, .15, .16, .025, 28); cy(g, F, 0, .025, 0, .012, .012, 1.35, 10); cy(g, finSide(o.fin), 0, 1.35, 0, .18, .14, .25, 32, true); lampLight(g, ctx, 0, 1.4, 0); }},
+  sconce:{cat:'decor', n:'Бра настенное', w:.22, d:.25, h:.25, place:'wall', elev:1.8, fins:['black', 'white', 'steel', 'mustard'], fin:'black',
+    build(g, o, ctx){ const F = finMat(o.fin); cy(g, F, 0, .06, -.11, .05, .05, .02, 20).rotation.x = Math.PI / 2; bx(g, F, 0, .06, -.04, .015, .015, .14); cy(g, finSide(o.fin), 0, .0, .05, .05, .1, .14, 28, true);
+      const b = mesh(g, new THREE.SphereGeometry(.035, 12, 10), BULB, 0, .02, .05); b.castShadow = false; lampLight(g, ctx, 0, 0, .05); }},
+  track:{cat:'decor', n:'Трековый свет', w:2.0, d:.08, h:.18, rs:'w', place:'ceil', fins:['black', 'white'], fin:'black', presets:PW([1.0, 2.0, 3.0]),
+    build(g, o, ctx){ const F = finMat(o.fin); bx(g, F, 0, .14, 0, o.w, .04, .04); spread(Math.max(2, Math.round(o.w / .5)), o.w - .2).forEach((x, i) => {
+      bx(g, F, x, .1, 0, .015, .04, .015); const s = cy(g, F, x, .0, 0, .035, .035, .11, 16); s.rotation.x = (i % 2 ? .35 : -.35); if (i % 2 === 0) lampLight(g, ctx, x, -.05, 0); }); }},
+  poster:{cat:'decor', n:'Постер в раме', w:.5, d:.03, h:.7, rs:'wh', place:'wall', elev:1.3, fins:['black', 'oak', 'white'], fin:'black', text:'COFFEE',
+    build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, o.w, o.h, o.d); const tex = canvasTex(400, Math.round(400 * o.h / o.w), (c, W, H) => { c.fillStyle = '#efe6d6'; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#c0643e'; c.beginPath(); c.arc(W * .5, H * .42, W * .3, 0, Math.PI * 2); c.fill(); c.fillStyle = '#2e5a47'; c.fillRect(W * .1, H * .62, W * .8, H * .12);
+      c.fillStyle = '#1f1f22'; c.font = `800 ${W * .13}px Manrope, sans-serif`; c.textAlign = 'center'; c.fillText(o.text || '', W / 2, H * .9); });
+      const p = mesh(g, new THREE.PlaneGeometry(o.w - .06, o.h - .06), new THREE.MeshStandardMaterial({map:tex, roughness:.8}), 0, o.h / 2, o.d / 2 + .001); p.castShadow = false; }},
+  mirror:{cat:'decor', n:'Зеркало круглое', w:.7, d:.03, h:.7, rs:'w', place:'wall', elev:1.2, fins:['black', 'oak', 'steel', 'mustard'], fin:'mustard', size:o => ({h:o.w}),
+    build(g, o){ const r = o.w / 2; const fr = mesh(g, new THREE.TorusGeometry(r - .015, .015, 10, 48), finMat(o.fin), 0, r, 0); fr.castShadow = false;
+      mesh(g, new THREE.CircleGeometry(r - .02, 48), matC('#dfe6ea', .03, 1), 0, r, .004).castShadow = false; }},
+  greenWall:{cat:'decor', n:'Зелёная стена', w:1.2, d:.08, h:1.0, rs:'wh', place:'wall', elev:.9,
+    build(g, o){ bx(g, DARK, 0, 0, -.02, o.w, o.h, .03); const R = rnd(11), L = [matC('#3f6b35', .9, 0, {flatShading:true}), matC('#5f8f45', .9, 0, {flatShading:true}), matC('#2f5a3a', .9, 0, {flatShading:true})];
+      for (let i = 0; i < Math.round(o.w * o.h * 70); i++) mesh(g, new THREE.IcosahedronGeometry(.04 + R() * .04, 0), L[i % 3], (R() - .5) * (o.w - .06), .03 + R() * (o.h - .06), .01 + R() * .03); }},
+  hangPlant:{cat:'decor', n:'Кашпо подвесное', w:.4, d:.4, h:.5, place:'hang', elev:1.9, fins:['white', 'terra', 'black'], fin:'white',
+    build(g, o, ctx){ cy(g, finMat(o.fin), 0, .3, 0, .12, .09, .16, 24); cy(g, DARK, 0, .46, 0, .003, .003, Math.max(.05, (ctx?.H || 3) - o.elev - .46), 6);
+      const R = rnd(3), L = matC('#4c7a3d', .8, 0, {flatShading:true}); for (let i = 0; i < 9; i++){ const a = R() * 6.28, rr = .08 + R() * .1; mesh(g, new THREE.IcosahedronGeometry(.05 + R() * .04, 0), L, Math.cos(a) * rr, .05 + R() * .35, Math.sin(a) * rr); } }},
+  coat:{cat:'decor', n:'Вешалка напольная', w:.5, d:.5, h:1.75, fins:['black', 'oak', 'walnut', 'white'], fin:'black',
+    build(g, o){ const F = finMat(o.fin); cy(g, F, 0, 0, 0, .2, .22, .02, 28); cy(g, F, 0, .02, 0, .015, .015, 1.7, 10);
+      for (let i = 0; i < 4; i++){ const a = i * Math.PI / 2, h = bx(g, F, Math.cos(a) * .08, 1.6, Math.sin(a) * .08, .16, .015, .015); h.rotation.y = -a; h.rotation.z = .4 * (Math.cos(a) >= 0 ? 1 : -1); } }},
+  // ---- toilet ----
+  toilet:{cat:'wash', n:'Унитаз', w:.38, d:.65, h:.8, fins:['white', 'black'], fin:'white', snap:true,
+    build(g, o){ const F = finMat(o.fin); cy(g, F, 0, 0, .06, .13, .16, .38, 28).scale.z = 1.3; bx(g, F, 0, .38, -.24, .36, .4, .16, .03); const s = mesh(g, new THREE.TorusGeometry(.15, .025, 10, 32), F, 0, .4, .07); s.rotation.x = Math.PI / 2; s.scale.y = 1.3; }},
+  handSink:{cat:'wash', n:'Раковина для рук', w:.45, d:.35, h:.18, place:'wall', elev:.8, fins:['white', 'steel', 'black'], fin:'white',
+    build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, 0, .45, .16, .35, .04); bx(g, matC('#9aa0a6', .25, .9), 0, .158, .02, .34, .004, .24); cy(g, STEEL, 0, .16, -.14, .012, .012, .14, 10); bx(g, STEEL, 0, .29, -.1, .02, .02, .1, .006); }},
 };
 // door and window openings live inside a wall: pos = centre along the wall from its start
 const OPS = {
@@ -679,7 +849,7 @@ let P = null, pid = null;
 function rectWalls(W, D){ return [{id:'w1', a:[0, 0], b:[W, 0], t:.15}, {id:'w2', a:[W, 0], b:[W, D], t:.15}, {id:'w3', a:[W, D], b:[0, D], t:.15}, {id:'w4', a:[0, D], b:[0, 0], t:.15}]; }
 function newItem(kind, x = 0, z = 0, rot = 0, extra = {}){
   const D = DEF[kind], o = {id:sid(), kind, x, z, rot, w:D.w, d:D.d, h:D.h};
-  for (const k of ['fin', 'top', 'sty', 'ledge', 'elev', 'text', 'groups', 'neon']) if (D[k] !== undefined) o[k] = D[k];
+  for (const k of ['fin', 'top', 'sty', 'ledge', 'elev', 'text', 'groups', 'neon', 'goods']) if (D[k] !== undefined) o[k] = D[k];
   Object.assign(o, extra); Object.assign(o, D.size?.(o) || {}); return o; }
 const newOp = (kind, wall, pos, extra = {}) => ({id:sid(), kind, wall, pos, w:OPS[kind].w, h:OPS[kind].h, sill:OPS[kind].sill, fin:OPS[kind].fin, ...extra});
 function blank(W = 8, D = 6, H = 3){ return {v:1, name:'Моя кофейня', H, wallCol:'#f2eee7', floor:'planks', light:'day', fade:true, walls:rectWalls(W, D), ops:[newOp('entrance', 'w3', W / 2, {w:Math.min(2.4, W - .6)})], items:[]}; }
@@ -828,7 +998,7 @@ function buildItems(){
   disposeTree(roots.items); itemObj.clear(); ctx = {H:P.H, lights:[], eve:P.light === 'eve'};
   for (const it of P.items){ const D = DEF[it.kind]; if (!D) continue;
     const g = new THREE.Group();
-    if (view === 'plan' && D.place === 'hang'){ const rm = new THREE.Mesh(new THREE.RingGeometry(.13, .17, 32), new THREE.MeshBasicMaterial({color:'#e0a43a', side:THREE.DoubleSide, transparent:true, opacity:.9, depthTest:false}));
+    if (view === 'plan' && (D.place === 'hang' || D.place === 'ceil')){ const rm = new THREE.Mesh(new THREE.RingGeometry(.13, .17, 32), new THREE.MeshBasicMaterial({color:'#e0a43a', side:THREE.DoubleSide, transparent:true, opacity:.9, depthTest:false}));
       rm.rotation.x = -Math.PI / 2; rm.position.y = .2; rm.renderOrder = 5; g.add(rm); const dot = new THREE.Mesh(new THREE.CircleGeometry(.05, 20), rm.material); dot.rotation.x = -Math.PI / 2; dot.position.y = .2; dot.renderOrder = 5; g.add(dot);
       const hit = new THREE.Mesh(new THREE.CircleGeometry(.17, 20), new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide})); hit.rotation.x = -Math.PI / 2; hit.position.y = .2; g.add(hit); }
     else { D.build(g, it, ctx); bake(g); } g.userData.sel = {t:'item', id:it.id}; g.userData.box = [it.w, D.full ? P.H : it.h, it.d, 0];
@@ -838,12 +1008,19 @@ function rebuild(){ ctx.H = P.H; buildFloor(); buildWalls(); buildItems(); drawS
 
 /* support: things that stand on counters, tables and fridges */
 function toLocal(o, x, z){ const dx = x - o.x, dz = z - o.z, c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0); return [dx * c - dz * s, dx * s + dz * c]; }
-function supportAt(x, z, skip){ let y = 0;
+// a worktop can lie on a fridge and a machine on the worktop: tops stack
+function supTop(o, dep = 0){ return (DEF[o.kind].place === 'on' ? supportAt(o.x, o.z, o.id, dep + 1) : 0) + o.h; }
+function supportAt(x, z, skip, dep = 0){ let y = 0; if (dep > 5) return 0;
   for (const o of P.items){ const D = DEF[o.kind]; if (!D?.sup || o.id === skip) continue; const [lx, lz] = toLocal(o, x, z);
     const rects = D.rects ? D.rects(o) : [[0, 0, o.w, o.d]];
-    for (const [cx, cz, w, d] of rects) if (Math.abs(lx - cx) <= w / 2 + .02 && Math.abs(lz - cz) <= d / 2 + .02) y = Math.max(y, o.h); }
+    for (const [cx, cz, w, d] of rects) if (Math.abs(lx - cx) <= w / 2 + .02 && Math.abs(lz - cz) <= d / 2 + .02){ y = Math.max(y, supTop(o, dep)); break; } }
   return y; }
-function baseY(it){ const D = DEF[it.kind]; return D.place === 'on' ? supportAt(it.x, it.z, it.id) : D.place === 'wall' || D.place === 'hang' ? (it.elev ?? D.elev ?? 1.5) : 0; }
+function ridersOf(it){ const out = [], seen = new Set([it.id]), q = [it];
+  while (q.length){ const s = q.shift(); if (!DEF[s.kind].sup) continue; const top = supTop(s);
+    for (const o of P.items){ if (seen.has(o.id) || DEF[o.kind].place !== 'on') continue; const [lx, lz] = toLocal(s, o.x, o.z);
+      if (Math.abs(lx) <= s.w / 2 + .02 && Math.abs(lz) <= s.d / 2 + .02 && Math.abs(supportAt(o.x, o.z, o.id) - top) < .001){ seen.add(o.id); out.push(o); q.push(o); } } }
+  return out; }
+function baseY(it){ const D = DEF[it.kind]; return D.place === 'on' ? supportAt(it.x, it.z, it.id) : D.place === 'ceil' ? P.H - it.h : D.place === 'wall' || D.place === 'hang' ? (it.elev ?? D.elev ?? 1.5) : 0; }
 
 /* walls: fade the ones between the camera and the room */
 let dirty = true, shadowDirty = true;
@@ -941,7 +1118,7 @@ stage.addEventListener('pointerdown', e => {
   const p = pick(e); if (!p) return; down.s = p.s;
   if (p.s.t === 'item'){ const it = P.items.find(i => i.id === p.s.id), hit = floorHit(e); if (!it || !hit) return;
     ctl().enabled = false; e.stopPropagation(); if (sel?.id !== it.id) select({t:'item', id:it.id});
-    const riders = DEF[it.kind].sup ? P.items.filter(o => DEF[o.kind].place === 'on' && Math.abs(supportAt(o.x, o.z, o.id) - it.h) < .001 && (() => { const [lx, lz] = toLocal(it, o.x, o.z); return Math.abs(lx) <= it.w / 2 + .02 && Math.abs(lz) <= it.d / 2 + .02; })()).map(o => ({o, dx:o.x - it.x, dz:o.z - it.z})) : [];
+    const riders = ridersOf(it).map(o => ({o, dx:o.x - it.x, dz:o.z - it.z}));
     drag = {t:'item', it, ox:hit.x - it.x, oz:hit.z - it.z, moved:false, riders, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
   if (p.s.t === 'op'){ const op = P.ops.find(o => o.id === p.s.id); ctl().enabled = false; e.stopPropagation(); if (sel?.id !== op.id) select({t:'op', id:op.id});
     drag = {t:'op', op, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
@@ -1072,19 +1249,20 @@ function renderLib(){
   $('cats').innerHTML = [['all', 'Всё'], ...CATS].map(([k, n]) => `<button class="chip" type="button" data-cat="${k}" aria-pressed="${cat === k}">${n}</button>`).join('');
   const L = libList(); let h = '';
   for (const [ck, cn] of CATS){ const xs = L.filter(x => x.cat === ck); if (!xs.length) continue;
-    h += `<section><h3>${cn}</h3><div class="lgrid">${xs.map(x => `<button class="it" type="button" data-k="${x.k}" title="Нажмите или перетащите на план"><div class="th"><img alt="" data-th="${x.k}"${THUMBS.has(x.k) ? ` src="${THUMBS.get(x.k)}"` : ''}></div><b>${esc(x.n)}</b><span>${x.s}</span></button>`).join('')}</div></section>`; }
-  $('libBody').innerHTML = h || '<p class="note">Ничего не нашлось.</p>'; queueThumbs(); }
+    h += `<section><h3>${cn}</h3><div class="lgrid">${xs.map(x => `<button class="it" type="button" data-k="${x.k}" title="Нажмите или перетащите на план"><div class="th"><img alt="" loading="lazy" data-th="${x.k}" src="${THUMBS.get(x.k) || `thumbs/cafe/${x.k}.webp?v=${TV}`}"></div><b>${esc(x.n)}</b><span>${x.s}</span></button>`).join('')}</div></section>`; }
+  $('libBody').innerHTML = h || '<p class="note">Ничего не нашлось.</p>';
+  $('libBody').querySelectorAll('img[data-th]').forEach(img => img.addEventListener('error', () => { const k = img.dataset.th; if (!THUMBS.has(k) && !thumbQ.includes(k)) thumbQ.push(k); if (!thumbBusy) thumbStep(); }, {once:true})); }
 $('cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; cat = b.dataset.cat; renderLib(); });
 $('q').addEventListener('input', renderLib);
 $('libBody').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); if (!b || e.button !== 0) return; e.preventDefault(); startPlace(b.dataset.k, true); placing && (placing.moved = false); });
 
 /* catalogue pictures, rendered once from the same 3D models */
-const THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
+const TV = 1, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
 function queueThumbs(){ document.querySelectorAll('img[data-th]').forEach(img => { const k = img.dataset.th; if (!THUMBS.has(k) && !thumbQ.includes(k)) thumbQ.push(k); }); if (!thumbBusy) thumbStep(); }
 function thumbStep(){ if (!thumbQ.length){ thumbBusy = false; return; } thumbBusy = true;
   const k = thumbQ.shift(); try { THUMBS.set(k, makeThumb(k)); document.querySelectorAll(`img[data-th="${k}"]`).forEach(i => i.src = THUMBS.get(k)); } catch (e){ console.warn('thumb', k, e); }
   if (window.requestIdleCallback) requestIdleCallback(thumbStep, {timeout:300}); else setTimeout(thumbStep, 16); }
-function makeThumb(k){
+function makeThumb(k, type = 'image/png'){
   if (!thumbR){ thumbR = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true}); thumbR.setSize(240, 180, false); thumbR.outputColorSpace = THREE.SRGBColorSpace; thumbR.toneMapping = THREE.ACESFilmicToneMapping;
     thumbScene = new THREE.Scene(); const pm = new THREE.PMREMGenerator(thumbR); thumbScene.environment = pm.fromScene(new RoomEnvironment(), .04).texture;
     thumbScene.add(new THREE.HemisphereLight(0xffffff, 0xd9d2c6, 1.1)); const dl = new THREE.DirectionalLight(0xffffff, 1.6); dl.position.set(2, 4, 3); thumbScene.add(dl); }
@@ -1096,7 +1274,7 @@ function makeThumb(k){
   const box = new THREE.Box3().setFromObject(g), sph = box.getBoundingSphere(new THREE.Sphere()), c = sph.center;
   const cm_ = new THREE.PerspectiveCamera(30, 240 / 180, .01, 100), r = sph.radius, dist = r / Math.sin(15 * DEG) * .88;
   const dir = new THREE.Vector3(.75, .55, 1.1).normalize(); cm_.position.copy(c).addScaledVector(dir, dist); cm_.lookAt(c);
-  thumbR.render(thumbScene, cm_); const url = thumbR.domElement.toDataURL('image/png');
+  thumbR.render(thumbScene, cm_); const url = thumbR.domElement.toDataURL(type, .86);
   thumbScene.remove(g); disposeTree(g); return url; }
 
 /* ---------- inspector ---------- */
@@ -1111,6 +1289,8 @@ function renderInsp(){
         ${D.place === 'wall' || D.place === 'hang' ? `<div class="row2">${num('elev', D.place === 'hang' ? 'Низ плафона от пола' : 'Низ от пола', cm(d.elev ?? D.elev))}</div>` : ''}
         <div class="acts2"><button class="btn" type="button" data-a="rotL">⟲ 90°</button><button class="btn" type="button" data-a="rotR">⟳ 90°</button></div></div>
       <div class="grp"><h3>Размер, см</h3><div class="row3">${num('w', 'Ширина', cm(d.w), rs.includes('w') ? '' : 'disabled')}${num('d', 'Глубина', cm(d.d), rs.includes('d') ? '' : 'disabled')}${num('h', 'Высота', cm(D.full ? P.H : d.h), rs.includes('h') ? '' : 'disabled')}</div>${rs ? '' : '<p class="note">Размер как у настоящей модели.</p>'}</div>
+      ${D.presets ? `<div class="grp"><h3>Готовые размеры</h3><div class="chips">${D.presets.map(([n, v], i) => `<button type="button" class="chip" data-preset="${i}" aria-pressed="${Object.entries(v).every(([k, x]) => Math.abs(d[k] - x) < .001)}">${n}</button>`).join('')}</div></div>` : ''}
+      ${D.goods ? `<div class="grp"><h3>Что внутри</h3><div class="seg" style="width:max-content">${[['cakes', 'Десерты'], ['sandwich', 'Сэндвичи'], ['drinks', 'Напитки']].map(([k, n]) => `<button class="tab" type="button" data-goods="${k}" aria-selected="${d.goods === k}">${n}</button>`).join('')}</div></div>` : ''}
       ${D.groups ? `<div class="grp"><h3>Группы</h3><div class="seg" style="width:max-content">${[1, 2, 3].map(n => `<button class="tab" type="button" data-groups="${n}" aria-selected="${d.groups === n}">${n} ${n === 1 ? 'группа' : 'группы'}</button>`).join('')}</div></div>` : ''}
       ${D.text !== undefined ? `<div class="grp"><h3>Надпись</h3><input type="text" data-f="text" value="${esc(d.text)}" maxlength="24"></div>` : ''}
       ${D.neon ? `<div class="grp"><h3>Цвет неона</h3><div class="sw">${Object.entries(NEON).map(([k, c]) => `<button type="button" data-neon="${k}" aria-pressed="${d.neon === k}" style="background:${c}"></button>`).join('')}</div></div>` : ''}
@@ -1172,7 +1352,7 @@ $('inspIn').addEventListener('change', e => {
     if (f === 'x') d.x = v / 100 + ox; else if (f === 'z') d.z = v / 100 + oz; else if (f === 'rot') d.rot = v * DEG;
     else if (f === 'elev') d.elev = clamp(v / 100, 0, P.H); else if (f === 'text'){ d.text = String(v).slice(0, 24); Object.assign(d, D.size?.(d) || {}); }
     else if (f === 'ledge') d.ledge = v;
-    else if (['w', 'd', 'h'].includes(f)){ d[f] = clamp(v / 100, .05, 20); if (D.round && f === 'w') d.d = d.w; }
+    else if (['w', 'd', 'h'].includes(f)){ d[f] = clamp(v / 100, .02, 20); if (D.round && f === 'w') d.d = d.w; Object.assign(d, D.size?.(d) || {}); }
     return changed(); }
   if (sel.t === 'op'){ const W = P.walls.find(w => w.id === d.wall), H = W?.h || P.H;
     if (f === 'kind'){ const O = OPS[v]; Object.assign(d, {kind:v, w:O.w, h:O.h, sill:O.sill, fin:O.fins.includes(d.fin) ? d.fin : O.fin}); }
@@ -1201,6 +1381,8 @@ $('inspIn').addEventListener('click', e => {
   if (sel.t === 'item'){ const D = DEF[d.kind];
     if (ds.fin){ snap(); d.fin = ds.fin; return changed(); } if (ds.top){ snap(); d.top = ds.top; return changed(); }
     if (ds.sty){ snap(); d.sty = ds.sty; return changed(); } if (ds.neon){ snap(); d.neon = ds.neon; return changed(); }
+    if (ds.preset !== undefined){ snap(); Object.assign(d, D.presets[+ds.preset][1]); if (D.round) d.d = d.w; Object.assign(d, D.size?.(d) || {}); return changed(); }
+    if (ds.goods){ snap(); d.goods = ds.goods; return changed(); }
     if (ds.groups){ snap(); d.groups = +ds.groups; Object.assign(d, D.size(d)); return changed(); }
     if (ds.a === 'rotL' || ds.a === 'rotR'){ snap(); d.rot = (d.rot || 0) + (ds.a === 'rotL' ? 1 : -1) * Math.PI / 2; return changed(); }
     if (ds.a === 'dup') return dup(); if (ds.a === 'del') return del(); return; }
@@ -1303,10 +1485,12 @@ async function renderHome(){
 const STPIC = new Map();
 function starterShot(fn){   // render a starter layout off screen for its card
   const keep = P; P = fn(); view = '3d'; rebuild(); R3.setSize(480, 300, false); persp.aspect = 1.6; persp.updateProjectionMatrix(); fit(1.6); ctl3.update(); fadeWalls();
-  R3.shadowMap.needsUpdate = true; R3.render(scene, persp); const u = R3.domElement.toDataURL('image/jpeg', .8); P = keep; needShadow(); return u; }
+  R3.shadowMap.needsUpdate = true; R3.render(scene, persp); const u = R3.domElement.toDataURL(window.__mkType || 'image/jpeg', .82); P = keep; needShadow(); return u; }
 function starterPics(){ for (const [k, , , fn] of STARTERS){ if (!fn) continue; const img = document.querySelector(`img[data-sth="${k}"]`); if (!img) continue;
-  let u = STPIC.get(k); if (!u) try { u = starterShot(fn); STPIC.set(k, u); } catch (e){ console.warn(e); }
-  if (u){ img.src = u; img.hidden = false; img.nextElementSibling?.remove(); } } }
+  const show = () => { img.hidden = false; img.nextElementSibling?.remove(); };
+  img.addEventListener('load', show, {once:true});
+  img.addEventListener('error', () => { try { img.src = starterShot(fn); } catch (e){ console.warn(e); } }, {once:true});
+  img.src = `thumbs/cafe/st-${k}.webp?v=${TV}`; } }
 $('starters').addEventListener('click', e => { const b = e.target.closest('[data-start]'); if (!b) return; const s = STARTERS.find(x => x[0] === b.dataset.start);
   if (!s[3]){ $('newDlg').showModal(); return; } openNew(s[3](), uuid()); });
 $('newBtn').addEventListener('click', () => $('newDlg').showModal());
@@ -1330,15 +1514,20 @@ async function enterEditor(){
   $('pname').value = P.name || ''; sel = null;
   await new Promise(r => requestAnimationFrame(r));
   const r = stage.getBoundingClientRect(); R3.setSize(r.width, r.height, false); LR.setSize(r.width, r.height); persp.aspect = r.width / Math.max(1, r.height); persp.updateProjectionMatrix();
-  if (!started){ started = true; loop(); }
+  $('stLoad').hidden = started;
   rebuild(); fit(); renderInsp(); hintUpdate(); undoBtns(); try { renderLib(); } catch (e){ console.warn(e); }
+  if (!started){ try { await Promise.race([R3.compileAsync(scene, persp), new Promise(r => setTimeout(r, 4000))]); } catch {} started = true; loop(); }
+  $('stLoad').hidden = true;
   $('saved').textContent = SB.user ? 'Сохранено в облаке' : 'Сохранено на этом компьютере';
 }
 addEventListener('beforeunload', () => { if (saveT && pid && P){ LS.set('skladka-cafe:' + pid, P); } });
 
 /* ---------- start ---------- */
+window.__cafeMk = {keys:() => [...Object.keys(OPS), ...Object.keys(DEF)], thumb:k => makeThumb(k, 'image/webp'),
+  starter:k => starterShot(STARTERS.find(x => x[0] === k)[3]), heights:() => P.items.map(i => [i.kind, +baseY(i).toFixed(3)])};
 (async () => {
   if (!SB.user) return;
+  $('boot').hidden = true;
   const id = new URLSearchParams(location.search).get('id');
   if (id){ const data = await loadProject(id); if (data){ P = data; pid = id; await enterEditor(); return; } toast('Планировка не найдена'); history.replaceState(null, '', 'cafe.html'); }
   $('home').hidden = false; renderHome();
