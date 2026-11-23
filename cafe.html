@@ -478,6 +478,7 @@ const ZT = {hall:['Зал для гостей', 'Dining area', 'Zona de público
   bar:['Рабочая зона бара', 'Bar work area', 'Zona de servicio (barra)', '#f0993a'], kitchen:['Кухня, заготовка', 'Kitchen / food prep', 'Cocina / preparación', '#e8604c'],
   wash:['Моечная', 'Warewashing', 'Zona de lavado', '#2fb3b8'], store:['Склад', 'Storage', 'Almacén', '#9c8f76'], wc:['Санузел', 'Restroom', 'Aseo', '#3fae5a'], staff:['Персонал, раздевалка', 'Staff room', 'Vestuario de personal', '#c06fc4']};
 const ZMAT = new Map();
+const BRUSH = matC('#e6e8ea', .34, .55);   // brushed stainless, lighter than polished STEEL
 const PW = ws => ws.map(w => [cm(w) + ' см', {w}]);
 const LIGHT = matC('#fff6dc', .3, 0, {emissive:'#fff0c8', emissiveIntensity:1});
 const BULB = matC('#fff4d6', .3, 0, {emissive:'#ffdca0', emissiveIntensity:2});
@@ -503,6 +504,9 @@ function showBase(g, o){ const {w, d} = o; bx(g, DARK, 0, 0, 0, w - .04, .08, d 
 function doorsFront(g, w, d, y0, y1, low){ const n = Math.max(1, Math.round(w / .45)), dw = w / n;
   for (let i = 0; i < n; i++){ const x = -w / 2 + dw * (i + .5); if (i) bx(g, DARK, -w / 2 + dw * i, y0 + .01, d / 2 + .001, .006, y1 - y0 - .02, .004);
     const hx = n > 1 && i % 2 === 0 ? x + dw / 2 - .05 : x - dw / 2 + .05; bx(g, STEEL, n === 1 ? x + dw / 2 - .06 : hx, low ? y1 - .2 : y0 + .03, d / 2 + .012, .014, .14, .014); } }
+// a box whose top is wTop wide and bottom wBot wide (sloped sides, like the Linea body)
+function trap(g, m, x, y0, z, wTop, wBot, h, d){ const geo = new THREE.BoxGeometry(wTop, h, d), p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) if (p.getY(i) < 0) p.setX(i, p.getX(i) * wBot / wTop); geo.computeVertexNormals(); if (m.map) worldUV(geo, wTop, h, d); return mesh(g, geo, m, x, y0 + h / 2, z); }
 function capsule(w, d){ const r = d / 2, hw = Math.max(0, w / 2 - r), s = new THREE.Shape(); s.moveTo(-hw, -r); s.lineTo(hw, -r); s.absarc(hw, 0, r, -Math.PI / 2, Math.PI / 2, false); s.lineTo(-hw, r); s.absarc(-hw, 0, r, Math.PI / 2, Math.PI * 1.5, false); return s; }
 function slab(g, m, shape, y0, h){ const geo = new THREE.ExtrudeGeometry(shape, {depth:h, bevelEnabled:false, curveSegments:20}); geo.rotateX(-Math.PI / 2); return mesh(g, geo, m, 0, y0, 0); }
 const DEF = {
@@ -574,6 +578,51 @@ const DEF = {
         for (let k = 0; k < 4; k++) bx(g, K, x - .045 + k * .03, .37, d * .37 + .002, .022, .018, .006); });
       for (const sx of [-1, 1]) cy(g, STEEL, sx * (w / 2 - .07), .13, d * .33, .006, .006, .22, 8);
       if (n > 1) cy(g, STEEL, 0, .2, d * .3, .005, .005, .14, 8); }},
+  linea:{cat:'coffee', n:'Эспрессо-машина Linea (как La Marzocco)', w:.70, d:.56, h:.53, place:'on', fins:MACH, fin:'steel', groups:2, text:'',
+    size: o => ({w:[.48, .70, .94][(o.groups || 2) - 1]}),
+    build(g, o){ const {w, d, h} = o, F = o.fin === 'steel' ? BRUSH : finMat(o.fin), K = DARK, n = o.groups || 2, tb = .17, dz = -.03, bd = d * .8;
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, K, sx * (w * .38), 0, dz + sz * (bd / 2 - .06), .022, .025, .025, 14);
+      bx(g, K, 0, .025, dz, w * .82, .07, bd - .02, .01);                                    // black plinth
+      trap(g, F, 0, .095, dz, w * .95, w * .81, h - tb - .095, bd);                           // sloped body
+      bx(g, F, 0, h - tb, dz, w, tb, bd + .04, .006);                                          // top band
+      bx(g, matC('#8e959b', .3, .85), 0, h - .006, dz, w - .1, .008, bd - .02);                // cup tray
+      for (let i = 0; i < 8; i++) bx(g, K, -w / 2 + .07 + (w - .14) * (i + .5) / 8, h + .002, dz, (w - .14) / 8 - .012, .002, bd - .06);
+      for (const sx of [-1, 1]){ bx(g, STEEL, sx * (w / 2 - .012), h, dz, .02, .035, bd + .02, .004); bx(g, STEEL, sx * (w / 2 - .012), h - .03, dz + bd / 2 + .005, .02, .065, .02); }
+      const fz = dz + (bd + .04) / 2, tray = .09;
+      bx(g, STEEL, 0, .095, fz - .02, w * .86, .035, tray * 2.2, .006); bx(g, K, 0, .131, fz - .02, w * .82, .002, tray * 2);   // drip tray + grate
+      spread(n, w - .3).forEach(x => {
+        bx(g, K, x, h - tb + .06, fz + .002, .11, .06, .006, .006);                             // key pad
+        for (let k = 0; k < 4; k++){ const b = cy(g, STEEL, x - .036 + k * .024, h - tb + .09, fz + .006, .008, .008, .006, 12); b.rotation.x = Math.PI / 2; }
+        cy(g, STEEL, x, h - tb - .05, fz - .045, .045, .05, .05, 24);                         // group head
+        cy(g, STEEL, x, h - tb - .085, fz - .045, .05, .045, .035, 24);                       // portafilter basket
+        const hd = bx(g, K, x, h - tb - .08, fz + .07, .03, .028, .15, .012); hd.rotation.x = -.12;   // handle
+        bx(g, STEEL, x, h - tb - .12, fz - .045, .02, .02, .02, .004); });
+      for (const sx of [-1, 1]){ const s = cy(g, STEEL, sx * (w / 2 - .07), .19, fz + .01, .006, .006, .2, 8); s.rotation.z = sx * .12;
+        const kn = cy(g, K, sx * (w / 2 - .07), h - tb + .05, fz + .02, .022, .022, .03, 16); kn.rotation.x = Math.PI / 2; }
+      if (n > 1) cy(g, STEEL, 0, .2, fz - .01, .005, .005, .15, 8);
+      if (o.text){ const tex = canvasTex(1024, 128, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = '#c3262b'; c.font = '700 84px Manrope, sans-serif'; c.textBaseline = 'middle'; c.fillText(o.text.toUpperCase(), 20, H / 2); });
+        const p = mesh(g, new THREE.PlaneGeometry(w * .62, w * .62 / 8), new THREE.MeshStandardMaterial({map:tex, transparent:true, roughness:.5}), -w * .1, h - tb / 2, dz - (bd + .04) / 2 - .001); p.rotation.y = Math.PI; p.castShadow = false; } }},
+  lineaMini:{cat:'coffee', n:'Эспрессо-машина Linea Mini (1 группа)', w:.36, d:.45, h:.38, place:'on', fins:MACH, fin:'steel', text:'',
+    build(g, o){ const F = o.fin === 'steel' ? BRUSH : finMat(o.fin), K = DARK, w = .36, h = .38, bd = .36, dz = -.035, tb = .12;
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, K, sx * .12, 0, dz + sz * .13, .014, .016, .02, 12);
+      bx(g, K, 0, .02, dz, .3, .035, bd - .02, .006);
+      trap(g, F, 0, .055, dz, w * .97, w * .82, h - tb - .055, bd);
+      bx(g, F, 0, h - tb, dz, w, tb, bd + .02, .006);
+      bx(g, matC('#8e959b', .3, .85), 0, h - .004, dz, w - .06, .006, bd - .04);
+      for (const sx of [-1, 1]) bx(g, STEEL, sx * (w / 2 - .01), h, dz, .016, .03, bd, .004);
+      const fz = dz + (bd + .02) / 2;
+      bx(g, STEEL, 0, .055, fz + .01, .3, .03, .16, .005); bx(g, K, 0, .086, fz + .01, .27, .002, .13);           // drip tray
+      bx(g, K, 0, h - tb + .045, fz + .012, .15, .03, .025, .01);                                                  // paddle
+      for (const sx of [-1, 1]){ const kn = cy(g, K, sx * .13, h - tb + .055, fz + .012, .022, .022, .025, 18); kn.rotation.x = Math.PI / 2;
+        const st = cy(g, STEEL, sx * .13, h - tb + .055, fz + .028, .014, .014, .01, 14); st.rotation.x = Math.PI / 2; }
+      const gg = cy(g, matC('#f4f2ee', .3), -.085, .17, fz - .01, .022, .022, .01, 20); gg.rotation.x = Math.PI / 2;
+      cy(g, STEEL, 0, h - tb - .045, fz - .04, .04, .044, .045, 24); cy(g, STEEL, 0, h - tb - .075, fz - .04, .044, .04, .03, 24);
+      const hd = bx(g, K, 0, h - tb - .07, fz + .06, .026, .025, .13, .011); hd.rotation.x = -.12;
+      const s = cy(g, STEEL, .14, .14, fz + .005, .005, .005, .15, 8); s.rotation.z = .15;
+      if (o.text){ const tex = canvasTex(512, 64, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = '#c3262b'; c.font = '700 44px Manrope, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(o.text.toUpperCase(), W / 2, H / 2); });
+        const m = new THREE.MeshStandardMaterial({map:tex, transparent:true, roughness:.5});
+        const p = mesh(g, new THREE.PlaneGeometry(.24, .03), m, 0, .07, fz + .091); p.castShadow = false;
+        const b = mesh(g, new THREE.PlaneGeometry(.26, .033), m, 0, h - tb / 2, dz - (bd + .02) / 2 - .001); b.rotation.y = Math.PI; b.castShadow = false; } }},
   grinder:{cat:'coffee', n:'Кофемолка для эспрессо', w:.22, d:.33, h:.66, place:'on', fins:MACH, fin:'black',
     build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, .02, .2, .06, .28, .02); bx(g, F, 0, .06, -.04, .17, .36, .2, .03);
       bx(g, DARK, 0, .22, .07, .045, .05, .05, .01); bx(g, DARK, 0, .12, .085, .08, .012, .06);
@@ -1334,19 +1383,21 @@ function queueThumbs(){ document.querySelectorAll('img[data-th]').forEach(img =>
 function thumbStep(){ if (!thumbQ.length){ thumbBusy = false; return; } thumbBusy = true;
   const k = thumbQ.shift(); try { THUMBS.set(k, makeThumb(k)); document.querySelectorAll(`img[data-th="${k}"]`).forEach(i => i.src = THUMBS.get(k)); } catch (e){ console.warn('thumb', k, e); }
   if (window.requestIdleCallback) requestIdleCallback(thumbStep, {timeout:300}); else setTimeout(thumbStep, 16); }
-function makeThumb(k, type = 'image/png'){
+function makeThumb(k, type = 'image/png', extra = null, size = null, dirv = null){
   if (!thumbR){ thumbR = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true}); thumbR.setSize(240, 180, false); thumbR.outputColorSpace = THREE.SRGBColorSpace; thumbR.toneMapping = THREE.ACESFilmicToneMapping;
     thumbScene = new THREE.Scene(); const pm = new THREE.PMREMGenerator(thumbR); thumbScene.environment = pm.fromScene(new RoomEnvironment(), .04).texture;
     thumbScene.add(new THREE.HemisphereLight(0xffffff, 0xd9d2c6, 1.1)); const dl = new THREE.DirectionalLight(0xffffff, 1.6); dl.position.set(2, 4, 3); thumbScene.add(dl); }
   const g = new THREE.Group();
   if (OPS[k]){ const o = {kind:k, ...OPS[k]}; buildOp(g, o, .15); if (k === 'arch') bx(g, matC('#d9d4cc', .9), 0, 0, 0, o.w + .3, .02, .15);
     const wm = matC('#bdb6ab', .95); bx(g, wm, -o.w / 2 - .15, 0, 0, .3, Math.max(o.h + o.sill, 2.4), .15); bx(g, wm, o.w / 2 + .15, 0, 0, .3, Math.max(o.h + o.sill, 2.4), .15); }
-  else { const D = DEF[k], o = newItem(k); D.build(g, o, {H:2.4, lights:null}); }
+  else { const D = DEF[k], o = newItem(k, 0, 0, 0, extra || {}); D.build(g, o, {H:2.4, lights:null}); }
+  if (size) thumbR.setSize(size[0], size[1], false);
   thumbScene.add(g);
   const box = new THREE.Box3().setFromObject(g), sph = box.getBoundingSphere(new THREE.Sphere()), c = sph.center;
   const cm_ = new THREE.PerspectiveCamera(30, 240 / 180, .01, 100), r = sph.radius, dist = r / Math.sin(15 * DEG) * .88;
-  const dir = new THREE.Vector3(.75, .55, 1.1).normalize(); cm_.position.copy(c).addScaledVector(dir, dist); cm_.lookAt(c);
-  thumbR.render(thumbScene, cm_); const url = thumbR.domElement.toDataURL(type, .86);
+  const dir = new THREE.Vector3(...(dirv || [.75, .55, 1.1])).normalize(); cm_.position.copy(c).addScaledVector(dir, dist); cm_.lookAt(c);
+  if (size){ cm_.aspect = size[0] / size[1]; cm_.updateProjectionMatrix(); }
+  thumbR.render(thumbScene, cm_); const url = thumbR.domElement.toDataURL(type, .86); if (size) thumbR.setSize(240, 180, false);
   thumbScene.remove(g); disposeTree(g); return url; }
 
 /* ---------- inspector ---------- */
@@ -1556,6 +1607,7 @@ $('specCopy').addEventListener('click', async () => { try { await navigator.clip
 // kw, phases, water (c = cold, ch = cold + hot), drain (d = direct, i = indirect via floor sink), hood type, food equipment, food prep
 const TECH = {
   espresso:{kw:o => [3.0, 4.6, 6.4][(o.groups || 2) - 1], ph:o => (o.groups || 2) > 1 ? 3 : 1, w:'c', dr:'i', food:1, prep:1},
+  linea:{kw:o => [3.0, 4.6, 6.4][(o.groups || 2) - 1], ph:o => (o.groups || 2) > 1 ? 3 : 1, w:'c', dr:'i', food:1, prep:1}, lineaMini:{kw:1.6, food:1, prep:1},
   grinder:{kw:.45, food:1, prep:1}, grinder2:{kw:1.1, food:1, prep:1}, batch:{kw:2.4, w:'c', food:1, prep:1}, kettle:{kw:1.2, food:1, prep:1}, blender:{kw:1.5, food:1, prep:1},
   milk:{kw:.15, food:1}, fridge:{kw:.35, food:1}, fridge2:{kw:.6, food:1}, under:{kw:.45, food:1, prep:1}, ice:{kw:.7, w:'c', dr:'i', food:1}, freezer:{kw:.3, food:1},
   sink:{w:'ch', dr:'d', food:1}, dish:{kw:3.6, w:'ch', dr:'i', food:1}, pastry:{kw:.9, food:1}, showSq:{kw:.8, food:1}, showCurve:{kw:1.0, food:1}, showVert:{kw:.7, food:1},
@@ -1572,7 +1624,7 @@ const SYMS = new Set(['socket', 'socket3', 'panel', 'ext', 'emerg', 'exitSign', 
 // names for the drawings: [en, es]
 const TRN = {bar:['Service counter', 'Barra de servicio'], corner:['L-shaped counter', 'Barra en L'], backbar:['Back bar cabinets', 'Mueble de contrabarra'], shelf:['Wall shelf', 'Estante de pared'],
   menu:['Menu board', 'Pizarra de menú'], neon:['Neon sign', 'Rótulo de neón'], pos:['POS terminal', 'Terminal TPV'], pastry:['Refrigerated pastry case', 'Vitrina refrigerada de pastelería'],
-  espresso:['Espresso machine', 'Cafetera espresso'], grinder:['Espresso grinder', 'Molino de espresso'], grinder2:['Bulk coffee grinder', 'Molino de café en grano'], batch:['Batch brewer', 'Cafetera de filtro'],
+  espresso:['Espresso machine', 'Cafetera espresso'], linea:['Espresso machine, Linea type', 'Cafetera espresso tipo Linea'], lineaMini:['Espresso machine, compact 1 group', 'Cafetera espresso compacta 1 grupo'], grinder:['Espresso grinder', 'Molino de espresso'], grinder2:['Bulk coffee grinder', 'Molino de café en grano'], batch:['Batch brewer', 'Cafetera de filtro'],
   knock:['Knock box', 'Cajón de posos'], kettle:['Kettle', 'Hervidor'], blender:['Blender', 'Batidora de vaso'], milk:['Countertop milk fridge', 'Refrigerador de leche'],
   fridge:['Reach-in refrigerator, glass door', 'Armario refrigerado, puerta de cristal'], fridge2:['Reach-in refrigerator, 2 doors', 'Armario refrigerado, 2 puertas'], under:['Undercounter refrigerator', 'Mesa refrigerada'],
   ice:['Ice machine', 'Máquina de hielo'], freezer:['Chest freezer', 'Arcón congelador'], sink:['Sink', 'Fregadero'], dish:['Undercounter dishwasher', 'Lavavajillas'], trash:['Waste bin', 'Contenedor de residuos'],
@@ -1864,7 +1916,7 @@ async function buildPdf(){
   const eqCols = [[tr('No.', 'Nº'), 10], [tr('Description', 'Descripción'), 92], [tr('Qty', 'Ud.'), 11], [tr('Size W x D x H', 'Medidas A x F x H'), 40], [tr('Electrical', 'Electricidad'), 42], [tr('Water', 'Agua'), 22], [tr('Drain', 'Desagüe'), 40], [tr('Notes', 'Observaciones'), 131]];
   const wTxt = t => !t?.w ? '' : t.w === 'ch' ? tr('CW + HW', 'AF + ACS') : tr('CW', 'AF'), dTxt = t => !t?.dr ? '' : t.dr === 'i' ? tr('Indirect to FS', 'Con sifón, indirecto') : tr('Direct', 'Directo');
   const note = (it, t) => [t?.food && !es ? 'NSF/ANSI' : '', t?.hood ? tr(`Under Type ${t.hood} hood`, 'Bajo campana extractora') : '', it.kind === 'sink3' || (it.kind === 'sink' && !es) ? tr('To grease interceptor', 'A separador de grasas') : '',
-    it.kind === 'espresso' ? `${it.groups || 2} ${tr('groups', 'grupos')}` : '', it.kind === 'handSink' ? tr('Soap & paper towel dispensers', 'Grifo de accionamiento no manual, jabón y toallas de papel') : ''].filter(Boolean).join('; ');
+    it.kind === 'espresso' || it.kind === 'linea' ? `${it.groups || 2} ${tr('groups', 'grupos')}` : '', it.kind === 'handSink' ? tr('Soap & paper towel dispensers', 'Grifo de accionamiento no manual, jabón y toallas de papel') : ''].filter(Boolean).join('; ');
   y = table(16, y, eqCols, groups.map(g => { const t = tech(g.it); return {cells:[g.no, nm(g.it, reg === 'es' ? 'es' : 'en'), g.n, sizeT(g.it), t?.kw ? `${kwT(t.kw)} ${volt(t)}` : '', wTxt(t), dTxt(t), note(g.it, t)]}; }), {onBreak:newA2});
   y += 8; if (y > 226) y = newA2();
   heading(tr('Room / area & finish schedule', 'Cuadro de superficies y acabados'), 16, y); y += 3;
@@ -1995,7 +2047,7 @@ async function enterEditor(){
 addEventListener('beforeunload', () => { if (saveT && pid && P){ LS.set('skladka-cafe:' + pid, P); } });
 
 /* ---------- start ---------- */
-window.__cafeMk = {keys:() => [...Object.keys(OPS), ...Object.keys(DEF)], thumb:k => makeThumb(k, 'image/webp'),
+window.__cafeMk = {keys:() => [...Object.keys(OPS), ...Object.keys(DEF)], thumb:k => makeThumb(k, 'image/webp'), big:(k, e, dv) => makeThumb(k, 'image/png', e, [800, 600], dv),
   starter:k => starterShot(STARTERS.find(x => x[0] === k)[3]), heights:() => P.items.map(i => [i.kind, +baseY(i).toFixed(3)]),
   add:(k, x, z, rot, e) => { snap(); P.items.push(newItem(k, x, z, rot, e)); changed(); }};
 (async () => {
