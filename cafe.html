@@ -1083,7 +1083,7 @@ const THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thu
 function queueThumbs(){ document.querySelectorAll('img[data-th]').forEach(img => { const k = img.dataset.th; if (!THUMBS.has(k) && !thumbQ.includes(k)) thumbQ.push(k); }); if (!thumbBusy) thumbStep(); }
 function thumbStep(){ if (!thumbQ.length){ thumbBusy = false; return; } thumbBusy = true;
   const k = thumbQ.shift(); try { THUMBS.set(k, makeThumb(k)); document.querySelectorAll(`img[data-th="${k}"]`).forEach(i => i.src = THUMBS.get(k)); } catch (e){ console.warn('thumb', k, e); }
-  (window.requestIdleCallback || setTimeout)(thumbStep, 16); }
+  if (window.requestIdleCallback) requestIdleCallback(thumbStep, {timeout:300}); else setTimeout(thumbStep, 16); }
 function makeThumb(k){
   if (!thumbR){ thumbR = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true}); thumbR.setSize(240, 180, false); thumbR.outputColorSpace = THREE.SRGBColorSpace; thumbR.toneMapping = THREE.ACESFilmicToneMapping;
     thumbScene = new THREE.Scene(); const pm = new THREE.PMREMGenerator(thumbR); thumbScene.environment = pm.fromScene(new RoomEnvironment(), .04).texture;
@@ -1330,9 +1330,9 @@ async function enterEditor(){
   $('pname').value = P.name || ''; sel = null;
   await new Promise(r => requestAnimationFrame(r));
   const r = stage.getBoundingClientRect(); R3.setSize(r.width, r.height, false); LR.setSize(r.width, r.height); persp.aspect = r.width / Math.max(1, r.height); persp.updateProjectionMatrix();
-  rebuild(); renderLib(); renderInsp(); hintUpdate(); undoBtns(); fit();
-  $('saved').textContent = SB.user ? 'Сохранено в облаке' : 'Сохранено на этом компьютере';
   if (!started){ started = true; loop(); }
+  rebuild(); fit(); renderInsp(); hintUpdate(); undoBtns(); try { renderLib(); } catch (e){ console.warn(e); }
+  $('saved').textContent = SB.user ? 'Сохранено в облаке' : 'Сохранено на этом компьютере';
 }
 addEventListener('beforeunload', () => { if (saveT && pid && P){ LS.set('skladka-cafe:' + pid, P); } });
 
