@@ -153,6 +153,14 @@ main{position:relative;min-width:0;min-height:0;background:var(--stage);overflow
 .sw label input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .swn{font-size:12px;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
+.audit{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:min(40vh,380px);overflow:auto}
+.audit li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;align-items:start;font-size:13px;line-height:1.42;padding:8px 10px;border:1px solid var(--line);border-radius:9px}
+.audit li i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:800 11px var(--sans);color:#fff;font-style:normal}
+.audit .ok i{background:#2f9e5b}.audit .warn i{background:#de8d12}.audit .err i{background:var(--danger)}
+.audit li[data-i]{cursor:pointer}.audit li[data-i]:hover{border-color:var(--accent)}
+.dstat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.dstat div{border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:0}.dstat b{display:block;font-size:17px}.dstat span{font-size:11.5px;color:var(--muted)}
+@media (max-width:640px){.dstat{grid-template-columns:1fr 1fr}}
 .boot{position:fixed;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;color:var(--muted);font-size:13px;background:var(--bg);z-index:40}
 .boot i,.stload i{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(1turn)}}
@@ -235,6 +243,7 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
     <button class="ibtn" id="redo" type="button" title="Повторить (Ctrl+Shift+Z)" aria-label="Повторить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <span class="sp"></span>
     <span class="saved" id="saved"></span>
+    <button class="btn" id="docBtn" type="button" title="Проверка по нормам и PDF-чертежи для разрешения"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M9 13l2 2 4-4"/></svg><span class="hide-s">Документы</span></button>
     <button class="btn" id="specBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg><span class="hide-s">Оборудование</span></button>
     <button class="btn" id="shotBtn" type="button" title="Сохранить картинку PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="hide-s">Снимок</span></button>
     <button class="ibtn" id="moreBtn" type="button" title="Ещё" aria-label="Ещё" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
@@ -274,6 +283,18 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
 
   <aside class="panel" id="insp"><div class="in" id="inspIn"></div></aside>
 
+  <dialog class="dlg" id="docDlg" style="width:min(780px,calc(100vw - 32px))"><form method="dialog">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2>Документы для разрешения</h2>
+      <div class="seg" role="tablist" aria-label="Где открываетесь"><button class="tab" type="button" data-reg="es">Испания</button><button class="tab" type="button" data-reg="la">Лос-Анджелес, США</button></div></div>
+    <div class="row2"><label class="f">Название заведения (латиницей)<input type="text" id="pm_business" placeholder="Café Luna"></label><label class="f">Адрес помещения<input type="text" id="pm_address" placeholder="Calle Mayor 10, Madrid"></label></div>
+    <div class="row2"><label class="f">Заявитель / владелец<input type="text" id="pm_owner" placeholder="Имя или компания"></label><label class="f">Кто готовит проект (необязательно)<input type="text" id="pm_author" placeholder="Архитектор, инженер"></label></div>
+    <div class="dstat" id="docStat"></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h3 style="font-size:14px">Проверка по нормам</h3><span class="note" id="docSum"></span></div>
+    <ul class="audit" id="docList"></ul>
+    <p class="note" id="docNote"></p>
+    <p class="note">В PDF: титульный лист с 3D, план с размерами и номерами оборудования, спецификация с мощностями и подключениями, экспликация и отделка, план электрики с нагрузками, план воды/слива/вытяжки, план эвакуации с расчётом вместимости. Язык — испанский или английский.</p>
+    <div class="acts"><button class="btn" value="ok">Закрыть</button><button class="btn pri" type="button" id="docPdf">Скачать комплект PDF</button></div>
+  </form></dialog>
   <dialog class="dlg" id="specDlg" style="width:min(720px,calc(100vw - 32px))"><form method="dialog">
     <h2>Оборудование и мебель</h2>
     <div class="specwrap"><table class="spec" id="specT"></table></div>
@@ -439,7 +460,7 @@ const MENU = [['Эспрессо', '150'], ['Американо', '180'], ['Ка
 const NEON = {pink:'#ff4fa3', warm:'#fff0cf', blue:'#59c8ff', orange:'#ffa040', green:'#6dff9e'};
 
 /* ---------- catalogue: every item is built from simple shapes at real sizes ---------- */
-const CATS = [['open', 'Входы и окна'], ['bar', 'Бар и стойки'], ['coffee', 'Кофе'], ['kitchen', 'Кухня'], ['cold', 'Холод и витрины'], ['store', 'Шкафы и хранение'], ['wash', 'Мойка и санузел'], ['hall', 'Зал'], ['decor', 'Декор и свет']];
+const CATS = [['open', 'Входы и окна'], ['bar', 'Бар и стойки'], ['coffee', 'Кофе'], ['kitchen', 'Кухня'], ['cold', 'Холод и витрины'], ['store', 'Шкафы и хранение'], ['wash', 'Мойка и санузел'], ['hall', 'Зал'], ['decor', 'Декор и свет'], ['eng', 'Инженерия и нормы']];
 const BODY = ['white', 'black', 'oak', 'walnut', 'green', 'terra', 'grey', 'mint', 'cream', 'navy', 'concrete', 'terrazzo'];
 const TOPS = ['marble', 'oak', 'walnut', 'terrazzo', 'concrete', 'steel', 'black', 'white'];
 const MACH = ['steel', 'black', 'white', 'red', 'mint', 'sky', 'cream'];
@@ -452,6 +473,11 @@ function counterBody(g, o, cx, cz, w, d, h, F, T, carcass){
   bx(g, carcass || F, cx, kick, cz, w, h - tk - kick, d);
   bx(g, T, cx, h - tk, cz + .015, w + .02, tk, d + .03);
 }
+// zone types for the permit drawings: name ru / en / es, colour
+const ZT = {hall:['Зал для гостей', 'Dining area', 'Zona de público sentado', '#5b8def'], queue:['Зона у стойки (стоя)', 'Standing / queue area', 'Zona de público de pie', '#8c6cf0'],
+  bar:['Рабочая зона бара', 'Bar work area', 'Zona de servicio (barra)', '#f0993a'], kitchen:['Кухня, заготовка', 'Kitchen / food prep', 'Cocina / preparación', '#e8604c'],
+  wash:['Моечная', 'Warewashing', 'Zona de lavado', '#2fb3b8'], store:['Склад', 'Storage', 'Almacén', '#9c8f76'], wc:['Санузел', 'Restroom', 'Aseo', '#3fae5a'], staff:['Персонал, раздевалка', 'Staff room', 'Vestuario de personal', '#c06fc4']};
+const ZMAT = new Map();
 const PW = ws => ws.map(w => [cm(w) + ' см', {w}]);
 const LIGHT = matC('#fff6dc', .3, 0, {emissive:'#fff0c8', emissiveIntensity:1});
 const BULB = matC('#fff4d6', .3, 0, {emissive:'#ffdca0', emissiveIntensity:2});
@@ -795,6 +821,42 @@ const DEF = {
     build(g, o){ const F = finMat(o.fin); cy(g, F, 0, 0, .06, .13, .16, .38, 28).scale.z = 1.3; bx(g, F, 0, .38, -.24, .36, .4, .16, .03); const s = mesh(g, new THREE.TorusGeometry(.15, .025, 10, 32), F, 0, .4, .07); s.rotation.x = Math.PI / 2; s.scale.y = 1.3; }},
   handSink:{cat:'wash', n:'Раковина для рук', w:.45, d:.35, h:.18, place:'wall', elev:.8, fins:['white', 'steel', 'black'], fin:'white',
     build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, 0, .45, .16, .35, .04); bx(g, matC('#9aa0a6', .25, .9), 0, .158, .02, .34, .004, .24); cy(g, STEEL, 0, .16, -.14, .012, .012, .14, 10); bx(g, STEEL, 0, .29, -.1, .02, .02, .1, .006); }},
+  // ---- engineering and code items (for the permit drawings) ----
+  zone:{cat:'eng', n:'Зона помещения', w:3, d:3, h:.01, rs:'wd', place:'zone', zt:'hall', text:'',
+    build(g, o){ const c = ZT[o.zt]?.[3] || '#888888'; let m = ZMAT.get(c); if (!m){ m = new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:.24, depthWrite:false, side:THREE.DoubleSide}); ZMAT.set(c, m); }
+      const p = mesh(g, new THREE.PlaneGeometry(o.w, o.d), m, 0, .012, 0); p.rotation.x = -Math.PI / 2; p.castShadow = p.receiveShadow = false;
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(o.w, o.d)), new THREE.LineBasicMaterial({color:c})); e.rotation.x = -Math.PI / 2; e.position.y = .016; g.add(e); }},
+  socket:{cat:'eng', n:'Розетка', w:.09, d:.03, h:.09, place:'wall', elev:.3,
+    build(g){ bx(g, matC('#f4f4f2', .4), 0, 0, 0, .09, .09, .03, .006); for (const x of [-.012, .012]) cy(g, DARK, x, .045, .016, .004, .004, .004, 8).rotation.x = Math.PI / 2; }},
+  socket3:{cat:'eng', n:'Силовая розетка 380 В', w:.1, d:.06, h:.12, place:'wall', elev:.4,
+    build(g){ bx(g, matC('#c73a32', .45), 0, 0, 0, .1, .12, .06, .01); cy(g, DARK, 0, .06, .031, .03, .03, .004, 16).rotation.x = Math.PI / 2; }},
+  panel:{cat:'eng', n:'Электрощит', w:.4, d:.12, h:.55, place:'wall', elev:1.3,
+    build(g){ bx(g, matC('#d9dadb', .5), 0, 0, 0, .4, .55, .12, .01); bx(g, matC('#c2c4c6', .5), 0, .03, .061, .36, .49, .004); bx(g, DARK, .15, .26, .066, .015, .05, .01); }},
+  fdrain:{cat:'eng', n:'Трап в полу', w:.2, d:.2, h:.01,
+    build(g){ bx(g, STEEL, 0, 0, 0, .2, .008, .2); for (let i = -3; i <= 3; i++) bx(g, DARK, i * .022, .008, 0, .008, .002, .14); }},
+  fsink:{cat:'eng', n:'Приямок для слива (floor sink)', w:.3, d:.3, h:.01,
+    build(g){ bx(g, STEEL, 0, 0, 0, .3, .008, .3); bx(g, DARK, 0, .008, 0, .22, .002, .22); }},
+  grease:{cat:'eng', n:'Жироуловитель', w:.5, d:.35, h:.3, snap:true,
+    build(g){ bx(g, STEEL, 0, 0, 0, .5, .27, .35, .01); bx(g, matC('#b8bcc0', .35, .8), 0, .27, 0, .52, .03, .37, .006); for (const x of [-.27, .27]) cy(g, matC('#9aa0a6', .4, .5), x, .16, 0, .03, .03, .06, 12).rotation.z = Math.PI / 2; }},
+  whtr:{cat:'eng', n:'Водонагреватель', w:.45, d:.45, h:.85, place:'wall', elev:1.2,
+    build(g){ cy(g, matC('#f1f0ec', .35), 0, 0, 0, .215, .215, .85, 32); cy(g, matC('#d7d6d2', .4), 0, -.06, 0, .03, .03, .06, 10); bx(g, DARK, 0, .1, .2, .1, .06, .03, .01); }},
+  hood:{cat:'eng', n:'Вытяжной зонт', w:1.2, d:.9, h:.6, rs:'wdh', place:'ceil', planRect:true, presets:PW([.9, 1.2, 1.5, 2.0]),
+    build(g, o){ const {w, d, h} = o; bx(g, STEEL, 0, 0, 0, w, .3, d, .01); bx(g, matC('#9aa0a6', .3, .8), 0, -.001, 0, w - .1, .004, d - .1); bx(g, STEEL, 0, .3, -d / 2 + .2, w * .5, Math.max(.05, h - .3), .3); }},
+  mop:{cat:'eng', n:'Мойка для уборочного инвентаря', w:.6, d:.6, h:.3, snap:true,
+    build(g){ bx(g, matC('#f1f0ec', .35), 0, 0, 0, .6, .3, .6, .03); bx(g, matC('#9aa0a6', .3, .6), 0, .29, .03, .5, .012, .48); cy(g, STEEL, 0, .3, -.27, .015, .015, .6, 10); bx(g, STEEL, 0, .85, -.21, .025, .025, .14, .008); }},
+  sink3:{cat:'wash', n:'Мойка трёхсекционная', w:1.8, d:.6, h:.9, rs:'w', snap:true, presets:PW([1.5, 1.8, 2.1, 2.4]),
+    build(g, o){ const {w, d, h} = o, bw = Math.min(.45, (w - .5) / 3);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, STEEL, sx * (w / 2 - .04), 0, sz * (d / 2 - .05), .02, .02, h - .3, 10);
+      bx(g, STEEL, 0, .18, 0, w - .06, .02, d - .08); bx(g, STEEL, 0, h - .3, 0, w, .3, d, .004); bx(g, STEEL, 0, h, -d / 2 + .01, w, .25, .02);
+      spread(3, bw * 2 + .06).forEach(x => { bx(g, matC('#8e959b', .25, .9), x, h - .004, .03, bw, .006, d - .16); cy(g, STEEL, x, h, -d / 2 + .06, .012, .012, .28, 10); bx(g, STEEL, x, h + .27, -d / 2 + .12, .02, .02, .14, .006); }); }},
+  ext:{cat:'eng', n:'Огнетушитель', w:.18, d:.18, h:.6, place:'wall', elev:.6,
+    build(g){ const R = matC('#c8231d', .35, .1); cy(g, R, 0, 0, 0, .075, .075, .46, 24); cy(g, R, 0, .46, 0, .075, .04, .04, 24); bx(g, DARK, 0, .5, 0, .04, .08, .04, .008); bx(g, DARK, .03, .55, 0, .1, .015, .02); cy(g, DARK, .08, .2, .05, .01, .01, .3, 8); }},
+  emerg:{cat:'eng', n:'Аварийный светильник', w:.3, d:.06, h:.1, place:'wall', elev:2.3,
+    build(g){ bx(g, matC('#f4f4f2', .4), 0, 0, 0, .3, .1, .06, .01); bx(g, matC('#3fb46a', .4, 0, {emissive:'#2c9a52', emissiveIntensity:.8}), 0, .02, .031, .2, .03, .004); }},
+  exitSign:{cat:'eng', n:'Табличка «Выход»', w:.36, d:.03, h:.16, place:'wall', elev:2.2,
+    build(g){ bx(g, matC('#f4f4f2', .4), 0, 0, 0, .36, .16, .03, .006);
+      const tex = canvasTex(360, 160, (c, W, H) => { c.fillStyle = '#16834a'; c.fillRect(0, 0, W, H); c.fillStyle = '#fff'; c.font = '800 70px Manrope, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(P?.permit?.region === 'la' ? 'EXIT' : 'SALIDA', W / 2, H / 2 + 4); });
+      const p = mesh(g, new THREE.PlaneGeometry(.34, .14), new THREE.MeshBasicMaterial({map:tex, toneMapped:false}), 0, .08, .016); p.castShadow = false; }},
 };
 // door and window openings live inside a wall: pos = centre along the wall from its start
 const OPS = {
@@ -849,7 +911,7 @@ let P = null, pid = null;
 function rectWalls(W, D){ return [{id:'w1', a:[0, 0], b:[W, 0], t:.15}, {id:'w2', a:[W, 0], b:[W, D], t:.15}, {id:'w3', a:[W, D], b:[0, D], t:.15}, {id:'w4', a:[0, D], b:[0, 0], t:.15}]; }
 function newItem(kind, x = 0, z = 0, rot = 0, extra = {}){
   const D = DEF[kind], o = {id:sid(), kind, x, z, rot, w:D.w, d:D.d, h:D.h};
-  for (const k of ['fin', 'top', 'sty', 'ledge', 'elev', 'text', 'groups', 'neon', 'goods']) if (D[k] !== undefined) o[k] = D[k];
+  for (const k of ['fin', 'top', 'sty', 'ledge', 'elev', 'text', 'groups', 'neon', 'goods', 'zt']) if (D[k] !== undefined) o[k] = D[k];
   Object.assign(o, extra); Object.assign(o, D.size?.(o) || {}); return o; }
 const newOp = (kind, wall, pos, extra = {}) => ({id:sid(), kind, wall, pos, w:OPS[kind].w, h:OPS[kind].h, sill:OPS[kind].sill, fin:OPS[kind].fin, ...extra});
 function blank(W = 8, D = 6, H = 3){ return {v:1, name:'Моя кофейня', H, wallCol:'#f2eee7', floor:'planks', light:'day', fade:true, walls:rectWalls(W, D), ops:[newOp('entrance', 'w3', W / 2, {w:Math.min(2.4, W - .6)})], items:[]}; }
@@ -916,7 +978,7 @@ const ctl3 = new OrbitControls(persp, R3.domElement); ctl3.enableDamping = true;
 const ctlP = new OrbitControls(ortho, R3.domElement); ctlP.enableRotate = false; ctlP.enableDamping = true; ctlP.dampingFactor = .15; ctlP.screenSpacePanning = true;
 ctlP.mouseButtons = {LEFT:THREE.MOUSE.PAN, MIDDLE:THREE.MOUSE.DOLLY, RIGHT:THREE.MOUSE.PAN}; ctlP.touches = {ONE:THREE.TOUCH.PAN, TWO:THREE.TOUCH.DOLLY_PAN};
 ctlP.minZoom = .2; ctlP.maxZoom = 12; ctlP.enabled = false;
-const roots = {floor:new THREE.Group(), walls:new THREE.Group(), items:new THREE.Group(), ui:new THREE.Group(), labels:new THREE.Group()};
+const roots = {floor:new THREE.Group(), walls:new THREE.Group(), items:new THREE.Group(), ui:new THREE.Group(), labels:new THREE.Group(), zl:new THREE.Group()};
 for (const g of Object.values(roots)) scene.add(g);
 const grid = new THREE.GridHelper(60, 120, 0x9c98a6, 0xc9c6cf); grid.material.transparent = true; grid.material.opacity = .45; grid.position.y = .002; grid.visible = false; scene.add(grid);
 let view = '3d', ctx = {H:3, lights:[]}, itemObj = new Map(), wallObj = new Map();
@@ -944,11 +1006,14 @@ function disposeTree(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose();
 /* geometry of the room */
 const ptKey = p => Math.round(p[0] * 1000) + ':' + Math.round(p[1] * 1000);
 function wallInfo(W){ const ux = W.b[0] - W.a[0], uz = W.b[1] - W.a[1], L = Math.hypot(ux, uz) || 1e-6; return {L, dx:ux / L, dz:uz / L}; }
-function roomLoop(){   // the walls as one closed outline, if they form one
-  if (P.walls.length < 3) return null; const deg = new Map();
-  for (const W of P.walls) for (const p of [W.a, W.b]) deg.set(ptKey(p), (deg.get(ptKey(p)) || 0) + 1);
-  if ([...deg.values()].some(v => v !== 2)) return null;
-  const left = [...P.walls], pts = []; let cur = left.shift(), at = cur.b; pts.push(cur.a);
+let loopIds = new Set();
+function roomLoop(){   // the walls as one closed outline, if they form one; inner partitions with a free end are ignored
+  let ws = [...P.walls], deg;
+  for (;;){ deg = new Map(); for (const W of ws) for (const p of [W.a, W.b]) deg.set(ptKey(p), (deg.get(ptKey(p)) || 0) + 1);
+    const keep = ws.filter(W => deg.get(ptKey(W.a)) > 1 && deg.get(ptKey(W.b)) > 1); if (keep.length === ws.length) break; ws = keep; }
+  loopIds = new Set(ws.map(W => W.id));
+  if (ws.length < 3 || [...deg.values()].some(v => v !== 2)) return null;
+  const left = [...ws], pts = []; let cur = left.shift(), at = cur.b; pts.push(cur.a);
   while (left.length){ const i = left.findIndex(W => ptKey(W.a) === ptKey(at) || ptKey(W.b) === ptKey(at)); if (i < 0) return null;
     const W = left.splice(i, 1)[0]; pts.push(at); at = ptKey(W.a) === ptKey(at) ? W.b : W.a; }
   return ptKey(at) === ptKey(pts[0]) ? pts : null; }
@@ -1001,8 +1066,13 @@ function buildItems(){
     if (view === 'plan' && (D.place === 'hang' || D.place === 'ceil')){ const rm = new THREE.Mesh(new THREE.RingGeometry(.13, .17, 32), new THREE.MeshBasicMaterial({color:'#e0a43a', side:THREE.DoubleSide, transparent:true, opacity:.9, depthTest:false}));
       rm.rotation.x = -Math.PI / 2; rm.position.y = .2; rm.renderOrder = 5; g.add(rm); const dot = new THREE.Mesh(new THREE.CircleGeometry(.05, 20), rm.material); dot.rotation.x = -Math.PI / 2; dot.position.y = .2; dot.renderOrder = 5; g.add(dot);
       const hit = new THREE.Mesh(new THREE.CircleGeometry(.17, 20), new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide})); hit.rotation.x = -Math.PI / 2; hit.position.y = .2; g.add(hit); }
+    else if (view === 'plan' && D.planRect){ const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(it.w, it.d)), new THREE.LineDashedMaterial({color:'#e0a43a', dashSize:.08, gapSize:.05, depthTest:false}));
+      e.computeLineDistances(); e.rotation.x = -Math.PI / 2; e.position.y = .05; e.renderOrder = 5; g.add(e); const hit = new THREE.Mesh(new THREE.PlaneGeometry(it.w, it.d), new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide})); hit.rotation.x = -Math.PI / 2; hit.position.y = .05; g.add(hit); }
+    else if (D.place === 'zone'){ if (view === 'plan'){ D.build(g, it, ctx); bake(g); } }
     else { D.build(g, it, ctx); bake(g); } g.userData.sel = {t:'item', id:it.id}; g.userData.box = [it.w, D.full ? P.H : it.h, it.d, 0];
     g.rotation.y = it.rot || 0; g.position.set(it.x, baseY(it), it.z); roots.items.add(g); itemObj.set(it.id, g); }
+  for (const c of [...roots.zl.children]) roots.zl.remove(c);
+  if (view === 'plan') for (const it of P.items) if (it.kind === 'zone'){ const o = lbl(`${it.text || ZT[it.zt]?.[0] || ''} · ${(it.w * it.d).toFixed(1).replace('.', ',')} м²`, 'soft'); o.position.set(it.x, .1, it.z); roots.zl.add(o); }
   applyLight(); }
 function rebuild(){ ctx.H = P.H; buildFloor(); buildWalls(); buildItems(); drawSel(); needShadow(); }
 
@@ -1105,7 +1175,9 @@ function pick(e){ setRay(e);
   for (const h of hits){ let o = h.object, s = null, faded = false;
     if (o.userData.nopick || o.isLine) continue;
     while (o){ if (o.userData.faded) faded = true; if (!s && o.userData.sel) s = o.userData.sel; o = o.parent; }
-    if (faded || !s) continue; return {s, point:h.point}; }
+    if (faded || !s) continue;
+    if (s.t === 'item'){ const it = P.items.find(i => i.id === s.id); if (it?.kind === 'zone'){ const [lx, lz] = toLocal(it, h.point.x, h.point.z); if (Math.abs(lx) < it.w / 2 - .3 && Math.abs(lz) < it.d / 2 - .3) continue; } }
+    return {s, point:h.point}; }
   return null; }
 let hoverT = 0, tool = 'select', placing = null, drag = null, down = null, chain = null;
 const isTyping = () => /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || '') && document.activeElement.type !== 'checkbox';
@@ -1162,7 +1234,7 @@ stage.addEventListener('contextmenu', e => { if (tool === 'wall' || placing){ e.
 
 /* placing a new thing from the catalogue: it follows the pointer until a click */
 function startPlace(kind, fromLib = false){
-  cancelPlace(); if (tool !== 'select') setTool('select');
+  cancelPlace(); if (tool !== 'select') setTool('select'); if (DEF[kind]?.place === 'zone' && view !== 'plan'){ setView('plan'); toast('Зоны видны и двигаются на «Плане»'); }
   snap(); const [cx, cz] = centroid();
   if (OPS[kind]){ const n = nearestWall(cx, cz); if (!n){ hist.pop(); toast('Сначала нарисуйте стены — дверь и окно ставятся в стену.'); return; }
     const op = newOp(kind, n.W.id, n.L / 2); const H = n.W.h || P.H; if (op.sill + op.h > H - .05) op.h = Math.max(.5, H - .05 - op.sill);
@@ -1289,10 +1361,13 @@ function renderInsp(){
         ${D.place === 'wall' || D.place === 'hang' ? `<div class="row2">${num('elev', D.place === 'hang' ? 'Низ плафона от пола' : 'Низ от пола', cm(d.elev ?? D.elev))}</div>` : ''}
         <div class="acts2"><button class="btn" type="button" data-a="rotL">⟲ 90°</button><button class="btn" type="button" data-a="rotR">⟳ 90°</button></div></div>
       <div class="grp"><h3>Размер, см</h3><div class="row3">${num('w', 'Ширина', cm(d.w), rs.includes('w') ? '' : 'disabled')}${num('d', 'Глубина', cm(d.d), rs.includes('d') ? '' : 'disabled')}${num('h', 'Высота', cm(D.full ? P.H : d.h), rs.includes('h') ? '' : 'disabled')}</div>${rs ? '' : '<p class="note">Размер как у настоящей модели.</p>'}</div>
+      ${d.kind === 'zone' ? `<div class="grp"><h3>Что это за зона</h3><div class="chips">${Object.entries(ZT).map(([k, z]) => `<button type="button" class="chip" data-zt="${k}" aria-pressed="${d.zt === k}">${z[0]}</button>`).join('')}</div>
+        <p class="note">${(d.w * d.d).toFixed(1).replace('.', ',')} м². Нужна для вместимости и экспликации в «Документах». Видна на «Плане», двигается за край.</p></div>` : ''}
+      ${techInsp(d)}
       ${D.presets ? `<div class="grp"><h3>Готовые размеры</h3><div class="chips">${D.presets.map(([n, v], i) => `<button type="button" class="chip" data-preset="${i}" aria-pressed="${Object.entries(v).every(([k, x]) => Math.abs(d[k] - x) < .001)}">${n}</button>`).join('')}</div></div>` : ''}
       ${D.goods ? `<div class="grp"><h3>Что внутри</h3><div class="seg" style="width:max-content">${[['cakes', 'Десерты'], ['sandwich', 'Сэндвичи'], ['drinks', 'Напитки']].map(([k, n]) => `<button class="tab" type="button" data-goods="${k}" aria-selected="${d.goods === k}">${n}</button>`).join('')}</div></div>` : ''}
       ${D.groups ? `<div class="grp"><h3>Группы</h3><div class="seg" style="width:max-content">${[1, 2, 3].map(n => `<button class="tab" type="button" data-groups="${n}" aria-selected="${d.groups === n}">${n} ${n === 1 ? 'группа' : 'группы'}</button>`).join('')}</div></div>` : ''}
-      ${D.text !== undefined ? `<div class="grp"><h3>Надпись</h3><input type="text" data-f="text" value="${esc(d.text)}" maxlength="24"></div>` : ''}
+      ${D.text !== undefined ? `<div class="grp"><h3>${d.kind === 'zone' ? 'Своё название (необязательно)' : 'Надпись'}</h3><input type="text" data-f="text" value="${esc(d.text)}" maxlength="24"></div>` : ''}
       ${D.neon ? `<div class="grp"><h3>Цвет неона</h3><div class="sw">${Object.entries(NEON).map(([k, c]) => `<button type="button" data-neon="${k}" aria-pressed="${d.neon === k}" style="background:${c}"></button>`).join('')}</div></div>` : ''}
       ${D.fins ? `<div class="grp"><h3>${D.cat === 'hall' && SOFT.includes(D.fin) ? 'Обивка' : D.tops ? 'Корпус' : 'Цвет'} <span class="swn">· ${esc(FIN[d.fin]?.n || '')}</span></h3>${swatches(D.fins, d.fin, 'data-fin')}</div>` : ''}
       ${D.tops ? `<div class="grp"><h3>${d.kind === 'shelf' ? 'Полка' : 'Столешница'} <span class="swn">· ${esc(FIN[d.top]?.n || '')}</span></h3>${swatches(D.tops, d.top, 'data-top')}</div>` : ''}
@@ -1315,6 +1390,9 @@ function renderInsp(){
     <div class="grp"><h3>Добавить в стену</h3><div class="acts2">${['entrance', 'door', 'window', 'showcase'].map(k => `<button class="btn" type="button" data-addop="${k}">+ ${OPS[k].n.replace(' со стеклом', '')}</button>`).join('')}</div></div>
     <div class="acts2"><button class="btn" type="button" data-a="split">Разделить пополам</button><button class="btn danger" type="button" data-a="del">Удалить стену</button></div>`;
 }
+function techInsp(d){ const t = tech(d); if (!t || !t.kwDef && !t.w && !t.dr) return ''; if (t.sym && t.sym !== 'light' && !t.w) return '';
+  const parts = [t.kw ? `${String(+t.kw.toFixed(2)).replace('.', ',')} кВт${t.ph === 3 ? ', 3 фазы' : ''}` : '', t.w === 'ch' ? 'холодная и горячая вода' : t.w ? 'вода' : '', t.dr === 'i' ? 'слив через приямок' : t.dr ? 'слив' : '', t.hood ? 'нужна вытяжка' : ''].filter(Boolean);
+  return `<div class="grp"><h3>Подключение</h3>${t.kwDef ? `<label class="f">Мощность, кВт (из паспорта)<input type="number" data-f="kw" value="${+t.kw.toFixed(2)}" step="0.05" min="0"></label>` : ''}<p class="note">${parts.join(' · ') || 'без подключения'}. Попадёт в «Документы».</p></div>`; }
 function roomPanel(){ const L = roomLoop(), area = L ? polyArea(L) : null, per = P.walls.reduce((s, W) => s + wallInfo(W).L, 0), b = bounds();
   const cnt = P.items.length;
   return `<div class="ih"><b>Помещение</b><span>Ничего не выбрано — здесь настройки всей комнаты</span></div>
@@ -1351,7 +1429,7 @@ $('inspIn').addEventListener('change', e => {
   if (sel.t === 'item'){ const D = DEF[d.kind], [ox, oz] = origin();
     if (f === 'x') d.x = v / 100 + ox; else if (f === 'z') d.z = v / 100 + oz; else if (f === 'rot') d.rot = v * DEG;
     else if (f === 'elev') d.elev = clamp(v / 100, 0, P.H); else if (f === 'text'){ d.text = String(v).slice(0, 24); Object.assign(d, D.size?.(d) || {}); }
-    else if (f === 'ledge') d.ledge = v;
+    else if (f === 'ledge') d.ledge = v; else if (f === 'kw') d.kw = clamp(v, 0, 60);
     else if (['w', 'd', 'h'].includes(f)){ d[f] = clamp(v / 100, .02, 20); if (D.round && f === 'w') d.d = d.w; Object.assign(d, D.size?.(d) || {}); }
     return changed(); }
   if (sel.t === 'op'){ const W = P.walls.find(w => w.id === d.wall), H = W?.h || P.H;
@@ -1383,6 +1461,7 @@ $('inspIn').addEventListener('click', e => {
     if (ds.sty){ snap(); d.sty = ds.sty; return changed(); } if (ds.neon){ snap(); d.neon = ds.neon; return changed(); }
     if (ds.preset !== undefined){ snap(); Object.assign(d, D.presets[+ds.preset][1]); if (D.round) d.d = d.w; Object.assign(d, D.size?.(d) || {}); return changed(); }
     if (ds.goods){ snap(); d.goods = ds.goods; return changed(); }
+    if (ds.zt){ snap(); d.zt = ds.zt; return changed(); }
     if (ds.groups){ snap(); d.groups = +ds.groups; Object.assign(d, D.size(d)); return changed(); }
     if (ds.a === 'rotL' || ds.a === 'rotR'){ snap(); d.rot = (d.rot || 0) + (ds.a === 'rotL' ? 1 : -1) * Math.PI / 2; return changed(); }
     if (ds.a === 'dup') return dup(); if (ds.a === 'del') return del(); return; }
@@ -1457,7 +1536,7 @@ $('impHome').addEventListener('change', e => { const f = e.target.files[0]; e.ta
 
 /* equipment list */
 function specRows(){ const groups = new Map();
-  for (const it of P.items){ const D = DEF[it.kind]; const fin = [it.fin && FIN[it.fin]?.n, it.top && D.tops && 'столешница: ' + FIN[it.top]?.n, it.groups && it.groups + ' гр.', it.text && `«${it.text}»`].filter(Boolean).join(', ');
+  for (const it of P.items){ const D = DEF[it.kind]; if (D.place === 'zone') continue; const fin = [it.fin && FIN[it.fin]?.n, it.top && D.tops && 'столешница: ' + FIN[it.top]?.n, it.groups && it.groups + ' гр.', it.text && `«${it.text}»`].filter(Boolean).join(', ');
     const key = [D.cat, D.n, sizeTxt(it.w, it.d, D.full ? P.H : it.h), fin].join('|'); groups.set(key, (groups.get(key) || 0) + 1); }
   for (const o of P.ops){ const key = ['open', OPS[o.kind].n, `${cm(o.w)}×${cm(o.h)}`, FIN[o.fin]?.n || ''].join('|'); groups.set(key, (groups.get(key) || 0) + 1); }
   const rows = [...groups].map(([k, n]) => { const [c, name, size, fin] = k.split('|'); return {c, name, size, fin, n}; });
@@ -1470,6 +1549,399 @@ $('specBtn').addEventListener('click', () => { const rows = specRows(); let h = 
 const specCsv = () => ['Раздел;Наименование;Размер, см;Отделка;Кол-во', ...specRows().map(r => [CATS.find(c => c[0] === r.c)?.[1], r.name, r.size, r.fin, r.n].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';'))].join('\n');
 $('specCsv').addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + specCsv()], {type:'text/csv'})); a.download = (P.name || 'кофейня') + ' — оборудование.csv'; a.click(); });
 $('specCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(specCsv().replace(/;/g, '\t').replace(/"/g, '')); toast('Список скопирован — вставьте в таблицу'); } catch { toast('Браузер не дал скопировать'); } });
+
+/* ---------- permit documents: Spain and Los Angeles ----------
+   Connection data for each kind, a rules check and a PDF drawing set
+   (cover, floor plan, schedules, electrical, plumbing, life safety). */
+// kw, phases, water (c = cold, ch = cold + hot), drain (d = direct, i = indirect via floor sink), hood type, food equipment, food prep
+const TECH = {
+  espresso:{kw:o => [3.0, 4.6, 6.4][(o.groups || 2) - 1], ph:o => (o.groups || 2) > 1 ? 3 : 1, w:'c', dr:'i', food:1, prep:1},
+  grinder:{kw:.45, food:1, prep:1}, grinder2:{kw:1.1, food:1, prep:1}, batch:{kw:2.4, w:'c', food:1, prep:1}, kettle:{kw:1.2, food:1, prep:1}, blender:{kw:1.5, food:1, prep:1},
+  milk:{kw:.15, food:1}, fridge:{kw:.35, food:1}, fridge2:{kw:.6, food:1}, under:{kw:.45, food:1, prep:1}, ice:{kw:.7, w:'c', dr:'i', food:1}, freezer:{kw:.3, food:1},
+  sink:{w:'ch', dr:'d', food:1}, dish:{kw:3.6, w:'ch', dr:'i', food:1}, pastry:{kw:.9, food:1}, showSq:{kw:.8, food:1}, showCurve:{kw:1.0, food:1}, showVert:{kw:.7, food:1},
+  showTop:{kw:.35, food:1}, multideck:{kw:1.8, food:1}, gelato:{kw:1.3, food:1}, barFridge:{kw:.35, food:1}, builtFridge:{kw:.15, food:1}, pos:{kw:.15},
+  superauto:{kw:3.0, w:'c', dr:'i', food:1, prep:1}, oven:{kw:3.5, hood:'II', food:1, prep:1}, micro:{kw:1.3, food:1, prep:1}, panini:{kw:2.2, hood:'I', food:1, prep:1},
+  juicer:{kw:.25, food:1, prep:1}, boiler:{kw:2.8, w:'c', food:1, prep:1}, coldbrew:{food:1, prep:1}, kiosk:{kw:.2}, tvMenu:{kw:.45}, neon:{kw:.06},
+  lamp:{kw:.06, sym:'light'}, floorLamp:{kw:.06, sym:'light'}, sconce:{kw:.04, sym:'light'}, track:{kw:.2, sym:'light'},
+  handSink:{w:'ch', dr:'d'}, toilet:{w:'c', dr:'d'}, mop:{w:'ch', dr:'d'}, sink3:{w:'ch', dr:'d', food:1}, whtr:{kw:3.0, w:'c'}, hood:{kw:.35},
+  fdrain:{sym:'fd'}, fsink:{sym:'fs'}, grease:{sym:'gi'}, socket:{sym:'socket'}, socket3:{sym:'socket3'}, panel:{sym:'panel'}, ext:{sym:'ext'}, emerg:{kw:.01, sym:'el'}, exitSign:{kw:.01, sym:'exit'},
+};
+function tech(it){ const T = TECH[it.kind]; if (!T) return null; const f = v => typeof v === 'function' ? v(it) : v;
+  return {kw:it.kw ?? f(T.kw) ?? 0, ph:f(T.ph) || 1, w:T.w || '', dr:T.dr || '', hood:T.hood || '', food:!!T.food, prep:!!T.prep, sym:T.sym || '', kwDef:T.kw !== undefined}; }
+const SYMS = new Set(['socket', 'socket3', 'panel', 'ext', 'emerg', 'exitSign', 'fdrain', 'fsink']);
+// names for the drawings: [en, es]
+const TRN = {bar:['Service counter', 'Barra de servicio'], corner:['L-shaped counter', 'Barra en L'], backbar:['Back bar cabinets', 'Mueble de contrabarra'], shelf:['Wall shelf', 'Estante de pared'],
+  menu:['Menu board', 'Pizarra de menú'], neon:['Neon sign', 'Rótulo de neón'], pos:['POS terminal', 'Terminal TPV'], pastry:['Refrigerated pastry case', 'Vitrina refrigerada de pastelería'],
+  espresso:['Espresso machine', 'Cafetera espresso'], grinder:['Espresso grinder', 'Molino de espresso'], grinder2:['Bulk coffee grinder', 'Molino de café en grano'], batch:['Batch brewer', 'Cafetera de filtro'],
+  knock:['Knock box', 'Cajón de posos'], kettle:['Kettle', 'Hervidor'], blender:['Blender', 'Batidora de vaso'], milk:['Countertop milk fridge', 'Refrigerador de leche'],
+  fridge:['Reach-in refrigerator, glass door', 'Armario refrigerado, puerta de cristal'], fridge2:['Reach-in refrigerator, 2 doors', 'Armario refrigerado, 2 puertas'], under:['Undercounter refrigerator', 'Mesa refrigerada'],
+  ice:['Ice machine', 'Máquina de hielo'], freezer:['Chest freezer', 'Arcón congelador'], sink:['Sink', 'Fregadero'], dish:['Undercounter dishwasher', 'Lavavajillas'], trash:['Waste bin', 'Contenedor de residuos'],
+  tableR:['Round table', 'Mesa redonda'], tableS:['Square table', 'Mesa cuadrada'], table4:['Table for 4', 'Mesa para 4'], tableH:['High table', 'Mesa alta'], chair:['Chair', 'Silla'], stool:['Bar stool', 'Taburete alto'],
+  armchair:['Armchair', 'Butaca'], sofa:['Banquette', 'Banco tapizado'], wbar:['Window counter', 'Barra de ventana'], plant:['Plant', 'Planta'], lamp:['Pendant light', 'Lámpara colgante'], rug:['Rug', 'Alfombra'],
+  slats:['Slat partition', 'Celosía de listones'], column:['Column', 'Pilar'], worktop:['Worktop', 'Encimera'], island:['Island counter', 'Barra isla'], barRound:['Rounded counter', 'Barra redondeada'],
+  barU:['U-shaped counter', 'Barra en U'], cabD:['Drawer cabinet', 'Cajonera'], cabDoor:['Base cabinet', 'Mueble bajo'], wallCab:['Wall cabinet', 'Armario de pared'], tallCab:['Tall cabinet', 'Armario columna'],
+  rack:['Shelving', 'Estantería'], showSq:['Refrigerated display case', 'Vitrina refrigerada, cristal recto'], showCurve:['Refrigerated display case, curved', 'Vitrina refrigerada, cristal curvo'],
+  showVert:['Upright pastry display', 'Vitrina vertical de pastelería'], showTop:['Countertop display case', 'Vitrina de sobremesa'], multideck:['Open multideck cooler', 'Mural refrigerado'],
+  gelato:['Gelato display', 'Vitrina de helados'], barFridge:['Back bar cooler', 'Botellero refrigerado'], builtFridge:['Built-in undercounter fridge', 'Frigorífico integrable'],
+  superauto:['Super-automatic coffee machine', 'Cafetera superautomática'], oven:['Convection oven', 'Horno de convección'], micro:['Microwave', 'Microondas'], panini:['Panini grill', 'Plancha de contacto'],
+  juicer:['Citrus juicer', 'Exprimidor'], boiler:['Hot water urn', 'Hervidor de agua'], coldbrew:['Cold brew tower', 'Torre de cold brew'], scales:['Barista scale', 'Báscula'], sofa2:['Sofa, 2 seats', 'Sofá 2 plazas'],
+  pouf:['Pouf', 'Puf'], lowTable:['Coffee table', 'Mesa baja'], bench:['Bench', 'Banco'], tableHR:['High table, rectangular', 'Mesa alta rectangular'], kiosk:['Self-order kiosk', 'Quiosco de autopedido'],
+  tvMenu:['Digital menu screens', 'Pantallas de menú'], floorLamp:['Floor lamp', 'Lámpara de pie'], sconce:['Wall sconce', 'Aplique'], track:['Track lighting', 'Carril de focos'], poster:['Framed poster', 'Cuadro'],
+  mirror:['Mirror', 'Espejo'], greenWall:['Green wall', 'Jardín vertical'], hangPlant:['Hanging planter', 'Macetero colgante'], coat:['Coat stand', 'Perchero'], toilet:['Water closet', 'Inodoro'],
+  handSink:['Hand wash sink', 'Lavamanos'], zone:['Area', 'Zona'], socket:['Receptacle', 'Toma de corriente'], socket3:['Power receptacle, 3-phase', 'Toma de fuerza 400 V'], panel:['Electrical panel', 'Cuadro eléctrico'],
+  fdrain:['Floor drain', 'Sumidero'], fsink:['Floor sink', 'Sumidero sifónico'], grease:['Grease interceptor', 'Separador de grasas'], whtr:['Water heater', 'Termo eléctrico'], hood:['Exhaust hood', 'Campana extractora'],
+  mop:['Mop sink', 'Vertedero de limpieza'], sink3:['3-compartment sink', 'Fregadero de 3 senos'], ext:['Fire extinguisher', 'Extintor'], emerg:['Emergency light', 'Alumbrado de emergencia'], exitSign:['Exit sign', 'Señal de salida'],
+  entrance:['Storefront entrance door', 'Puerta de entrada acristalada'], door:['Door', 'Puerta'], door2:['Double door', 'Puerta doble'], showcase:['Storefront window', 'Escaparate'], window:['Window', 'Ventana'], arch:['Opening', 'Hueco de paso']};
+const FLOOR_TR = {planks:['Wood plank floor', 'Tarima de madera', 1], herring:['Herringbone wood floor', 'Parquet en espiga', 1], planksd:['Wood plank floor, dark', 'Tarima de madera oscura', 1],
+  concrete:['Sealed polished concrete', 'Hormigón pulido sellado'], terrazzo:['Terrazzo', 'Terrazo'], checker:['Ceramic tile', 'Baldosa cerámica'], tile:['Ceramic tile', 'Gres porcelánico'], tiled:['Ceramic tile, dark', 'Gres porcelánico oscuro'], tilet:['Quarry tile', 'Baldosa de gres rústico']};
+const SQFT = .09290304;
+// occupant load factors: Spain CTE DB-SI SI3 table 2.1 (m² per person); LA CBC table 1004.5 (sq ft per person); 0 = not counted (used by the same people)
+const OLF = {es:{hall:1.5, queue:1, bar:10, kitchen:10, wash:10, store:40, wc:0, staff:0}, la:{hall:15, queue:5, bar:200, kitchen:200, wash:200, store:300, wc:0, staff:0}};
+const REG = {
+  es:{n:'Испания', exitW:.80, aisle:1.0, ext:15, travel:25, two:100, wcTurn:1.5, cH:.85, cW:.80, minH:2.5},
+  la:{n:'Лос-Анджелес (США)', exitW:.813, aisle:.914, ext:22.86, travel:22.86, two:49, wcTurn:1.525, cH:.864, cW:.914, minH:2.29}};
+const EXIT_KINDS = ['entrance', 'door', 'door2'];
+const clearW = o => o.kind === 'entrance' ? Math.min(1.0, o.w * .45) - .06 : o.w - .12;
+const f1 = v => v.toFixed(1).replace('.', ','), inch = m => Math.round(m / .0254) + ' in', feet = m => Math.round(m / .3048) + ' ft';
+function itemPoly(it, grow = 0){ const c = Math.cos(it.rot || 0), s = Math.sin(it.rot || 0), hw = it.w / 2 + grow, hd = it.d / 2 + grow;
+  return [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([lx, lz]) => [it.x + lx * c + lz * s, it.z - lx * s + lz * c]); }
+const toWorld = (it, lx, lz) => { const c = Math.cos(it.rot || 0), s = Math.sin(it.rot || 0); return [it.x + lx * c + lz * s, it.z - lx * s + lz * c]; };
+function inPoly(p, poly){ let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++){ const [xi, zi] = poly[i], [xj, zj] = poly[j];
+  if ((zi > p[1]) !== (zj > p[1]) && p[0] < (xj - xi) * (p[1] - zi) / (zj - zi) + xi) ins = !ins; } return ins; }
+function segProj(p, a, b){ const dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz || 1e-9, t = clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / L2, 0, 1); return [a[0] + t * dx, a[1] + t * dz]; }
+function polyGap(A, B){ if (A.some(p => inPoly(p, B)) || B.some(p => inPoly(p, A))) return [0, null]; let m = Infinity, mid = null;   // distance and the middle of the gap
+  for (const [X, Y] of [[A, B], [B, A]]) for (const p of X) for (let i = 0; i < Y.length; i++){ const q = segProj(p, Y[i], Y[(i + 1) % Y.length]), d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+    if (d < m){ m = d; mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; } } return [m, mid]; }
+function exitsOf(){ roomLoop(); const all = !loopIds.size;
+  return P.ops.filter(o => EXIT_KINDS.includes(o.kind) && (all || loopIds.has(o.wall))).map(o => { const W = P.walls.find(w => w.id === o.wall); if (!W) return null; const {dx, dz} = wallInfo(W);
+    return {o, W, p:[W.a[0] + dx * o.pos, W.a[1] + dz * o.pos], clear:clearW(o)}; }).filter(Boolean); }
+const nm = (it, lang) => lang ? (TRN[it.kind]?.[lang === 'es' ? 1 : 0] || it.kind) : DEF[it.kind]?.n || OPS[it.kind]?.n || it.kind;
+
+function audit(){
+  P.permit ??= {region:'es'}; const reg = P.permit.region === 'la' ? 'la' : 'es', R = REG[reg], list = [];
+  const M = (lvl, ru, en, es, sel) => list.push({lvl, ru, en, es:es ?? en, sel});
+  const loop = roomLoop(), b = bounds(), outline = loop || [[b.x0, b.z0], [b.x1, b.z0], [b.x1, b.z1], [b.x0, b.z1]], area = polyArea(outline);
+  const items = P.items.filter(i => DEF[i.kind]), K = k => items.filter(i => i.kind === k), zones = K('zone');
+  // occupant load
+  const fac = OLF[reg], toU = a => reg === 'la' ? a / SQFT : a, occRows = [];
+  let occ = 0;
+  if (zones.length){ for (const z of zones){ const a = z.w * z.d, f = fac[z.zt] ?? 0, n = f ? Math.ceil(toU(a) / f) : 0; occ += n; occRows.push({z, a, f, n}); }
+    const rest = area - zones.reduce((s, z) => s + z.w * z.d, 0); if (rest > 1){ const n = Math.ceil(toU(rest) / fac.hall); occ += n; occRows.push({z:null, rest:true, a:rest, f:fac.hall, n}); } }
+  else { occ = Math.ceil(toU(area) / fac.hall); occRows.push({z:null, a:area, f:fac.hall, n:occ}); }
+  const seats = items.reduce((s, i) => s + ({chair:1, stool:1, armchair:1, pouf:1, sofa2:2}[i.kind] || (i.kind === 'sofa' ? Math.floor(i.w / .6) : i.kind === 'bench' ? Math.floor(i.w / .5) : 0)), 0);
+  // exits and travel distance (straight line, a lower bound of the real path)
+  const ex = exitsOf(), need = occ > R.two ? 2 : 1, step = .3; let far = 0, farP = null, farE = null, extFar = 0;
+  const exts = K('ext');
+  for (let x = b.x0 + step / 2; x < b.x1; x += step) for (let z = b.z0 + step / 2; z < b.z1; z += step){ if (!inPoly([x, z], outline)) continue;
+    if (ex.length){ let m = Infinity, e0 = null; for (const e of ex){ const d = Math.hypot(e.p[0] - x, e.p[1] - z); if (d < m){ m = d; e0 = e; } } if (m > far){ far = m; farP = [x, z]; farE = e0; } }
+    if (exts.length) extFar = Math.max(extFar, Math.min(...exts.map(e => Math.hypot(e.x - x, e.z - z)))); }
+  const needT = far > R.travel ? 2 : need;
+  // electrical and water
+  let kw = 0, kw3 = false, water = 0, drains = 0; for (const it of items){ const t = tech(it); if (!t) continue; kw += t.kw; if (t.ph === 3 && t.kw) kw3 = true; if (t.w) water++; if (t.dr) drains++; }
+  const food = items.filter(i => tech(i)?.food), prep = items.filter(i => tech(i)?.prep), hs = K('handSink');
+  const S = it => ({t:'item', id:it.id}), names = (a, n = 4) => a.slice(0, n).map(i => '«' + nm(i) + '»').join(', ') + (a.length > n ? ` и ещё ${a.length - n}` : ''), namesL = (a, l) => a.slice(0, 5).map(i => nm(i, l)).join(', ');
+
+  if (!zones.length) M('warn', 'Не размечены зоны (зал, бар, склад, санузел…). Пока вместимость посчитана так, будто вся площадь — зал. Добавьте «Зону помещения» из раздела «Инженерия и нормы».',
+    'Areas are not defined: occupant load assumes the whole floor is dining area.', 'No se han definido zonas: la ocupación se calcula como si toda la superficie fuera zona de público.');
+  const rr = occRows.find(r => r.rest);
+  M('ok', `Вместимость по нормам: ${occ} чел. Посадочных мест на плане: ${seats}.${rr ? ` Неразмеченные ${f1(rr.a)} м² посчитаны как зал.` : ''}`, `Occupant load: ${occ} (CBC Table 1004.5). Seats shown: ${seats}.`, `Ocupación: ${occ} personas (CTE DB-SI, SI 3, tabla 2.1). Plazas sentadas: ${seats}.`);
+  if (reg === 'la') occ > 49
+    ? M('warn', 'Больше 49 человек — это класс A-2: нужны 2 выхода, ручки «антипаника», табло EXIT и разрешение пожарных LAFD (Place of Assembly).', 'Occupant load over 49: Group A-2 — two exits, panic hardware, exit signs and an LAFD Place of Assembly permit required.')
+    : M('ok', 'До 49 человек — класс B: хватает одного выхода, если путь до него не длиннее 22,9 м (75 ft).', 'Occupant load 49 or less: Group B occupancy; one exit permitted where common path of travel does not exceed 75 ft.');
+  else if (occ > 50) M('warn', 'Больше 50 человек — это «local de pública concurrencia» (ITC-BT-28): нужен проект электрики от инженера, аварийное освещение и проверка OCA.', '', 'Ocupación > 50 personas: local de pública concurrencia (ITC-BT-28) — proyecto eléctrico, alumbrado de emergencia e inspección inicial por OCA.');
+  if (!ex.length) M('err', 'Нет выхода: поставьте входную группу или дверь в наружную стену.', 'No exit door in the exterior walls.', 'No hay puerta de salida en los muros exteriores.');
+  else if (ex.length < needT) M('err', `Нужно ${needT} выхода, а есть ${ex.length}${far > R.travel ? ` (дальняя точка в ${f1(far)} м от выхода, а можно до ${R.travel} м)` : ''}.`, `${needT} exits required, ${ex.length} provided.`, `Se requieren ${needT} salidas; existen ${ex.length}.`);
+  else M('ok', `Выходов: ${ex.length}, нужно ${needT}. Самая дальняя точка — ${f1(far)} м до выхода по прямой (до ${f1(R.travel)} м).`, `Exits: ${ex.length} provided, ${needT} required. Longest straight-line distance to an exit: ${feet(far)}.`, `Salidas: ${ex.length} (requeridas ${needT}). Recorrido máximo en línea recta: ${f1(far)} m.`);
+  for (const e of ex) if (e.clear < R.exitW - .005) M('err', `Дверь на выход ${cm(e.clear)} см в свету, а нужно не меньше ${cm(R.exitW)} см — сделайте проём шире (≈${cm(R.exitW + .13)} см).`, `Exit door clear width ${inch(e.clear)}, min. 32 in.`, `Puerta de salida con paso libre de ${cm(e.clear)} cm; mínimo 0,80 m.`, {t:'op', id:e.o.id});
+  if (P.H < R.minH) M('err', `Потолок ${cm(P.H)} см — обычно нужно не ниже ${cm(R.minH)} см.`, `Ceiling height ${cm(P.H)} cm, min. 7'-6".`, `Altura libre ${cm(P.H)} cm; mínimo habitual 2,50 m.`);
+  if (!exts.length) M('err', reg === 'la' ? 'Нет огнетушителя: нужен 2-A:10-B:C, не дальше 22,9 м (75 ft) от любой точки.' : 'Нет огнетушителя: нужен 21A-113B, не дальше 15 м от любой точки.', 'No portable fire extinguisher (2-A:10-B:C within 75 ft travel).', 'Falta extintor (eficacia 21A-113B a menos de 15 m de cualquier origen de evacuación).');
+  else if (extFar > R.ext) M('warn', `Есть места дальше ${R.ext} м от огнетушителя — добавьте ещё один.`, 'Some areas are beyond 75 ft from an extinguisher.', 'Hay zonas a más de 15 m de un extintor.');
+  else M('ok', `Огнетушителей: ${exts.length}, покрывают всё помещение.`, `Fire extinguishers: ${exts.length}.`, `Extintores: ${exts.length}.`);
+  const el = K('emerg').length, es_ = K('exitSign').length;
+  if (reg === 'es'){ if (!el) M('warn', 'Нет аварийного освещения — в кафе оно нужно над выходами и на пути к ним.', '', 'Falta alumbrado de emergencia en salidas y recorridos de evacuación.');
+    if (!es_ && (area > 50 || occ > 50)) M('warn', 'Нет табличек «SALIDA» над выходами.', '', 'Falta señalización de SALIDA.'); }
+  else if (needT > 1){ if (!el) M('err', 'При двух выходах нужно аварийное освещение путей эвакуации.', 'Means of egress illumination with emergency power required.'); if (!es_) M('err', 'При двух выходах нужны табло EXIT.', 'Exit signs required.'); }
+  // health
+  if (food.length && !hs.length) M('err', 'Нет раковины для мытья рук в рабочей зоне — обязательно (рядом с баром или кухней).', 'No hand wash sink in the food preparation area.', 'Falta lavamanos en la zona de manipulación de alimentos.');
+  if (reg === 'la' && hs.length){ const far = prep.filter(i => Math.min(...hs.map(h => Math.hypot(h.x - i.x, h.z - i.z))) > 7.62); if (far.length) M('err', `Дальше 7,6 м (25 ft) от раковины для рук: ${names(far)}.`, `More than 25 ft from a hand sink: ${namesL(far, 'en')}.`, '', far.map(S)[0]); }
+  if (reg === 'la'){ if (!K('sink3').length) M('err', 'Нужна трёхсекционная мойка с сушилками для посуды (даже если есть посудомойка).', '3-compartment sink with drainboards required.');
+    if (!K('mop').length) M('err', 'Нужна мойка для уборочного инвентаря (mop sink).', 'Janitorial (mop) sink required.');
+    if (!K('grease').length) M('err', 'Нужен жироуловитель (grease interceptor) — требование LA Sanitation.', 'Grease interceptor required (LA Sanitation FOG program).');
+    if (!K('whtr').length) M('warn', 'Добавьте водонагреватель — инспекция просит его объём и мощность.', 'Water heater not shown; capacity calculation required.');
+    const ind = items.filter(i => tech(i)?.dr === 'i' && !K('fsink').some(f => Math.hypot(f.x - i.x, f.z - i.z) < 1.8));
+    if (ind.length) M('warn', `Нужен приямок (floor sink) рядом для непрямого слива: ${names(ind)}.`, `Indirect waste to floor sink required for: ${namesL(ind, 'en')}.`, '', S(ind[0])); }
+  else { if (food.length && !K('sink').length && !K('sink3').length && !K('dish').length) M('err', 'Нет мойки или посудомойки для посуды.', '', 'Falta fregadero o lavavajillas para el menaje.');
+    if (!K('mop').length) M('warn', 'Желательно место для уборочного инвентаря с раковиной (vertedero).', '', 'Se recomienda vertedero para útiles de limpieza.');
+    if (!K('whtr').length && (hs.length || K('sink').length)) M('warn', 'Нужна горячая вода для рук и посуды — добавьте водонагреватель (termo).', '', 'Agua caliente sanitaria: falta termo eléctrico.');
+    if (!K('grease').length) M('warn', 'Часто требуется жироуловитель по местным правилам стоков (ordenanza de vertidos).', '', 'Separador de grasas: según ordenanza municipal de vertidos.'); }
+  const toilets = K('toilet'), wcz = zones.filter(z => z.zt === 'wc');
+  if (!toilets.length) M('err', 'Нет туалета.', 'No restroom (water closet).', 'No hay aseo.');
+  else if (reg === 'la' && seats > 20 && toilets.length < 2) M('warn', 'Больше 20 мест — обычно нужны туалеты для гостей (CPC, табл. 422.1). Уточните у инспектора.', 'Over 20 seats: customer restrooms typically required (CPC Table 422.1).');
+  if (toilets.length && !wcz.length) M('warn', 'Отметьте зону «Санузел», чтобы проверить разворот коляски.', 'Restroom area not defined.', 'Zona de aseo no definida.');
+  for (const z of wcz) if (Math.min(z.w, z.d) < R.wcTurn) M('err', `Санузел ${cm(z.w)}×${cm(z.d)} см — для коляски нужен круг Ø${cm(R.wcTurn)} см.`, `Restroom ${inch(z.w)} x ${inch(z.d)}: 60 in turning space required.`, `Aseo de ${cm(z.w)}x${cm(z.d)} cm: se requiere círculo de giro Ø1,50 m.`, S(z));
+  // accessibility
+  const counters = items.filter(i => ['bar', 'barRound', 'island', 'barU', 'corner'].includes(i.kind)), effH = i => i.h + (i.kind === 'bar' && i.ledge ? .235 : 0);
+  if (counters.length && !counters.some(c => effH(c) <= R.cH + .005)) M('warn', `Часть стойки (не уже ${cm(R.cW)} см) должна быть не выше ${cm(R.cH)} см — для гостей на коляске. Сейчас ${cm(Math.min(...counters.map(effH)))} см.`,
+    `Accessible service counter: a portion min. 36 in wide at max. 34 in high is required (ADA 904.4). Lowest counter: ${inch(Math.min(...counters.map(effH)))}.`, `Punto de atención accesible: tramo de 0,80 m de ancho a máx. 0,85 m de altura (Orden TMA/851/2021).`, S(counters[0]));
+  const tables = items.filter(i => ['tableR', 'tableS', 'table4', 'tableH', 'tableHR', 'wbar'].includes(i.kind));
+  if (reg === 'la' && tables.length && tables.filter(t => t.h >= .71 && t.h <= .865).length < Math.ceil(tables.length * .05)) M('warn', 'Нужно минимум 5% столов высотой 71–86 см для гостей на коляске (ADA 226).', 'Min. 5% of dining surfaces shall be 28-34 in high (ADA 226).');
+  // equipment
+  const hoods = K('hood'), noHood = items.filter(i => tech(i)?.hood && !hoods.some(h => inPoly([i.x, i.z], itemPoly(h, .15))));
+  if (noHood.length) M(reg === 'la' ? 'err' : 'warn', `Над ${names(noHood)} нужен вытяжной зонт${reg === 'la' ? ' (Type I для гриля, Type II для печи)' : ' с выводом на крышу (по местной норме)'}.`, `Exhaust hood required over: ${namesL(noHood, 'en')}.`, `Se requiere campana extractora sobre: ${namesL(noHood, 'es')}.`, S(noHood[0]));
+  if (FLOOR_TR[P.floor]?.[2] && (food.length || zones.some(z => ['bar', 'kitchen', 'wash'].includes(z.zt)))) M('warn', 'Деревянный пол в рабочей зоне не пройдёт: там нужна плитка, терраццо или бетон — гладкий, моющийся, с закруглённым плинтусом.',
+    'Food prep, warewashing and restroom floors: smooth, durable, nonabsorbent, with 4 in coved base. Wood flooring is limited to dining areas.', 'Suelos de zonas de manipulación: lisos, impermeables y lavables, con encuentro en media caña. Madera solo en zona de público.');
+  const big = items.filter(i => { const D = DEF[i.kind]; return !D.place && !SYMS.has(i.kind) && !['hall', 'decor', 'eng'].includes(D.cat) && i.h >= .5; }); const gaps = [];
+  const floorIt = items.filter(i => !DEF[i.kind].place && i.kind !== 'rug' && i.kind !== 'zone');
+  for (let i = 0; i < big.length; i++) for (let j = i + 1; j < big.length; j++){ const [g, mid] = polyGap(itemPoly(big[i]), itemPoly(big[j]));
+    if (g > .45 && g < R.aisle - .005 && !floorIt.some(o => o !== big[i] && o !== big[j] && inPoly(mid, itemPoly(o, .03)))) gaps.push([g, big[i], big[j]]); }
+  for (const [g, a, c] of gaps.slice(0, 4)) M('warn', `Проход ${cm(g)} см между «${nm(a)}» и «${nm(c)}» — лучше не меньше ${cm(R.aisle)} см.`, `Aisle ${inch(g)} between ${nm(a, 'en')} and ${nm(c, 'en')}; min. 36 in.`, `Paso de ${cm(g)} cm entre ${nm(a, 'es')} y ${nm(c, 'es')}; mínimo 1,00 m.`, S(a));
+  // electrical
+  if (reg === 'es') kw > 9.2 || kw3 ? M('warn', `Нагрузка ${f1(kw)} кВт — понадобится трёхфазное подключение 400 В.`, '', `Potencia instalada ${f1(kw)} kW: suministro trifásico 400 V.`) : M('ok', `Нагрузка ${f1(kw)} кВт — хватит 230 В.`, '', `Potencia instalada ${f1(kw)} kW: suministro monofásico 230 V.`);
+  else M('ok', `Нагрузка ${f1(kw)} кВт ≈ ${Math.round(kw * 1000 * .8 / (1.732 * 208))} А на 208 В (3 фазы).`, `Connected load ${f1(kw)} kW; approx. ${Math.round(kw * 1000 * .8 / (1.732 * 208))} A at 208 V 3-phase (80% demand).`);
+  if (kw > 0 && !K('panel').length) M('warn', 'Отметьте место электрощита.', 'Electrical panel location not shown.', 'Falta ubicación del cuadro eléctrico.');
+  const order = {err:0, warn:1, ok:2}; list.sort((a, c) => order[a.lvl] - order[c.lvl]);
+  return {reg, R, area, loop, outline, zones, occ, occRows, seats, ex, need:needT, far, farP, farE, kw, kw3, water, drains, list, items}; }
+
+/* --- the dialog --- */
+function renderDocs(){ const A = audit(), pm = P.permit, ar = a => A.reg === 'la' ? Math.round(a / SQFT) + ' sq ft' : f1(a) + ' м²';
+  document.querySelectorAll('[data-reg]').forEach(b => b.setAttribute('aria-selected', b.dataset.reg === A.reg));
+  for (const k of ['business', 'address', 'owner', 'author']) if (document.activeElement !== $('pm_' + k)) $('pm_' + k).value = pm[k] || '';
+  $('docStat').innerHTML = `<div><b>${ar(A.area)}</b><span>площадь</span></div><div><b>${A.occ}</b><span>чел. по нормам · ${A.seats} мест</span></div><div><b>${f1(A.kw)} кВт</b><span>оборудование</span></div><div><b>${A.water} / ${A.drains}</b><span>точек воды / слива</span></div>`;
+  const n = {err:0, warn:0}; A.list.forEach(m => n[m.lvl]++);
+  $('docSum').textContent = n.err ? `Нужно исправить: ${n.err}, обратить внимание: ${n.warn}` : n.warn ? `Обратить внимание: ${n.warn}` : 'Всё основное на месте';
+  $('docList').innerHTML = A.list.map((m, i) => `<li class="${m.lvl}" ${m.sel ? `data-i="${i}" title="Показать на плане"` : ''}><i>${m.lvl === 'ok' ? '✓' : '!'}</i><span>${esc(m.ru)}</span></li>`).join('');
+  $('docList')._a = A;
+  $('docNote').innerHTML = A.reg === 'la'
+    ? 'В Лос-Анджелесе: до ремонта — plan check в LA County Environmental Health (этот комплект), разрешение LADBS на стройку (чертежи подписывает лицензированный архитектор), потом инспекция, Health Permit и проверка пожарных LAFD.'
+    : 'В Испании проект подписывает técnico competente (архитектор или инженер) и подаёт в ayuntamiento как «licencia de actividad» или «declaración responsable». Электрику оформляет instalador autorizado (boletín CIE). Этот комплект — основа для них, он сэкономит время и деньги.'; }
+$('docBtn').addEventListener('click', () => { P.permit ??= {region:'es'}; renderDocs(); $('docDlg').showModal(); });
+$('docDlg').addEventListener('click', e => { const r = e.target.closest('[data-reg]'); if (r){ P.permit.region = r.dataset.reg; renderDocs(); autosave(); if (P.items.some(i => i.kind === 'exitSign')) buildItems(); return; }
+  const li = e.target.closest('li[data-i]'); if (li){ const m = $('docList')._a.list[+li.dataset.i]; $('docDlg').close(); if (view !== 'plan') setView('plan'); select(m.sel); } });
+$('docDlg').addEventListener('input', e => { const k = e.target.id?.startsWith('pm_') && e.target.id.slice(3); if (!k) return; P.permit[k] = e.target.value.slice(0, 120); autosave(); });
+$('docPdf').addEventListener('click', async () => { const b = $('docPdf'), t = b.textContent; b.disabled = true; b.textContent = 'Собираю PDF…';
+  try { await buildPdf(); toast('PDF-комплект сохранён'); } catch (e){ console.error(e); toast('Не получилось собрать PDF: ' + e.message); } finally { b.disabled = false; b.textContent = t; } });
+
+/* --- the PDF drawing set --- */
+let pdfLib = null;
+const loadPdfLib = () => pdfLib ??= new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload = () => res(window.jspdf.jsPDF); s.onerror = () => { pdfLib = null; rej(new Error('нет связи с сервером библиотеки')); }; document.head.appendChild(s); });
+const TRL = {а:'a', б:'b', в:'v', г:'g', д:'d', е:'e', ё:'e', ж:'zh', з:'z', и:'i', й:'y', к:'k', л:'l', м:'m', н:'n', о:'o', п:'p', р:'r', с:'s', т:'t', у:'u', ф:'f', х:'kh', ц:'ts', ч:'ch', ш:'sh', щ:'shch', ъ:'', ы:'y', ь:'', э:'e', ю:'yu', я:'ya'};
+const pt = s => String(s ?? '').replace(/[а-яё]/gi, c => { const l = TRL[c.toLowerCase()] ?? ''; return c === c.toLowerCase() ? l : l.charAt(0).toUpperCase() + l.slice(1); })
+  .replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”«»]/g, '"').replace(/…/g, '...').replace(/≈/g, '~').replace(/[^\x20-\x7e\xa0-\xff]/g, '');
+function shot3D(){ const v0 = view, sz = R3.getSize(new THREE.Vector2()), cp = persp.position.clone(), ct = ctl3.target.clone(), sv = selLine?.visible;
+  try { view = '3d'; rebuild(); if (selLine) selLine.visible = false; R3.setPixelRatio(1); R3.setSize(1600, 1000, false); persp.aspect = 1.6; persp.updateProjectionMatrix(); fit(1.6); ctl3.update(); fadeWalls();
+    R3.shadowMap.needsUpdate = true; R3.render(scene, persp); return R3.domElement.toDataURL('image/jpeg', .88); }
+  finally { view = v0; R3.setPixelRatio(DPR); R3.setSize(sz.x, sz.y, false); persp.aspect = sz.x / Math.max(1, sz.y); persp.updateProjectionMatrix(); persp.position.copy(cp); ctl3.target.copy(ct); ctl3.update();
+    rebuild(); if (selLine && sv !== undefined) selLine.visible = sv; need(); } }
+
+async function buildPdf(){
+  const jsPDF = await loadPdfLib(), A = audit(), reg = A.reg, R = A.R, es = reg === 'es', tr = (en, sp) => pt(es ? sp : en), pm = P.permit;
+  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'a3', compress:true});
+  const len = m => { if (es) return m.toFixed(2).replace('.', ',') + ' m'; const ti = Math.round(m / .0254), f = Math.floor(ti / 12); return `${f}'-${ti - f * 12}"`; };
+  const area = a => es ? a.toFixed(2).replace('.', ',') + ' m²' : Math.round(a / SQFT) + ' sq ft';
+  const sizeT = it => es ? `${cm(it.w)}x${cm(it.d)}x${cm(it.h)} cm` : `${Math.round(it.w / .0254)}x${Math.round(it.d / .0254)}x${Math.round(it.h / .0254)} in`;
+  const volt = t => !t.kw ? '' : es ? (t.ph === 3 ? '400 V 3~' : '230 V') : t.ph === 3 ? '208 V 3PH' : t.kw > 1.8 ? '208/240 V' : '120 V';
+  const kwT = v => v.toFixed(2).replace('.', es ? ',' : '.') + ' kW';
+  const proj = pt(pm.business || P.name || 'Cafe'), date = new Date().toLocaleDateString(es ? 'es-ES' : 'en-US');
+  const items = A.items, Z = z => ZT[z.zt] || ZT.hall;
+  // schedule numbers: identical items share a number
+  const groups = [], gno = new Map(), corder = CATS.map(c => c[0]);
+  const sched = items.filter(i => i.kind !== 'zone' && !SYMS.has(i.kind)).sort((a, b) => corder.indexOf(DEF[a.kind].cat) - corder.indexOf(DEF[b.kind].cat) || nm(a, 'en').localeCompare(nm(b, 'en')));
+  for (const it of sched){ const t = tech(it), key = [it.kind, cm(it.w), cm(it.d), cm(it.h), it.fin, it.top, it.groups, t?.kw].join('|'); let g = groups.find(x => x.key === key);
+    if (!g){ g = {key, no:groups.length + 1, it, n:0}; groups.push(g); } g.n++; gno.set(it.id, g.no); }
+
+  let pageN = 0; const sheets = [];
+  function frame(no, title, scale){ if (pageN++) doc.addPage(); sheets.push([no, title]);
+    doc.setDrawColor(0); doc.setTextColor(0); doc.setLineDashPattern([], 0); doc.setLineWidth(.6); doc.rect(10, 10, 400, 277); doc.setLineWidth(.3); doc.line(10, 249, 410, 249);
+    for (const x of [170, 300, 355]) doc.line(x, 249, x, 287);
+    const lab = (t, x, y) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(110); doc.text(pt(t), x, y); doc.setTextColor(0); };
+    lab(tr('PROJECT', 'PROYECTO'), 13, 254); doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text(proj, 13, 260);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text(doc.splitTextToSize(pt(pm.address || ''), 152).slice(0, 2), 13, 266);
+    if (pm.owner){ lab(tr('APPLICANT / OWNER', 'TITULAR'), 13, 277); doc.setFontSize(8.5); doc.text(pt(pm.owner), 13, 282); }
+    lab(tr('PREPARED BY', 'REDACTADO POR'), 173, 254); doc.setFontSize(9); doc.text(pt(pm.author || '-'), 173, 260);
+    doc.setFontSize(6.6); doc.setTextColor(150, 30, 30); doc.text(doc.splitTextToSize(tr('DRAFT - NOT FOR CONSTRUCTION. Prepared with Skladka Cafe 3D. To be verified, completed and signed by a licensed architect / engineer before submittal.',
+      'BORRADOR - documentación de apoyo generada con Skladka Café 3D. Debe ser verificada, completada y firmada por técnico competente antes de su presentación.'), 124), 173, 267); doc.setTextColor(0);
+    lab(tr('DATE', 'FECHA'), 303, 254); doc.setFontSize(9); doc.text(date, 303, 259); lab(tr('SCALE', 'ESCALA'), 303, 266); doc.setFontSize(9); doc.text(pt(scale || '-'), 303, 271);
+    lab(tr('SHEET', 'PLANO'), 358, 254); doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.text(no, 358, 264); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.text(doc.splitTextToSize(title, 50).slice(0, 3), 358, 270); }
+  const poly = (pts, st = 'S') => { if (pts.length < 2) return; doc.lines(pts.slice(1).map((p, i) => [p[0] - pts[i][0], p[1] - pts[i][1]]), pts[0][0], pts[0][1], [1, 1], st, true); };
+  const line = (pts) => doc.lines(pts.slice(1).map((p, i) => [p[0] - pts[i][0], p[1] - pts[i][1]]), pts[0][0], pts[0][1], [1, 1], 'S', false);
+  const alpha = a => doc.setGState(new doc.GState({opacity:a}));
+  const rtext = (str, x, y, ang) => { const w = doc.getTextWidth(str), r = ang * Math.PI / 180; doc.text(str, x - Math.cos(r) * w / 2 + Math.sin(r) * .9, y + Math.sin(r) * w / 2 + Math.cos(r) * .9, {angle:ang}); };
+  function planView(box){ const wb = (() => { const xs = [], zs = []; for (const W of P.walls) for (const p of [W.a, W.b]){ xs.push(p[0]); zs.push(p[1]); } for (const it of items){ for (const p of itemPoly(it)){ xs.push(p[0]); zs.push(p[1]); } }
+      return xs.length ? {x0:Math.min(...xs), x1:Math.max(...xs), z0:Math.min(...zs), z1:Math.max(...zs)} : {x0:0, x1:6, z0:0, z1:4}; })();
+    const bw = wb.x1 - wb.x0 + .4, bh = wb.z1 - wb.z0 + .4, cands = es ? [50, 75, 100, 150, 200] : [48, 96, 192];
+    let sc = cands.find(s => bw * 1000 / s + 34 <= box.w && bh * 1000 / s + 34 <= box.h), k; if (sc) k = 1000 / sc; else { k = Math.min((box.w - 34) / bw, (box.h - 34) / bh); sc = Math.round(1000 / k); }
+    const ox = box.x + (box.w - (wb.x1 - wb.x0) * k) / 2 - wb.x0 * k, oy = box.y + 6 + (box.h - 6 - (wb.z1 - wb.z0) * k) / 2 - wb.z0 * k;
+    return {k, sc, wb, T:(x, z) => [ox + x * k, oy + z * k], label:es ? '1:' + sc : ({48:'1/4" = 1\'-0"', 96:'1/8" = 1\'-0"', 192:'1/16" = 1\'-0"'}[sc] || '1:' + sc)}; }
+  function drawPlan(V, o){ const {T, k} = V, [cx, cz] = centroid(); roomLoop();
+    // zones
+    for (const z of items.filter(i => i.kind === 'zone')){ const pts = itemPoly(z).map(p => T(...p)), c = Z(z)[3];
+      if (o.zones !== 'none'){ doc.setFillColor(c); alpha(o.zones === 'fill' ? .2 : .08); poly(pts, 'F'); alpha(1); }
+      doc.setDrawColor(c); doc.setLineWidth(.2); doc.setLineDashPattern([1.2, .8], 0); poly(pts); doc.setLineDashPattern([], 0); doc.setDrawColor(0);
+ }
+    // items
+    const list = items.filter(i => i.kind !== 'zone').sort((a, b) => (baseY(a) + (a.kind === 'rug' ? -9 : a.h)) - (baseY(b) + (b.kind === 'rug' ? -9 : b.h)));
+    for (const it of list){ const D = DEF[it.kind], up = D.place === 'wall' || D.place === 'ceil' || D.place === 'hang';
+      doc.setLineWidth(o.light ? .12 : .22); doc.setDrawColor(o.light ? 170 : 40); doc.setFillColor(255, 255, 255);
+      if (up) doc.setLineDashPattern([1, .7], 0);
+      if (D.round || it.kind === 'lamp' || it.kind === 'pouf'){ const [x, y] = T(it.x, it.z); doc.circle(x, y, Math.max(.6, it.w / 2 * k), up ? 'S' : 'FD'); }
+      else poly(itemPoly(it).map(p => T(...p)), up || it.kind === 'rug' ? 'S' : 'FD');
+      doc.setLineDashPattern([], 0); }
+    doc.setDrawColor(0);
+    // walls and openings
+    for (const W of P.walls){ const {L, dx, dz} = wallInfo(W), t = W.t || .15, nx = -dz, nz = dx, P2 = (u, v) => T(W.a[0] + dx * u + nx * v, W.a[1] + dz * u + nz * v);
+      const mx = (W.a[0] + W.b[0]) / 2, mz = (W.a[1] + W.b[1]) / 2, sIn = (cx - mx) * nx + (cz - mz) * nz > 0 ? 1 : -1, outer = !loopIds.size || loopIds.has(W.id);
+      const ops = P.ops.filter(p => p.wall === W.id).sort((a, b) => a.pos - b.pos); let u = -t / 2; const pcs = [];
+      for (const p of ops){ const a = p.pos - p.w / 2, b = p.pos + p.w / 2; if (a > u) pcs.push([u, a]); u = Math.max(u, b); } pcs.push([u, L + t / 2]);
+      doc.setFillColor(o.light ? 120 : 35); for (const [a, b] of pcs) if (b - a > 1e-3) poly([P2(a, -t / 2), P2(b, -t / 2), P2(b, t / 2), P2(a, t / 2)], 'F');
+      doc.setLineWidth(.18);
+      for (const p of ops){ const a = p.pos - p.w / 2, b = p.pos + p.w / 2, out = outer ? -sIn : sIn;
+        line([P2(a, -t / 2), P2(a, t / 2)]); line([P2(b, -t / 2), P2(b, t / 2)]);
+        if (p.kind === 'window' || p.kind === 'showcase'){ for (const v of [-t / 2, -t / 6, t / 6, t / 2]) line([P2(a, v), P2(b, v)]); continue; }
+        if (p.kind === 'arch'){ doc.setLineDashPattern([1, .7], 0); for (const v of [-t / 2, t / 2]) line([P2(a, v), P2(b, v)]); doc.setLineDashPattern([], 0); continue; }
+        const leaf = (hu, ln, dir) => { line([P2(hu, out * t / 2), P2(hu, out * (t / 2 + ln))]); const arc = [];
+          for (let i = 0; i <= 14; i++){ const g = i / 14 * Math.PI / 2; arc.push(P2(hu + dir * ln * Math.sin(g), out * (t / 2 + ln * Math.cos(g)))); } doc.setLineWidth(.1); line(arc); doc.setLineWidth(.18); };
+        if (p.kind === 'door') leaf(a + .06, p.w - .12, 1);
+        else if (p.kind === 'door2'){ const lw = (p.w - .12) / 2; leaf(a + .06, lw, 1); leaf(b - .06, lw, -1); }
+        else { const dw = Math.min(1.0, p.w * .45); leaf(p.pos - dw / 2 + .03, dw - .06, 1); for (const [s0, s1] of [[a, p.pos - dw / 2], [p.pos + dw / 2, b]]) if (s1 - s0 > .02) line([P2(s0, 0), P2(s1, 0)]); } }
+      const full = (Math.abs(dz) < .01 && Math.abs(L - (V.wb.x1 - V.wb.x0)) < .02) || (Math.abs(dx) < .01 && Math.abs(L - (V.wb.z1 - V.wb.z0)) < .02);
+      if (o.dims && outer && !full){ const [x, y] = P2(L / 2, -sIn * (t / 2 + .05)), off = 3.2, ang = Math.atan2(-(dz), dx) * 180 / Math.PI, up = ((ang % 360) + 360) % 360, a2 = up > 90 && up <= 270 ? ang + 180 : ang;
+        const vx = -sIn * nx, vz = -sIn * nz; doc.setFontSize(7); doc.setTextColor(60); rtext(len(L), x + vx * off, y + vz * off, a2); doc.setTextColor(0); } }
+    if (o.dims){ const {wb} = V, [x0, y0] = T(wb.x0, wb.z0), [x1, y1] = T(wb.x1, wb.z1), yy = y0 - 9, xx = x0 - 9;
+      doc.setLineWidth(.15); line([[x0, yy], [x1, yy]]); line([[x0, yy - 1.5], [x0, yy + 1.5]]); line([[x1, yy - 1.5], [x1, yy + 1.5]]); doc.setFontSize(7.5); doc.text(len(wb.x1 - wb.x0), (x0 + x1) / 2, yy - 1.2, {align:'center'});
+      line([[xx, y0], [xx, y1]]); line([[xx - 1.5, y0], [xx + 1.5, y0]]); line([[xx - 1.5, y1], [xx + 1.5, y1]]); rtext(len(wb.z1 - wb.z0), xx - 2.2, (y0 + y1) / 2, 90); }
+    for (const z of items.filter(i => i.kind === 'zone')){ const c = Z(z)[3], r = A.occRows.find(r => r.z === z), [x, yc] = T(z.x, z.z);
+      const t1 = pt(z.text || Z(z)[es ? 2 : 1]).toUpperCase(), t2 = area(z.w * z.d) + (o.occ && r?.n ? `  ·  ${r.n} ${tr('occ.', 'pers.')}` : '');
+      const zs = itemPoly(z).map(p => T(...p)), top = Math.min(...zs.map(p => p[1])), bot = Math.max(...zs.map(p => p[1]));
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); const w = Math.max(doc.getTextWidth(t1), (doc.setFontSize(6.5), doc.getTextWidth(t2))) + 3;
+      const boxes = items.filter(i => i.kind !== 'zone' && i.kind !== 'rug').map(i => { const q = itemPoly(i).map(p => T(...p)); return [Math.min(...q.map(p => p[0])), Math.min(...q.map(p => p[1])), Math.max(...q.map(p => p[0])), Math.max(...q.map(p => p[1]))]; });
+      const hits = yy => boxes.filter(b => b[0] < x + w / 2 && b[2] > x - w / 2 && b[1] < yy + 3.6 && b[3] > yy - 3).length;
+      const y = [top + 4.5, (top + bot) / 2, bot - 5, top + 9, bot - 10].filter(v => v >= top + 3 && v <= bot - 3.6).reduce((a, b) => hits(b) < hits(a) ? b : a, top + 4.5);
+      doc.setFillColor(255, 255, 255); alpha(.85); doc.rect(x - w / 2, y - 3, w, 6.6, 'F'); alpha(1);
+      doc.setTextColor(c); doc.setFontSize(7); doc.text(t1, x, y, {align:'center'}); doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.text(t2, x, y + 3, {align:'center'}); doc.setTextColor(0); }
+    if (o.tags) for (const it of items){ const n = gno.get(it.id); if (!n) continue; const D = DEF[it.kind]; let [x, y] = T(it.x, it.z);
+      if (D.sup && it.w > .9){ [x, y] = T(...toWorld(it, -it.w / 2 + .22, 0)); } if (D.place === 'on'){ [x, y] = T(...toWorld(it, 0, it.d / 2 + .08)); }
+      doc.setFillColor(255, 255, 255); doc.setLineWidth(.15); doc.circle(x, y, 2.1, 'FD'); doc.setFontSize(n > 99 ? 5 : 6); doc.text(String(n), x, y + .75, {align:'center'}); } }
+  function scaleBar(V, x, y){ const st = es ? 1 : .3048 * 4, n = 5; doc.setLineWidth(.15); for (let i = 0; i < n; i++){ doc.setFillColor(i % 2 ? 255 : 0); doc.rect(x + i * st * V.k, y, st * V.k, 1.4, 'FD'); }
+    doc.setFontSize(6); for (let i = 0; i <= n; i++) doc.text(es ? `${i}` : `${i * 4}'`, x + i * st * V.k, y + 4.3, {align:'center'}); doc.text(es ? 'm' : '', x + n * st * V.k + 2, y + 4.3); }
+  function heading(t, x, y){ doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.text(pt(t), x, y); doc.setFont('helvetica', 'normal'); }
+  function table(x, y, cols, rows, opt = {}){ const maxY = opt.maxY || 244, fs = opt.fs || 7.2, lh = fs * .42;
+    const head = () => { doc.setFillColor(238, 238, 240); doc.rect(x, y, cols.reduce((s, c) => s + c[1], 0), 6, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(fs);
+      let cx = x; for (const [h, w] of cols){ doc.text(doc.splitTextToSize(pt(h), w - 2)[0], cx + 1, y + 4.1); cx += w; } doc.setFont('helvetica', 'normal'); y += 6; };
+    head();
+    for (const r of rows){ const cells = r.cells.map((c, i) => doc.splitTextToSize(pt(c), cols[i][1] - 2)), rh = Math.max(...cells.map(c => c.length)) * lh + 2.4;
+      if (y + rh > maxY){ y = opt.onBreak(); head(); }
+      if (r.fill){ doc.setFillColor(...r.fill); doc.rect(x, y, cols.reduce((s, c) => s + c[1], 0), rh, 'F'); }
+      doc.setFontSize(fs); if (r.bold) doc.setFont('helvetica', 'bold'); let cx = x; cells.forEach((c, i) => { doc.text(c, cx + 1, y + lh + .6); cx += cols[i][1]; }); doc.setFont('helvetica', 'normal');
+      doc.setDrawColor(215); doc.setLineWidth(.1); doc.line(x, y + rh, x + cols.reduce((s, c) => s + c[1], 0), y + rh); doc.setDrawColor(0); y += rh; }
+    return y; }
+  const mark = (lvl, x, y) => { doc.setFillColor(...(lvl === 'err' ? [205, 45, 45] : lvl === 'warn' ? [225, 150, 30] : [45, 150, 90])); doc.circle(x, y, 1.3, 'F'); };
+
+  // ---- G-0 cover ----
+  const titles = {G:tr('Cover sheet & project data', 'Portada y datos del proyecto'), A1:tr('Floor plan & equipment layout', 'Planta de distribución y equipamiento'), A2:tr('Equipment schedule & finish schedule', 'Relación de maquinaria y cuadro de superficies y acabados'),
+    E1:tr('Electrical plan & load schedule', 'Instalación eléctrica y previsión de cargas'), P1:tr('Plumbing & mechanical plan', 'Fontanería, saneamiento y ventilación'), LS:tr('Life safety & occupant load', 'Seguridad en caso de incendio y ocupación')};
+  frame('G-0', titles.G, '');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.text(proj, 16, 26); doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+  doc.text(tr('Food facility plans - coffee shop (draft drawing set)', 'Documentación gráfica - proyecto de actividad de cafetería (borrador)'), 16, 34);
+  try { doc.addImage(shot3D(), 'JPEG', 16, 40, 240, 150); doc.setDrawColor(200); doc.rect(16, 40, 240, 150); doc.setDrawColor(0); } catch (e){ console.warn(e); }
+  let y = 26; const info = [[tr('Address', 'Emplazamiento'), pm.address || '-'], [tr('Applicant / owner', 'Titular'), pm.owner || '-'], [tr('Use', 'Actividad'), tr('Coffee shop / food facility', 'Cafetería (pública concurrencia)')],
+    [tr('Floor area', 'Superficie útil'), area(A.area)], [tr('Ceiling height', 'Altura libre'), len(P.H)], [tr('Occupant load', 'Ocupación'), `${A.occ} ${tr('persons', 'personas')}`], [tr('Seats', 'Plazas sentadas'), String(A.seats)],
+    [tr('Exits', 'Salidas'), `${A.ex.length} (${tr('required', 'requeridas')}: ${A.need})`], [tr('Connected electrical load', 'Potencia instalada'), kwT(A.kw)], [tr('Occupancy group', 'Uso'), es ? 'Pública concurrencia' : A.occ > 49 ? 'A-2' : 'B']];
+  for (const [a, v] of info){ doc.setFontSize(7); doc.setTextColor(110); doc.text(pt(a).toUpperCase(), 266, y); doc.setTextColor(0); doc.setFontSize(10); doc.text(doc.splitTextToSize(pt(v), 138)[0], 266, y + 4.6); y += 11; }
+  heading(tr('Sheet index', 'Índice de planos'), 266, y + 4); y += 10; const idxY = y;
+  heading(tr('Code notes', 'Normativa de referencia'), 16, 200); doc.setFontSize(7.6);
+  doc.text(doc.splitTextToSize(tr('California Retail Food Code (CalCode); LA County Plan Check Guide for Food Facilities; 2022 California Building, Plumbing, Mechanical, Electrical and Fire Codes; ADA 2010 Standards. All food equipment shall be NSF/ANSI certified or equivalent. Food prep, warewashing and restroom floors: smooth, durable, nonabsorbent with 4" coved base; walls and ceilings smooth, washable.',
+    'CTE DB-SI (seguridad en caso de incendio), DB-SUA (utilización y accesibilidad), DB-HS (salubridad), DB-HR (ruido); REBT e ITC-BT-28; Reglamento (CE) 852/2004 de higiene de los productos alimenticios; Orden TMA/851/2021 (accesibilidad); ordenanzas municipales de actividad, ruido y vertidos.'), 240), 16, 206);
+  heading(tr('Check summary (automatic)', 'Comprobaciones (automáticas)'), 16, 224); doc.setFontSize(7.2); let cy_ = 230;
+  for (const m of A.list.filter(m => m.lvl !== 'ok' && (es ? m.es : m.en)).slice(0, 4)){ mark(m.lvl, 18, cy_ - 1); doc.text(doc.splitTextToSize(pt(es ? m.es : m.en), 230)[0], 21, cy_); cy_ += 4.4; }
+
+  // ---- A-1 plan ----
+  let V = planView({x:14, y:14, w:392, h:231}); frame('A-1', titles.A1, V.label); drawPlan(V, {zones:'fill', tags:true, dims:true, occ:false}); scaleBar(V, 18, 238);
+  heading(titles.A1, 18, 19);
+  // ---- A-2 schedules ----
+  let a2n = 0; const newA2 = () => { const n = a2n++; frame(n ? 'A-2.' + n : 'A-2', titles.A2, '-'); return 20; };
+  y = newA2(); heading(tr('Equipment schedule', 'Relación de maquinaria y mobiliario'), 16, y); y += 3;
+  const eqCols = [[tr('No.', 'Nº'), 10], [tr('Description', 'Descripción'), 92], [tr('Qty', 'Ud.'), 11], [tr('Size W x D x H', 'Medidas A x F x H'), 40], [tr('Electrical', 'Electricidad'), 42], [tr('Water', 'Agua'), 22], [tr('Drain', 'Desagüe'), 40], [tr('Notes', 'Observaciones'), 131]];
+  const wTxt = t => !t?.w ? '' : t.w === 'ch' ? tr('CW + HW', 'AF + ACS') : tr('CW', 'AF'), dTxt = t => !t?.dr ? '' : t.dr === 'i' ? tr('Indirect to FS', 'Con sifón, indirecto') : tr('Direct', 'Directo');
+  const note = (it, t) => [t?.food && !es ? 'NSF/ANSI' : '', t?.hood ? tr(`Under Type ${t.hood} hood`, 'Bajo campana extractora') : '', it.kind === 'sink3' || (it.kind === 'sink' && !es) ? tr('To grease interceptor', 'A separador de grasas') : '',
+    it.kind === 'espresso' ? `${it.groups || 2} ${tr('groups', 'grupos')}` : '', it.kind === 'handSink' ? tr('Soap & paper towel dispensers', 'Grifo de accionamiento no manual, jabón y toallas de papel') : ''].filter(Boolean).join('; ');
+  y = table(16, y, eqCols, groups.map(g => { const t = tech(g.it); return {cells:[g.no, nm(g.it, reg === 'es' ? 'es' : 'en'), g.n, sizeT(g.it), t?.kw ? `${kwT(t.kw)} ${volt(t)}` : '', wTxt(t), dTxt(t), note(g.it, t)]}; }), {onBreak:newA2});
+  y += 8; if (y > 226) y = newA2();
+  heading(tr('Room / area & finish schedule', 'Cuadro de superficies y acabados'), 16, y); y += 3;
+  const fl = FLOOR_TR[P.floor] || FLOOR_TR.tile, wet = zt => ['bar', 'kitchen', 'wash', 'wc'].includes(zt);
+  const zr = A.zones.length ? A.occRows.map(r => { const z = r.z || {zt:'hall', text:tr('Remaining area (circulation)', 'Resto de superficie (circulaciones)'), w:r.a, d:1};
+      return {cells:[pt(z.text || Z(z)[es ? 2 : 1]), area(z.w * z.d), (fl[2] && wet(z.zt) ? tr('Ceramic tile, 4" coved base (required)', 'Gres porcelánico con media caña (necesario)') : es ? fl[1] : fl[0]),
+        wet(z.zt) ? tr('FRP / glazed tile to 6 ft, washable paint above', 'Alicatado hasta 2,00 m, pintura lavable') : tr('Painted gypsum board', 'Pintura plástica'), wet(z.zt) ? tr('Washable, non-perforated', 'Falso techo lavable') : tr('Painted gypsum board', 'Pintura plástica'),
+        r?.f ? (es ? `${String(r.f).replace('.', ',')} m²/p` : `${r.f} sf/p`) : tr('Accessory', 'Alternativa'), r?.n || '-']}; })
+    : [{cells:[tr('Whole floor (areas not defined)', 'Superficie total (zonas sin definir)'), area(A.area), es ? fl[1] : fl[0], '', '', es ? '1,5 m²/p' : '15 sf/p', A.occ]}];
+  zr.push({cells:[tr('TOTAL', 'TOTAL'), area(A.area), '', '', '', '', A.occ], bold:true});
+  table(16, y, [[tr('Area', 'Zona'), 70], [tr('Size', 'Superficie'), 30], [tr('Floor', 'Suelo'), 80], [tr('Walls', 'Paredes'), 80], [tr('Ceiling', 'Techo'), 60], [tr('Load factor', 'Densidad'), 32], [tr('Occupants', 'Ocupación'), 36]], zr, {onBreak:newA2});
+
+  // ---- E-1 electrical ----
+  V = planView({x:14, y:14, w:268, h:231}); frame('E-1', titles.E1, V.label); drawPlan(V, {zones:'none', light:true}); scaleBar(V, 18, 238); heading(titles.E1, 18, 19);
+  const circ = []; let cn = 0, light = 0;
+  for (const it of items){ const t = tech(it); if (!t) continue;
+    if (t.sym === 'light'){ light += t.kw; const [x, y] = T0(V, it); doc.setLineWidth(.2); doc.circle(x, y, 1.6); line([[x - 1.1, y - 1.1], [x + 1.1, y + 1.1]]); line([[x - 1.1, y + 1.1], [x + 1.1, y - 1.1]]); continue; }
+    if (t.sym === 'socket' || t.sym === 'socket3'){ const [x, y] = T0(V, it); doc.setLineWidth(.2); doc.setFillColor(t.sym === 'socket3' ? 0 : 255); doc.circle(x, y, 1.5, 'FD'); line([[x - 2.6, y], [x - 1.5, y]]); continue; }
+    if (t.sym === 'panel'){ const [x, y] = T0(V, it); doc.setFillColor(40); doc.rect(x - 3, y - 1.4, 6, 2.8, 'FD'); doc.setFontSize(6); doc.text(tr('PANEL', 'CGMP'), x, y - 2.6, {align:'center'}); continue; }
+    if (!t.kw || t.sym) continue;
+    const c = 'C' + (++cn); circ.push({c, it, t}); const D = DEF[it.kind], [x, y] = V.T(...toWorld(it, 0, D.place === 'wall' ? 0 : -it.d / 2 + Math.min(.1, it.d / 4)));
+    doc.setFillColor(t.kw >= 2 || t.ph === 3 ? 0 : 255); doc.setLineWidth(.2); doc.circle(x, y, 1.5, 'FD'); doc.setFontSize(5.5); doc.text(`${c} ${kwT(t.kw).replace(' kW', 'kW')}`, x + 2, y - 1.2); }
+  const eRows = circ.map(({c, it, t}) => ({cells:[c, `${gno.get(it.id) ? gno.get(it.id) + '. ' : ''}${nm(it, es ? 'es' : 'en')}`, kwT(t.kw), volt(t)]}));
+  if (light) eRows.push({cells:['L', tr('Lighting', 'Alumbrado'), kwT(light), es ? '230 V' : '120 V']});
+  eRows.push({cells:['', tr('Connected load', 'Potencia instalada'), kwT(A.kw), ''], bold:true});
+  eRows.push({cells:['', tr('Estimated demand (x 0.8)', 'Potencia prevista (simultaneidad 0,8)'), kwT(A.kw * .8), ''], bold:true});
+  const eNewPage = () => { frame('E-1', titles.E1, V.label); return 20; };
+  y = table(288, 22, [[tr('Circ.', 'Circ.'), 12], [tr('Equipment', 'Receptor'), 62], ['kW', 22], [tr('Supply', 'Tensión'), 22]], eRows, {onBreak:eNewPage, fs:6.8});
+  doc.setFontSize(6.8); doc.text(doc.splitTextToSize(tr(`Service: ${A.kw > 20 ? '208Y/120 V 3-phase' : '120/240 V or 208Y/120 V'}, approx. ${Math.round(A.kw * 1000 * .8 / (1.732 * 208))} A at 208 V 3PH. Dedicated circuits for equipment marked solid. GFCI receptacles within 6 ft of sinks and in kitchen areas (CEC 210.8). Final design by licensed electrical engineer/contractor.`,
+    `Suministro recomendado: ${A.kw > 9.2 || A.kw3 ? 'trifásico 400/230 V' : 'monofásico 230 V'}. Circuitos independientes para receptores marcados en negro. Protección diferencial 30 mA. ${A.occ > 50 ? 'Local de pública concurrencia (ITC-BT-28): alumbrado de emergencia y proyecto por técnico titulado.' : ''} Instalación y boletín (CIE) por instalador autorizado.`), 116), 288, Math.min(y + 6, 236));
+  doc.setFontSize(6.5); const lg = [[tr('Equipment connection (open: <2 kW, solid: dedicated)', 'Toma para receptor (relleno: circuito propio)'), 'o'], [tr('Receptacle (user-placed)', 'Toma de corriente'), 'r'], [tr('Light fixture', 'Punto de luz'), 'x']];
+  lg.forEach(([t, s], i) => { const lx = 152, ly = 236 + i * 4; if (s === 'x'){ doc.circle(lx, ly - 1, 1.2); line([[lx - .8, ly - 1.8], [lx + .8, ly - .2]]); } else { doc.setFillColor(s === 'o' ? 0 : 255); doc.circle(lx, ly - 1, 1.2, 'FD'); } doc.text(pt(t), lx + 3, ly); });
+
+  // ---- P-1 plumbing & mechanical ----
+  V = planView({x:14, y:14, w:268, h:231}); frame('P-1', titles.P1, V.label); drawPlan(V, {zones:'none', light:true}); scaleBar(V, 18, 238); heading(titles.P1, 18, 19);
+  const pRows = [];
+  for (const it of items){ const t = tech(it); if (!t) continue; const D = DEF[it.kind];
+    if (t.sym === 'fd' || t.sym === 'fs' || t.sym === 'gi'){ const [x, y] = T0(V, it); doc.setLineWidth(.25); doc.setFillColor(255); doc.rect(x - 1.8, y - 1.8, 3.6, 3.6, 'FD'); line([[x - 1.8, y - 1.8], [x + 1.8, y + 1.8]]); line([[x - 1.8, y + 1.8], [x + 1.8, y - 1.8]]);
+      doc.setFontSize(5.5); doc.text({fd:tr('FD', 'SUM'), fs:'FS', gi:tr('GI', 'SG')}[t.sym], x + 2.4, y - 1.5); pRows.push({cells:[gno.get(it.id) || '', nm(it, es ? 'es' : 'en'), '', '', t.sym === 'gi' ? tr('Sized per LA Sanitation', 'Según ordenanza de vertidos') : '']}); continue; }
+    if (!t.w && !t.dr) continue;
+    const base = D.place === 'wall' ? 0 : -it.d / 2 + Math.min(.1, it.d / 4), pts = [];
+    if (t.w) pts.push(['C', [40, 110, 220], -.09]); if (t.w === 'ch') pts.push(['H', [215, 50, 50], .09]);
+    for (const [lt, col, dx] of pts){ const [x, y] = V.T(...toWorld(it, dx, base)); doc.setFillColor(...col); doc.circle(x, y, 1.25, 'F'); doc.setTextColor(255); doc.setFontSize(4.8); doc.text(lt, x, y + .6, {align:'center'}); doc.setTextColor(0); }
+    if (t.dr){ const [x, y] = V.T(...toWorld(it, 0, base + .12)); doc.setFillColor(0); doc.triangle(x - 1.3, y - 1, x + 1.3, y - 1, x, y + 1.2, 'F'); }
+    pRows.push({cells:[gno.get(it.id) || '', nm(it, es ? 'es' : 'en'), wTxt(t), dTxt(t), note(it, t)]}); }
+  for (const h of items.filter(i => i.kind === 'hood')){ doc.setLineWidth(.4); doc.setLineDashPattern([2, 1], 0); poly(itemPoly(h).map(p => V.T(...p))); doc.setLineDashPattern([], 0); const [x, y] = V.T(h.x, h.z);
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.text(tr('EXHAUST HOOD', 'CAMPANA'), x, y, {align:'center'}); doc.setFont('helvetica', 'normal'); }
+  y = table(288, 22, [[tr('No.', 'Nº'), 9], [tr('Fixture / equipment', 'Aparato'), 47], [tr('Water', 'Agua'), 16], [tr('Drain', 'Desagüe'), 22], [tr('Notes', 'Obs.'), 24]], pRows, {fs:6.4, onBreak:() => { frame('P-1', titles.P1, V.label); return 20; }});
+  doc.setFontSize(6.6); doc.text(doc.splitTextToSize(tr('C = cold water, H = hot water, triangle = waste. Indirect waste (ice machine, espresso, dishwasher) via air gap to floor sink. 3-compartment, mop and prep sinks to grease interceptor. Hand sinks: hot & cold water through a mixing faucet, min. 100 F. Water heater sized per Health Dept worksheet. Hoods per CMC chapter 5; make-up air to be provided.',
+    'C = agua fría, H = agua caliente, triángulo = desagüe con sifón individual. Lavamanos con agua fría y caliente y grifo de accionamiento no manual. Fregaderos a separador de grasas según ordenanza. Extracción de humos de cocina con salida a cubierta según ordenanza municipal; ventilación de aseos (DB-HS 3).'), 116), 288, Math.min(y + 6, 232));
+
+  // ---- LS-1 life safety ----
+  V = planView({x:14, y:14, w:268, h:231}); frame('LS-1', titles.LS, V.label); drawPlan(V, {zones:'fill', light:true, occ:true}); scaleBar(V, 18, 238); heading(titles.LS, 18, 19);
+  for (const e of A.ex){ const {dx, dz} = wallInfo(e.W), [cx, cz] = centroid(); let nx = -dz, nz = dx; if ((cx - e.p[0]) * nx + (cz - e.p[1]) * nz > 0){ nx = -nx; nz = -nz; }
+    const [x0, y0] = V.T(e.p[0] - nx * .45, e.p[1] - nz * .45), [x1, y1] = V.T(e.p[0] + nx * .55, e.p[1] + nz * .55); doc.setDrawColor(22, 131, 74); doc.setLineWidth(1); line([[x0, y0], [x1, y1]]);
+    const ax = x1 - x0, ay = y1 - y0, al = Math.hypot(ax, ay) || 1, ux = ax / al, uy = ay / al; doc.setFillColor(22, 131, 74); doc.triangle(x1 + ux * 2.4, y1 + uy * 2.4, x1 - uy * 1.8, y1 + ux * 1.8, x1 + uy * 1.8, y1 - ux * 1.8, 'F');
+    doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(22, 131, 74); doc.text(`${tr('EXIT', 'SALIDA')} ${es ? (e.clear).toFixed(2).replace('.', ',') + ' m' : Math.round(e.clear / .0254) + '"'}`, x1 + ux * 4 + 1, y1 + uy * 4 + 1);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(0); doc.setDrawColor(0); }
+  if (A.farP && A.farE){ const [x0, y0] = V.T(...A.farP), [x1, y1] = V.T(...A.farE.p); doc.setDrawColor(205, 45, 45); doc.setLineWidth(.3); doc.setLineDashPattern([1.5, 1], 0); line([[x0, y0], [x1, y1]]); doc.setLineDashPattern([], 0);
+    doc.setFillColor(205, 45, 45); doc.circle(x0, y0, .9, 'F'); doc.setFontSize(6.5); doc.setTextColor(205, 45, 45); doc.text(`${tr('Max. travel', 'Recorrido máx.')} ${len(A.far)}`, (x0 + x1) / 2 + 1.5, (y0 + y1) / 2 - 1.5); doc.setTextColor(0); doc.setDrawColor(0); }
+  for (const it of items){ const t = tech(it); if (!['ext', 'el', 'exit'].includes(t?.sym)) continue; const [x, y] = T0(V, it);
+    if (t.sym === 'ext'){ doc.setFillColor(205, 35, 30); doc.triangle(x, y - 2.2, x - 2, y + 1.4, x + 2, y + 1.4, 'F'); doc.setFontSize(5.5); doc.text(tr('FE', 'EXT'), x + 2.4, y + 1); }
+    else { doc.setFillColor(t.sym === 'exit' ? 22 : 255, t.sym === 'exit' ? 131 : 255, t.sym === 'exit' ? 74 : 255); doc.setLineWidth(.2); doc.rect(x - 1.8, y - 1.2, 3.6, 2.4, 'FD'); doc.setFontSize(5.5); doc.text(t.sym === 'exit' ? tr('EXIT', 'SAL.') : tr('EL', 'EM'), x + 2.4, y + 1); } }
+  const oRows = A.occRows.map(r => ({cells:[r.z ? pt(r.z.text || Z(r.z)[es ? 2 : 1]) : r.rest ? tr('Remaining area', 'Resto de superficie') : tr('Whole floor', 'Total'), area(r.a), r.f ? (es ? `${String(r.f).replace('.', ',')} m²/p` : `${r.f} sf/p`) : '-', r.n || '-']}));
+  oRows.push({cells:[tr('TOTAL OCCUPANT LOAD', 'OCUPACIÓN TOTAL'), area(A.area), '', A.occ], bold:true});
+  y = table(288, 22, [[tr('Area', 'Zona'), 44], [tr('Size', 'Sup.'), 24], [tr('Factor', 'Densidad'), 24], [tr('Occ.', 'Pers.'), 26]], oRows, {fs:6.6, onBreak:() => { frame('LS-1', titles.LS, V.label); return 20; }});
+  y += 5; const sum = [[tr('Exits required / provided', 'Salidas requeridas / existentes'), `${A.need} / ${A.ex.length}`], [tr('Min. exit width', 'Anchura mínima de salida'), es ? '0,80 m' : '32"'], [tr('Max. travel distance (straight line)', 'Recorrido máx. (línea recta)'), `${len(A.far)} / ${len(R.travel)}`],
+    [tr('Fire extinguishers', 'Extintores'), String(items.filter(i => i.kind === 'ext').length)], [tr('Emergency lights / exit signs', 'Emergencia / señales'), `${items.filter(i => i.kind === 'emerg').length} / ${items.filter(i => i.kind === 'exitSign').length}`]];
+  doc.setFontSize(6.8); for (const [a, v] of sum){ doc.text(pt(a), 289, y); doc.setFont('helvetica', 'bold'); doc.text(pt(v), 405, y, {align:'right'}); doc.setFont('helvetica', 'normal'); y += 4; }
+  y += 3; heading(tr('Checks', 'Comprobaciones'), 288, y); y += 4.5; doc.setFontSize(6.4);
+  for (const m of A.list){ const t = es ? m.es : m.en; if (!t) continue; const ln = doc.splitTextToSize(pt(t), 112); if (y + ln.length * 2.7 > 244) break; mark(m.lvl, 289.5, y - .9); doc.text(ln, 292.5, y); y += ln.length * 2.7 + 1.2; }
+
+  // sheet index on the cover
+  doc.setPage(1); doc.setFontSize(9); let iy = idxY; const seen = new Set();
+  for (const [no, t] of sheets){ if (seen.has(no)) continue; seen.add(no); doc.setFont('helvetica', 'bold'); doc.text(no, 266, iy); doc.setFont('helvetica', 'normal'); doc.text(doc.splitTextToSize(t, 120)[0], 282, iy); iy += 5.2; }
+  doc.save(pt((pm.business || P.name || 'cafe') + (es ? ' - documentacion' : ' - plan set')).replace(/[\\/:*?"<>|]/g, '') + '.pdf'); }
+function T0(V, it){ return V.T(it.x, it.z); }
 
 /* ---------- home: list of cafés ---------- */
 const CUP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3"/></svg>';
@@ -1524,7 +1996,8 @@ addEventListener('beforeunload', () => { if (saveT && pid && P){ LS.set('skladka
 
 /* ---------- start ---------- */
 window.__cafeMk = {keys:() => [...Object.keys(OPS), ...Object.keys(DEF)], thumb:k => makeThumb(k, 'image/webp'),
-  starter:k => starterShot(STARTERS.find(x => x[0] === k)[3]), heights:() => P.items.map(i => [i.kind, +baseY(i).toFixed(3)])};
+  starter:k => starterShot(STARTERS.find(x => x[0] === k)[3]), heights:() => P.items.map(i => [i.kind, +baseY(i).toFixed(3)]),
+  add:(k, x, z, rot, e) => { snap(); P.items.push(newItem(k, x, z, rot, e)); changed(); }};
 (async () => {
   if (!SB.user) return;
   $('boot').hidden = true;
