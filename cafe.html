@@ -71,6 +71,11 @@ dialog.dlg form{display:grid;gap:14px}
 dialog.dlg h2{font-size:18px}
 dialog.dlg .acts{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sides{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:". t ." "l c r" ". b .";gap:6px;margin:6px 0 8px}
+.side{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--mut,#777)}.side span{white-space:nowrap}
+.side button{width:30px;height:26px;border-radius:7px;border:1px solid var(--line,#ddd);background:var(--card,#fff);color:inherit;font-size:16px;font-weight:600;line-height:1;cursor:pointer}.side button:hover{border-color:var(--acc,#7048e8);color:var(--acc,#7048e8)}
+.side:not(.s-c){display:grid;grid-template-columns:auto auto;justify-content:center}.side:not(.s-c) span{grid-column:1/3;text-align:center}
+.s-t{grid-area:t}.s-l{grid-area:l}.s-r{grid-area:r}.s-b{grid-area:b}.s-c{grid-area:c;justify-content:center;border:1.5px dashed var(--line,#ccc);border-radius:8px;font-weight:600;color:inherit;min-height:52px}
 .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 
 /* ---------- home: my cafés ---------- */
@@ -1335,9 +1340,13 @@ function showGuides(it){ clearGuides(); if (view !== 'plan' || !it || it.kind ==
   need(); }
 // the floor inside the walls; nothing may stand outside it
 // change the floor size: the right and far walls move, doors and windows stay where they are
-function resizeRoom(W, D){ if (!P.walls.length){ P.walls = rectWalls(W, D); return; } const b = wallBounds(), nx = b.x0 + W, nz = b.z0 + D;
+function resizeRoom(W, D){ if (!P.walls.length){ P.walls = rectWalls(W, D); return; } const b = wallBounds(); moveEdges({r:b.x0 + W - b.x1, b:b.z0 + D - b.z1}); }
+// push sides of the floor out (+) or in (−): l left, r right, t far (top of the plan), b near (bottom)
+let sideStep = 50; document.addEventListener('change', e => { if (e.target.id === 'sideStep') sideStep = clamp(+e.target.value || 50, 5, 500); });
+function moveEdges(dv){ const b = wallBounds();
   const at = P.ops.map(o => { const w = P.walls.find(V => V.id === o.wall); if (!w) return null; const i = wallInfo(w); return [w.a[0] + i.dx * o.pos, w.a[1] + i.dz * o.pos]; });
-  for (const V of P.walls) for (const p of [V.a, V.b]){ if (Math.abs(p[0] - b.x1) < .01) p[0] = nx; if (Math.abs(p[1] - b.z1) < .01) p[1] = nz; }
+  for (const V of P.walls) for (const p of [V.a, V.b]){ if (dv.l && Math.abs(p[0] - b.x0) < .01) p[0] -= dv.l; if (dv.r && Math.abs(p[0] - b.x1) < .01) p[0] += dv.r;
+    if (dv.t && Math.abs(p[1] - b.z0) < .01) p[1] -= dv.t; if (dv.b && Math.abs(p[1] - b.z1) < .01) p[1] += dv.b; }
   P.ops.forEach((o, i) => { const w = P.walls.find(V => V.id === o.wall); if (!w || !at[i]) return; const I = wallInfo(w), q = at[i];
     o.pos = clamp((q[0] - w.a[0]) * I.dx + (q[1] - w.a[1]) * I.dz, o.w / 2 + .05, Math.max(o.w / 2 + .05, I.L - o.w / 2 - .05)); });
   P.ops = P.ops.filter(o => { const w = P.walls.find(V => V.id === o.wall); return w && wallInfo(w).L >= o.w + .1; }); }
@@ -1676,7 +1685,10 @@ function roomPanel(){ const wb = wallBounds(), L = roomLoop(), area = L ? polyAr
   return `<div class="ih"><b>Помещение</b><span>Ничего не выбрано — здесь настройки всей комнаты</span></div>
     <div class="stat"><div><b>${area != null ? area.toFixed(1).replace('.', ',') : '—'}</b><span>м², по осям стен</span></div><div><b>${cnt}</b><span>предметов</span></div><div><b>${(per).toFixed(1).replace('.', ',')}</b><span>м стен</span></div><div><b>${cm(b.x1 - b.x0)}×${cm(b.z1 - b.z0)}</b><span>см габарит</span></div></div>
     <div class="grp" id="floorGrp"><h3>Размер пола, см</h3><div class="row2">${num('rw', 'Ширина', cm(wb.x1 - wb.x0))}${num('rd', 'Глубина', cm(wb.z1 - wb.z0))}</div>
-      <button class="btn" type="button" data-a="rect">Применить размер</button><p class="note">Введите размер — стены сразу встанут по краю пола, двери и окна останутся на местах. Стену можно и потянуть мышкой на «Плане»: кликните по ней и тяните. Предметы всегда остаются внутри.</p></div>
+      <button class="btn" type="button" data-a="rect">Применить размер</button>
+      <h3 style="margin-top:12px">Растянуть по сторонам</h3>
+      <div class="sides">${[['t', 'Сверху'], ['l', 'Слева'], ['r', 'Справа'], ['b', 'Снизу']].map(([k, n]) => `<div class="side s-${k}"><span>${n}</span><button type="button" data-side="${k}" data-dv="-1" title="Уменьшить">−</button><button type="button" data-side="${k}" data-dv="1" title="Увеличить">+</button></div>`).join('')}<div class="side s-c">${cm(wb.x1 - wb.x0)}×${cm(wb.z1 - wb.z0)}</div></div>
+      <label class="f">Шаг, см<input type="number" id="sideStep" value="${sideStep}" min="5" max="500" step="5"></label><p class="note">Введите размер — стены сразу встанут по краю пола, двери и окна останутся на местах. Стену можно и потянуть мышкой на «Плане»: кликните по ней и тяните. Предметы всегда остаются внутри.</p></div>
     <div class="grp"><h3>Стены внутри помещения</h3><button class="btn" type="button" data-a="wc">Построить санузел 150×180</button>
       <p class="note">Встанет в свободный угол: две перегородки, дверь, унитаз и раковина. Свою перегородку рисуйте кнопкой <b>«Стены»</b> внизу: кликните на стене, потом в углах, <b>Esc</b> — закончить.</p></div>
     <div class="grp"><h3>Высота потолка, см</h3><input type="number" data-f="H" value="${cm(P.H)}" min="220" max="800" step="5"></div>
@@ -1742,6 +1754,9 @@ $('inspIn').addEventListener('click', e => {
     if (ds.ceil){ snap(); P.ceil = ds.ceil; return changed(); }
     if (ds.a === 'rect'){ const W = +$('inspIn').querySelector('[data-f="rw"]').value / 100, D = +$('inspIn').querySelector('[data-f="rd"]').value / 100;
       if (!(W >= 1 && D >= 1)) return toast('Нужно хотя бы 100 × 100 см.'); snap(); resizeRoom(W, D); toast('Размер пола изменён, стены по краю'); fit(); return changed(); }
+    if (ds.side){ const st = clamp(+$('sideStep').value || 50, 5, 500) / 100, dv = st * +ds.dv, b = wallBounds();
+      if (dv < 0 && ((ds.side === 'l' || ds.side === 'r') ? b.x1 - b.x0 : b.z1 - b.z0) + dv < 1) return toast('Меньше 100 см сделать нельзя.');
+      snap(); moveEdges({[ds.side]:dv}); toast(`${{t:'Сверху', l:'Слева', r:'Справа', b:'Снизу'}[ds.side]} ${dv > 0 ? '+' : '−'}${cm(Math.abs(dv))} см`); fit(); return changed(); }
     if (ds.a === 'wc'){ snap(); if (!buildWc()){ hist.pop(); return toast('Нет свободного угла 150 × 180 см. Освободите угол или нарисуйте стены инструментом «Стены».'); } toast('Санузел построен: стены, дверь, унитаз и раковина'); return changed(); }
     return; }
   if (sel.t === 'item'){ const D = DEF[d.kind];
