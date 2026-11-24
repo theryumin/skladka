@@ -136,6 +136,9 @@ main{position:relative;min-width:0;min-height:0;background:var(--stage);overflow
 .views{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:3;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .corner{position:absolute;right:12px;bottom:12px;display:flex;gap:6px;z-index:3}
 .netw{position:absolute;top:12px;right:12px;z-index:4}
+.sheets{position:absolute;top:58px;left:50%;transform:translateX(-50%);z-index:3;max-width:calc(100% - 24px);overflow-x:auto;white-space:nowrap;scrollbar-width:none;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.sheets[hidden]{display:none}
+.sheets .tab{font-size:12px;padding:5px 10px}
 .nbtn{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 13px var(--sans);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .nbtn svg{width:16px;height:16px}
 .nbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -214,6 +217,7 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
   .hint{display:none}
   .views{top:8px}
   .netw{top:52px;right:8px}
+  .sheets{top:52px;left:8px;transform:none;max-width:calc(100% - 110px)}
   #pname{width:120px}
   .hide-s{display:none!important}
 }
@@ -291,6 +295,7 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
       <button class="tab" role="tab" data-view="3d" aria-selected="true">3D</button>
       <button class="tab" role="tab" data-view="eye" aria-selected="false" title="Вид от входа на высоте глаз">Глазами гостя</button>
     </div>
+    <div class="seg sheets" id="sheets" role="tablist" aria-label="Лист плана" hidden></div>
     <div class="netw" id="netW"><button class="nbtn" id="netBtn" type="button" aria-pressed="false" aria-expanded="false" title="Электрика, свет, вода, канализация, вентиляция"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h7v6h9M4 18h5v-6M20 12v6h-6"/><circle cx="4" cy="6" r="1.6"/><circle cx="4" cy="18" r="1.6"/><circle cx="14" cy="18" r="1.6"/></svg>Сети</button>
       <div class="npop" id="netPop" hidden>
         <b>Инженерные сети</b><p>Строятся сами по тому, что стоит в кофейне. Двигайте щит, стояк, выход вентиляции, светильники и технику — линии перестроятся.</p>
@@ -1157,9 +1162,10 @@ function buildWalls(){
 }
 function buildItems(){
   disposeTree(roots.items); itemObj.clear(); ctx = {H:P.H, lights:[], eve:P.light === 'eve'};
-  for (const it of P.items){ const D = DEF[it.kind]; if (!D) continue;
+  for (const it of P.items){ const D = DEF[it.kind]; if (!D) continue; const role = sheetRole(it); if (role === 'hide') continue;
     const g = new THREE.Group();
-    if (view === 'plan' && (D.place === 'hang' || D.place === 'ceil')){ const rm = new THREE.Mesh(new THREE.RingGeometry(.13, .17, 32), new THREE.MeshBasicMaterial({color:'#e0a43a', side:THREE.DoubleSide, transparent:true, opacity:.9, depthTest:false}));
+    if (role !== 'full') ghostOf(g, it, role);
+    else if (view === 'plan' && (D.place === 'hang' || D.place === 'ceil')){ const rm = new THREE.Mesh(new THREE.RingGeometry(.13, .17, 32), new THREE.MeshBasicMaterial({color:'#e0a43a', side:THREE.DoubleSide, transparent:true, opacity:.9, depthTest:false}));
       rm.rotation.x = -Math.PI / 2; rm.position.y = .2; rm.renderOrder = 5; g.add(rm); const dot = new THREE.Mesh(new THREE.CircleGeometry(.05, 20), rm.material); dot.rotation.x = -Math.PI / 2; dot.position.y = .2; dot.renderOrder = 5; g.add(dot);
       const hit = new THREE.Mesh(new THREE.CircleGeometry(.17, 20), new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide})); hit.rotation.x = -Math.PI / 2; hit.position.y = .2; g.add(hit); }
     else if (view === 'plan' && D.planRect){ const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(it.w, it.d)), new THREE.LineDashedMaterial({color:'#e0a43a', dashSize:.08, gapSize:.05, depthTest:false}));
@@ -1169,7 +1175,7 @@ function buildItems(){
     g.rotation.y = it.rot || 0; g.position.set(it.x, baseY(it), it.z); roots.items.add(g); itemObj.set(it.id, g); }
   buildNet(); buildCeil();
   for (const c of [...roots.zl.children]) roots.zl.remove(c);
-  if (view === 'plan') for (const it of P.items) if (it.kind === 'zone'){ const o = lbl(`${it.text || ZT[it.zt]?.[0] || ''} · ${(it.w * it.d).toFixed(1).replace('.', ',')} м²`, 'soft'); o.position.set(it.x, .1, it.z); roots.zl.add(o); }
+  if (view === 'plan') for (const it of P.items) if (it.kind === 'zone' && sheetRole(it) === 'full'){ const o = lbl(`${it.text || ZT[it.zt]?.[0] || ''} · ${(it.w * it.d).toFixed(1).replace('.', ',')} м²`, 'soft'); o.position.set(it.x, .1, it.z); roots.zl.add(o); }
   applyLight(); }
 function rebuild(){ ctx.H = P.H; buildFloor(); buildWalls(); buildItems(); drawSel(); needShadow(); }
 
@@ -1459,7 +1465,7 @@ function fit(aspect){
 function sizeOrtho(){ const r = R3.domElement.getBoundingClientRect(), asp = r.width / Math.max(1, r.height), hh = ortho.userData.hh || 5;
   ortho.left = -hh * asp; ortho.right = hh * asp; ortho.top = hh; ortho.bottom = -hh; ortho.updateProjectionMatrix(); }
 function setView(v){ if (view === v) return fit();
-  view = v; clearGuides(); document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-selected', b.dataset.view === v));
+  view = v; clearGuides(); $('sheets').hidden = v !== 'plan'; document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-selected', b.dataset.view === v));
   ctlP.enabled = v === 'plan'; ctl3.enabled = v !== 'plan'; grid.visible = v === 'plan';
   if (v !== 'plan' && tool === 'wall') setTool('select');
   buildWalls(); buildItems(); drawSel(); fit(); hintUpdate(); }
@@ -1876,9 +1882,36 @@ const NLAYER = {e:'e', l:'l', c:'w', h:'w', d:'w', v:'v'};
 function nMat(k, plan){ const key = k + plan; if (!NMAT.has(key)) NMAT.set(key, plan ? new THREE.MeshBasicMaterial({color:NETC[k], depthTest:false, transparent:true, opacity:k === 'v' ? .4 : .95})
   : new THREE.MeshStandardMaterial({color:k === 'v' ? '#c3c8cd' : NETC[k], ...(k === 'sel' ? {emissive:'#7048e8', emissiveIntensity:.5} : {}), roughness:k === 'v' ? .35 : .5, metalness:k === 'v' ? .75 : .1})); return NMAT.get(key); }
 let netCache = null;
+/* plan sheets, like the drawing set of a real project: each shows its own things, the rest as pale outlines */
+const SHEETS = [['all', 'Всё'], ['furn', 'Мебель'], ['zones', 'Зоны'], ['e', 'Электрика'], ['l', 'Свет'], ['w', 'Вода и канализация'], ['v', 'Вентиляция']];
+let SHEET = 'all';
+const onPlanSheet = () => view === 'plan' && SHEET !== 'all';
+function netLayers(){ if (!onPlanSheet()) return NET.on ? NET : null; return ['e', 'l', 'w', 'v'].includes(SHEET) ? {e:SHEET === 'e', l:SHEET === 'l', w:SHEET === 'w', v:SHEET === 'v'} : null; }
+function sheetRole(it){ if (!onPlanSheet()) return 'full'; const D = DEF[it.kind], t = tech(it) || {}, pl = D.place, low = !pl || pl === 'on';
+  const rest = it.kind === 'zone' ? 'hide' : low && D.cat !== 'eng' ? 'ghost' : 'hide';
+  switch (SHEET){
+    case 'furn': return D.cat === 'eng' ? 'hide' : 'full';
+    case 'zones': return it.kind === 'zone' ? 'full' : rest;
+    case 'e': return ['panel', 'socket', 'socket3'].includes(it.kind) ? 'full' : t.kw && !t.sym ? 'mark' : rest;
+    case 'l': return ['light', 'el', 'exit'].includes(t.sym) || it.kind === 'panel' ? 'full' : rest;
+    case 'w': return ['riser', 'whtr', 'fsink', 'fdrain', 'grease'].includes(it.kind) ? 'full' : t.w || t.dr ? 'mark' : rest;
+    case 'v': return ['hood', 'ventOut'].includes(it.kind) ? 'full' : t.hood ? 'mark' : rest; }
+  return 'full'; }
+const GHOST = {fill:new THREE.MeshBasicMaterial({color:'#d4d3da', transparent:true, opacity:.5, depthWrite:false, side:THREE.DoubleSide}), edge:new THREE.LineBasicMaterial({color:'#9b99a6'}),
+  mark:{e:'#f08c00', w:'#1c7ed6', v:'#6c757d'}};
+function ghostOf(g, it, role){ const f = new THREE.Mesh(new THREE.PlaneGeometry(it.w, it.d), GHOST.fill); f.rotation.x = -Math.PI / 2; f.position.y = .03; g.add(f);
+  const c = role === 'mark' ? GHOST.mark[SHEET] : null, e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(it.w, it.d)), c ? new THREE.LineBasicMaterial({color:c}) : GHOST.edge);
+  e.rotation.x = -Math.PI / 2; e.position.y = .035; g.add(e); }
+function setSheet(k){ SHEET = k; document.querySelectorAll('[data-sheet]').forEach(b => b.setAttribute('aria-selected', b.dataset.sheet === k));
+  if (['e', 'l', 'w', 'v'].includes(k) && !P.netAuto){ snap(); const n = autoNet(); P.netAuto = 1; changed(); if (n) toast(`Разложил сети автоматически — ${n} шт. Правьте как нужно.`); }
+  else { buildItems(); drawSel(); }
+  if (k === 'zones' && !P.items.some(i => i.kind === 'zone')) toast('Зон пока нет: каталог слева → «Инженерия и нормы» → «Зона помещения».');
+  need(); }
+$('sheets').innerHTML = SHEETS.map(([k, n]) => `<button class="tab" type="button" role="tab" data-sheet="${k}" aria-selected="${k === 'all'}">${n}</button>`).join('');
+$('sheets').addEventListener('click', e => { const b = e.target.closest('[data-sheet]'); if (b) setSheet(b.dataset.sheet); });
 const NOFF = {h:[.07, .07], d:[-.07, -.07]};
 function buildNet(){
-  disposeTree(roots.net); netCache = null; if (!NET.on || netSuspend){ renderNetSum(null); return; }
+  disposeTree(roots.net); netCache = null; const LY = netLayers(); if (!LY || netSuspend){ renderNetSum(null); return; }
   const N = netCache = netPlan(), plan = view === 'plan', acc = new Map(), H = P.H, closed = view === 'eye' && (P.ceil || 'open') !== 'open';
   const box = (k, x, y, z, sx, sy, sz) => { const g = new THREE.BoxGeometry(sx, sy, sz); g.translate(x, y, z); const m = nMat(k, plan); if (!acc.has(m)) acc.set(m, []); acc.get(m).push(g); };
   const seg = (k, a, b, y, t, th = t) => box(k, (a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) + t, th, Math.abs(b[1] - a[1]) + t);
@@ -1886,7 +1919,7 @@ function buildNet(){
     for (let u = 0; u < L; u += .26) seg(k, at(u), at(Math.min(L, u + .16)), y, t, th); };
   const off = NOFF, YP = {v:.4, d:.45, c:.5, h:.55, e:.6, l:.65}, TT = {e:.035, l:.025, c:.03, h:.03, d:.06, v:.3};
   const Y3 = (k, m) => m === 'floor' ? {e:.012, c:.03, h:.03, d:.02}[k] ?? .02 : m === 'wall' ? {e:.3, c:.16, h:.16, d:.07}[k] ?? .2 : {e:H - .06, l:H - .03, c:H - .14, h:H - .14, d:H - .2, v:H - .2}[k];
-  for (const k of ['v', 'd', 'c', 'h', 'e', 'l']){ if (!NET[NLAYER[k]]) continue;
+  for (const k of ['v', 'd', 'c', 'h', 'e', 'l']){ if (!LY[NLAYER[k]]) continue;
     const o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]], hide = m => closed && m === 'ceil';   // above a suspended ceiling
     for (const [a, b, m] of N[k]){ const A = sh(a), B = sh(b); if (hide(m)) continue;
       if (plan) (k === 'l' || m === 'floor' ? dash : seg)(k, A, B, YP[k], k === 'v' ? .3 : TT[k] * 1.3, .002);
@@ -1895,10 +1928,10 @@ function buildNet(){
     for (const n of N.ends[k] || []){ const p = sh(n.p), y = Y3(k, n.mode || 'ceil'); if (hide(n.mode || 'ceil')) continue;
       if (plan) box(k, p[0], YP[k] + .01, p[1], .1, .002, .1);
       else if (Math.abs(n.y - y) > .03) box(k, p[0], (n.y + y) / 2, p[1], TT[k], Math.abs(n.y - y), TT[k]); } }
-  if (sel?.t === 'net' && NET[NLAYER[sel.k]]){ const k = sel.k, o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]], mine = N[k].filter(sg => sg[3] === sel.id);   // the selected line
+  if (sel?.t === 'net' && LY[NLAYER[sel.k]]){ const k = sel.k, o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]], mine = N[k].filter(sg => sg[3] === sel.id);   // the selected line
     for (const [a, b, m] of mine){ const A = sh(a), B = sh(b); if (plan) seg('sel', A, B, YP[k] + .03, .09, .002); else if (!(closed && m === 'ceil')) seg('sel', A, B, k === 'v' ? Y3('v', m) : Y3(k, m), k === 'v' ? .34 : TT[k] * 2.4, k === 'v' ? .24 : TT[k] * 2.4); }
     if (plan) for (const [a] of mine.slice(1)){ const A = sh(a); box('sel', A[0], YP[k] + .05, A[1], .14, .002, .14); } }
-  if (NET.v) for (const p of N.diff){ if (plan) box('v', p[0], YP.v + .01, p[1], .45, .002, .45); else if (closed) box('v', p[0], H - .006, p[1], .5, .01, .5); else { box('v', p[0], H - .33, p[1], .45, .06, .45); } }
+  if (LY.v) for (const p of N.diff){ if (plan) box('v', p[0], YP.v + .01, p[1], .45, .002, .45); else if (closed) box('v', p[0], H - .006, p[1], .5, .01, .5); else { box('v', p[0], H - .33, p[1], .45, .06, .45); } }
   for (const [m, l] of acc){ const geo = mergeGeometries(l, false); l.forEach(g => g.dispose()); const me = new THREE.Mesh(geo, m); me.userData.nopick = true;
     if (plan) me.renderOrder = 6; else me.castShadow = me.receiveShadow = false; roots.net.add(me); }
   renderNetSum(N); }
@@ -1917,9 +1950,9 @@ function buildCeil(){ disposeTree(roots.ceil); const k = P.ceil || 'open'; if (v
   const c = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:'#ffffff', roughness:.92, side:THREE.DoubleSide, map:k === 'grid' ? ceilTex : null}));
   c.rotation.x = -Math.PI / 2; c.position.y = P.H - .002; c.castShadow = c.receiveShadow = false; c.userData.nopick = true; roots.ceil.add(c); }
 // clicking a line on the plan selects it; dragging one of its pieces re-draws the line by hand
-function netPick(e){ if (!NET.on || view !== 'plan' || !netCache) return null; const hit = floorHit(e); if (!hit) return null;
+function netPick(e){ const LY = netLayers(); if (!LY || view !== 'plan' || !netCache) return null; const hit = floorHit(e); if (!hit) return null;
   const r = R3.domElement.getBoundingClientRect(), tol = (ortho.top - ortho.bottom) / ortho.zoom / r.height * 7; let best = null;
-  for (const k of ['l', 'e', 'h', 'c', 'd', 'v']){ if (!NET[NLAYER[k]]) continue; const o = NOFF[k] || [0, 0];
+  for (const k of ['l', 'e', 'h', 'c', 'd', 'v']){ if (!LY[NLAYER[k]]) continue; const o = NOFF[k] || [0, 0];
     for (const [a, b, , id] of netCache[k]){ if (!id) continue; const A = [a[0] + o[0], a[1] + o[1]], B = [b[0] + o[0], b[1] + o[1]], q = segProj([hit.x, hit.z], A, B), d = Math.hypot(hit.x - q[0], hit.z - q[1]);
       if (d < (k === 'v' ? Math.max(tol, .15) : tol) && (!best || d < best.d)) best = {d, k, id}; } }
   return best; }
