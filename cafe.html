@@ -603,7 +603,7 @@ const DEF = {
       const s = new THREE.Group(); s.position.set(-.04, .2, 0); s.rotation.x = -.35; g.add(s); bx(s, F, 0, -.11, 0, .3, .21, .016, .006);
       const scr = mesh(s, new THREE.PlaneGeometry(.28, .19), matC('#2c5e8c', .3, 0, {emissive:'#1b4166', emissiveIntensity:.8}), 0, 0, .0085); scr.castShadow = false;
       bx(g, F, .13, 0, .05, .075, .03, .15, .01); bx(g, matC('#3a8a5c', .4, 0, {emissive:'#1d5c38'}), .13, .03, .07, .05, .002, .05); }},
-  pastry:{cat:'bar', n:'Витрина для десертов', goods:'basque', presets:PW([.9, 1.2, 1.5]), w:1.2, d:.7, h:1.35, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'marble', snap:true,
+  pastry:{cat:'bar', n:'Витрина для десертов', goods:'basque', presets:PW([.9, 1.2, 1.5]), w:1.2, d:.7, h:1.35, rs:'wdh', size:o => ({h:Math.max(1.1, o.h), d:Math.max(.3, o.d)}), fins:BODY, fin:'white', tops:TOPS, top:'marble', snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), T = finMat(o.top), gh = h - .91;
       bx(g, DARK, 0, 0, 0, w - .04, .08, d - .06); bx(g, F, 0, .08, 0, w, .8, d); bx(g, T, 0, .88, 0, w, .03, d);
       bx(g, GLASS, 0, .91, 0, w - .02, gh, d - .04);
@@ -694,7 +694,7 @@ const DEF = {
     build(g, o){ const F = finMat(o.fin); bx(g, F, 0, 0, 0, .18, .13, .2, .02); cy(g, GLASS, 0, .13, 0, .08, .06, .27); cy(g, DARK, 0, .4, 0, .082, .082, .03); }},
   milk:{cat:'coffee', n:'Холодильник для молока', w:.3, d:.48, h:.45, place:'on', fins:['steel', 'black', 'white'], fin:'steel',
     build(g, o){ bx(g, finMat(o.fin), 0, 0, 0, .3, .45, .48, .01); bx(g, GLASS_T, 0, .05, .241, .24, .34, .005); }},
-  fridge:{cat:'cold', n:'Холодильный шкаф со стеклом', goods:'basque', presets:PW([.6, .7]), w:.6, d:.62, h:2.0, rs:'wh', fins:['white', 'black', 'steel'], fin:'black', snap:true,
+  fridge:{cat:'cold', n:'Холодильный шкаф со стеклом', goods:'basque', presets:PW([.6, .7]), w:.6, d:.62, h:2.0, rs:'wdh', size:o => ({h:Math.max(1.2, o.h), d:Math.max(.3, o.d)}), fins:['white', 'black', 'steel'], fin:'black', snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), t = .04, nd = w > .9 ? 2 : 1;
       bx(g, F, -w / 2 + t / 2, 0, 0, t, h, d); bx(g, F, w / 2 - t / 2, 0, 0, t, h, d); bx(g, F, 0, h - .16, 0, w, .16, d); bx(g, DARK, 0, 0, 0, w, .1, d); bx(g, F, 0, 0, -d / 2 + t / 2, w, h, t);
       bx(g, matC('#f3f3f1', .6), 0, .1, -d / 2 + t + .006, w - 2 * t, h - .26, .01);
@@ -709,8 +709,8 @@ const DEF = {
         bx(g, F, x - dw / 2 + .025, .1, z, .05, h - .26, .03); bx(g, F, x + dw / 2 - .025, .1, z, .05, h - .26, .03);
         bx(g, GLASS, x, .15, z, dw - .1, h - .36, .008);
         const hx = nd === 2 ? x + (k ? -1 : 1) * (dw / 2 - .07) : x + dw / 2 - .07; bx(g, STEEL, hx, h * .35, z + .03, .02, h * .3, .02, .008); } }},
-  fridge2:{cat:'cold', n:'Холодильный шкаф, 2 двери', goods:'basque', w:1.2, d:.7, h:2.0, rs:'wh', fins:['white', 'black', 'steel'], fin:'steel', snap:true, build:(g, o) => DEF.fridge.build(g, o)},
-  under:{cat:'cold', n:'Холодильный стол', presets:PW([.9, 1.35, 1.8]), w:1.35, d:.7, h:.85, rs:'wd', fins:['steel', 'black', 'white'], fin:'steel', sup:true, snap:true,
+  fridge2:{cat:'cold', n:'Холодильный шкаф, 2 двери', goods:'basque', w:1.2, d:.7, h:2.0, rs:'wdh', size:o => ({h:Math.max(1.2, o.h), d:Math.max(.3, o.d)}), fins:['white', 'black', 'steel'], fin:'steel', snap:true, build:(g, o) => DEF.fridge.build(g, o)},
+  under:{cat:'cold', n:'Холодильный стол', presets:PW([.9, 1.35, 1.8]), w:1.35, d:.7, h:.85, rs:'wdh', size:o => ({h:Math.max(0.6, o.h), d:Math.max(.3, o.d)}), fins:['steel', 'black', 'white'], fin:'steel', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), n = Math.max(1, Math.round(w / .6)), dw = w / n;
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, STEEL, sx * (w / 2 - .06), 0, sz * (d / 2 - .06), .02, .02, .12, 10);
       bx(g, F, 0, .12, 0, w, h - .16, d); bx(g, STEEL, 0, h - .04, .01, w + .01, .04, d + .02);
@@ -719,7 +719,7 @@ const DEF = {
   ice:{cat:'cold', n:'Льдогенератор', w:.5, d:.6, h:.8, fins:['steel', 'black'], fin:'steel', snap:true,
     build(g, o){ const F = finMat(o.fin); bx(g, F, 0, .06, 0, .5, .74, .6, .01); for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, STEEL, sx * .2, 0, sz * .24, .02, .02, .06, 10);
       bx(g, DARK, 0, .5, .301, .44, .24, .004); bx(g, STEEL, 0, .72, .315, .3, .02, .02); bx(g, DARK, 0, .1, .301, .4, .06, .004); }},
-  freezer:{cat:'cold', n:'Морозильный ларь', w:1.0, d:.65, h:.85, rs:'w', fins:['white', 'steel'], fin:'white', sup:true, snap:true,
+  freezer:{cat:'cold', n:'Морозильный ларь', w:1.0, d:.65, h:.85, rs:'wdh', size:o => ({h:Math.max(0.5, o.h), d:Math.max(.3, o.d)}), fins:['white', 'steel'], fin:'white', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o; bx(g, finMat(o.fin), 0, .04, 0, w, h - .08, d, .02); bx(g, DARK, 0, 0, 0, w - .06, .04, d - .06);
       bx(g, GLASS_T, 0, h - .04, 0, w - .06, .03, d - .06); bx(g, finMat(o.fin), 0, h - .04, d / 2 - .03, w, .04, .06); }},
   sink:{cat:'wash', n:'Мойка', presets:[['1 чаша · 60', {w:.6}], ['2 чаши · 100', {w:1.0}], ['с полкой · 120', {w:1.2}]], w:.6, d:.6, h:.85, rs:'w', fins:['steel', 'white', 'black'], fin:'steel', sup:true, snap:true,
@@ -815,36 +815,36 @@ const DEF = {
       for (let i = 0; i < 5; i++){ const y = .08 + i * (h - .12) / 4; bx(g, S, 0, y, 0, w, .025, d);
         if (i && i < 4) spread(Math.max(1, Math.floor((w - .1) / .13)), w - .16).forEach((x, j) => { if ((i + j) % 4 === 3) cy(g, GLASS, x, y + .025, 0, .05, .05, .16); else { bx(g, kraft, x, y + .025, 0, .1, .17, .06, .006); bx(g, lab[(i + j) % 4], x, y + .08, .031, .07, .05, .002); } }); } }},
   // ---- cold: showcases and fridges ----
-  showSq:{cat:'cold', n:'Витрина холодильная, прямое стекло', w:1.2, d:.8, h:1.3, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'marble', goods:'basque', snap:true, presets:PW([.9, 1.2, 1.5, 1.8, 2.4]),
+  showSq:{cat:'cold', n:'Витрина холодильная, прямое стекло', w:1.2, d:.8, h:1.3, rs:'wdh', size:o => ({h:Math.max(1.1, o.h), d:Math.max(.3, o.d)}), fins:BODY, fin:'white', tops:TOPS, top:'marble', goods:'basque', snap:true, presets:PW([.9, 1.2, 1.5, 1.8, 2.4]),
     build(g, o){ const {w, d, h} = o, gh = h - .9; showBase(g, o); glassCase(g, w, d, .9, gh, STEEL);
       bx(g, GLASS, 0, .9 + gh * .5, -.03, w - .06, .01, d - .16); goods(g, o.goods, w, .08, .9, 1); goods(g, o.goods, w, -.04, .9 + gh * .5 + .01, 3); bx(g, LIGHT, 0, h - .03, 0, w - .1, .008, .04); }},
-  showCurve:{cat:'cold', n:'Витрина холодильная, гнутое стекло', w:1.5, d:.9, h:1.3, rs:'w', fins:BODY, fin:'black', tops:TOPS, top:'steel', goods:'basque', snap:true, presets:PW([.9, 1.2, 1.5, 1.8, 2.4]),
+  showCurve:{cat:'cold', n:'Витрина холодильная, гнутое стекло', w:1.5, d:.9, h:1.3, rs:'wdh', size:o => ({h:Math.max(1.1, o.h), d:Math.max(.3, o.d)}), fins:BODY, fin:'black', tops:TOPS, top:'steel', goods:'basque', snap:true, presets:PW([.9, 1.2, 1.5, 1.8, 2.4]),
     build(g, o){ const {w, d, h} = o, r = Math.min(h - .9, d * .55); showBase(g, o); curveGlass(g, w, d, .9, r); goods(g, o.goods, w, .02, .9, 2); bx(g, GLASS, 0, .9 + r * .5, -.1, w - .06, .01, d * .45); goods(g, o.goods, w, -.12, .9 + r * .5 + .01, 4); }},
-  showVert:{cat:'cold', n:'Витрина кондитерская вертикальная', goods:'basque', w:.9, d:.7, h:1.85, rs:'w', fins:['black', 'white', 'steel', 'oak'], fin:'black', snap:true, presets:PW([.7, .9]),
+  showVert:{cat:'cold', n:'Витрина кондитерская вертикальная', goods:'basque', w:.9, d:.7, h:1.85, rs:'wdh', size:o => ({h:Math.max(1.2, o.h), d:Math.max(.3, o.d)}), fins:['black', 'white', 'steel', 'oak'], fin:'black', snap:true, presets:PW([.7, .9]),
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), gh = h - .37; bx(g, F, 0, 0, 0, w, .25, d, .01); bx(g, F, 0, h - .12, 0, w, .12, d, .01); bx(g, LIGHT, 0, h - .126, 0, w - .1, .006, d - .1);
       glassCase(g, w, d, .25, gh, F); const C = CAKES();
       for (let i = 0; i < 4; i++){ const y = .3 + i * gh / 4, r = Math.min(w, d) / 2 - .06; cy(g, GLASS, 0, y, 0, r, r, .01, 32);
         for (let k = 0; k < 3; k++){ const a = k * 2.1 + i, px = Math.cos(a) * r * .55, pz = Math.sin(a) * r * .55; if ((o.goods || 'basque') === 'basque') basque(g, px, y + .01, pz, .055); else cy(g, C[(i + k) % C.length], px, y + .01, pz, .075, .075, .07, 20); } } }},
-  showTop:{cat:'cold', n:'Витрина настольная', w:.9, d:.5, h:.45, rs:'w', place:'on', fins:['black', 'white', 'steel'], fin:'black', goods:'basque', presets:PW([.6, .9, 1.2]),
+  showTop:{cat:'cold', n:'Витрина настольная', w:.9, d:.5, h:.45, rs:'wdh', size:o => ({h:Math.max(0.25, o.h), d:Math.max(.3, o.d)}), place:'on', fins:['black', 'white', 'steel'], fin:'black', goods:'basque', presets:PW([.6, .9, 1.2]),
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin); bx(g, F, 0, 0, 0, w, .07, d, .01); glassCase(g, w, d, .07, h - .07, F); bx(g, GLASS, 0, .07 + (h - .07) / 2, 0, w - .05, .008, d - .05);
       goods(g, o.goods, w, 0, .07, 5); goods(g, o.goods, w, 0, .07 + (h - .07) / 2 + .008, 6); }},
-  multideck:{cat:'cold', n:'Горка холодильная открытая', goods:'basque', w:1.2, d:.7, h:2.0, rs:'w', fins:['black', 'white', 'steel', 'oak'], fin:'black', snap:true, presets:PW([.9, 1.2, 1.5, 1.8]),
+  multideck:{cat:'cold', n:'Горка холодильная открытая', goods:'basque', w:1.2, d:.7, h:2.0, rs:'wdh', size:o => ({h:Math.max(1.4, o.h), d:Math.max(.3, o.d)}), fins:['black', 'white', 'steel', 'oak'], fin:'black', snap:true, presets:PW([.9, 1.2, 1.5, 1.8]),
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), tag = matC('#efe9de', .6);
       for (const sx of [-1, 1]) bx(g, F, sx * (w / 2 - .025), 0, 0, .05, h, d); bx(g, F, 0, 0, -d / 2 + .03, w, h, .06); bx(g, F, 0, h - .2, 0, w, .2, d); bx(g, LIGHT, 0, h - .21, d / 2 - .1, w - .12, .008, .05);
       bx(g, F, 0, 0, 0, w, .4, d); goods(g, 'drinks', w - .1, .1, .4, 2);
       for (let i = 0; i < 4; i++){ const y = .62 + i * (h - .9) / 4, sd = d * .62 - i * .06, z = -d / 2 + .06 + sd / 2; bx(g, STEEL, 0, y, z, w - .1, .015, sd); bx(g, tag, 0, y - .03, z + sd / 2, w - .1, .03, .006);
         goods(g, o.goods || 'basque', w - .1, z + .04, y + .015, i + 3); } }},
-  gelato:{cat:'cold', n:'Витрина для мороженого', w:1.2, d:1.0, h:1.3, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'steel', snap:true, presets:PW([1.0, 1.2, 1.5, 1.8]),
+  gelato:{cat:'cold', n:'Витрина для мороженого', w:1.2, d:1.0, h:1.3, rs:'wdh', size:o => ({h:Math.max(1.1, o.h), d:Math.max(.3, o.d)}), fins:BODY, fin:'white', tops:TOPS, top:'steel', snap:true, presets:PW([1.0, 1.2, 1.5, 1.8]),
     build(g, o){ const {w, d, h} = o; showBase(g, o); curveGlass(g, w, d, .9, Math.min(h - .9, .42)); const R = rnd(5), cols = ['#f7d6e0', '#a8d5ba', '#6b3b24', '#fff3c4', '#f4a259', '#c9b1ff', '#ffffff'];
       const n = Math.max(1, Math.floor((w - .12) / .17)); for (const z of [-.12, .14]) spread(n, w - .25).forEach((x, i) => { bx(g, STEEL, x, .83, z, .16, .07, .24); bx(g, matC(cols[(i + (z > 0 ? 3 : 0)) % cols.length], .8), x, .9, z, .15, .025, .23);
         mesh(g, new THREE.SphereGeometry(.05, 10, 8), matC(cols[(i + (z > 0 ? 3 : 0)) % cols.length], .8), x + (R() - .5) * .05, .925, z + (R() - .5) * .08).scale.y = .6; }); }},
-  barFridge:{cat:'cold', n:'Барный холодильник со стеклом (под стойку)', goods:'basque', w:.9, d:.55, h:.86, rs:'w', fins:['black', 'steel', 'white'], fin:'black', sup:true, snap:true, presets:[['1 дверь · 60', {w:.6}], ['2 двери · 90', {w:.9}], ['3 двери · 135', {w:1.35}]],
+  barFridge:{cat:'cold', n:'Барный холодильник со стеклом (под стойку)', goods:'basque', w:.9, d:.55, h:.86, rs:'wdh', size:o => ({h:Math.max(0.5, o.h), d:Math.max(.3, o.d)}), fins:['black', 'steel', 'white'], fin:'black', sup:true, snap:true, presets:[['1 дверь · 60', {w:.6}], ['2 двери · 90', {w:.9}], ['3 двери · 135', {w:1.35}]],
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), n = Math.max(1, Math.round(w / .45)), dw = w / n;
       bx(g, F, 0, 0, 0, w, h, d - .02, .004); bx(g, matC('#f3f3f1', .6), 0, .08, .0, w - .06, h - .16, d - .1); bx(g, LIGHT, 0, h - .09, 0, w - .1, .006, d - .12);
       for (const y of [.1, .1 + (h - .2) / 2]){ bx(g, matC('#e2e8ea', .2, .1), 0, y, 0, w - .08, .008, d - .14); goods(g, o.goods || 'basque', w - .06, .02, y + .008, Math.round(y * 10)); }
       for (let i = 0; i < n; i++){ const x = -w / 2 + dw * (i + .5); for (const [y0, hh] of [[.04, .04], [h - .06, .04]]) bx(g, F, x, y0, d / 2, dw - .008, hh, .03);
         for (const sx of [-1, 1]) bx(g, F, x + sx * (dw / 2 - .02), .04, d / 2, .04, h - .08, .03); bx(g, GLASS, x, .08, d / 2, dw - .08, h - .14, .006); bx(g, STEEL, x, h - .1, d / 2 + .03, dw * .5, .014, .014); } }},
-  builtFridge:{cat:'cold', n:'Холодильник встраиваемый под столешницу', w:.6, d:.6, h:.86, rs:'w', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true, presets:PW([.6, .9, 1.2]),
+  builtFridge:{cat:'cold', n:'Холодильник встраиваемый под столешницу', w:.6, d:.6, h:.86, rs:'wdh', size:o => ({h:Math.max(0.5, o.h), d:Math.max(.3, o.d)}), fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true, presets:PW([.6, .9, 1.2]),
     build(g, o){ const {w, d, h} = o; counterBody(g, o, 0, 0, w, d, h, finMat(o.fin), finMat(o.top)); doorsFront(g, w, d, .1, h - .04, false);
       bx(g, matC('#2d6cdf', .4, 0, {emissive:'#2d6cdf', emissiveIntensity:.5}), w / 2 - .06, h - .1, d / 2 + .004, .03, .012, .004); }},
   // ---- kitchen and other machines ----
