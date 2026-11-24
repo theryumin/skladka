@@ -63,7 +63,7 @@ input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}
 .note{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:calc(100vw - 32px)}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:calc(100vw - 32px)}
 .toast.on{opacity:1}
 dialog.dlg{border:1px solid var(--line);border-radius:14px;padding:22px;width:min(460px,calc(100vw - 32px));background:var(--panel);color:var(--fg);box-shadow:0 20px 60px rgba(0,0,0,.25)}
 dialog.dlg::backdrop{background:rgba(20,18,30,.4)}
@@ -153,7 +153,15 @@ main{position:relative;min-width:0;min-height:0;background:var(--stage);overflow
 .nsum{font-size:11.5px;color:var(--muted);line-height:1.45;border-top:1px solid var(--line);padding-top:7px}
 .nsum:empty{display:none}
 .corner .ibtn{background:var(--panel);border:1px solid var(--line)}
-.hint{position:absolute;left:12px;bottom:12px;right:140px;z-index:3;pointer-events:none;display:flex}
+.hint{position:absolute;left:12px;bottom:78px;right:140px;z-index:3;pointer-events:none;display:flex}
+.dock{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:4;display:flex;align-items:center;gap:2px;padding:5px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 22px rgba(0,0,0,.1);max-width:calc(100% - 24px);overflow-x:auto;scrollbar-width:none}
+.dk{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px;padding:6px 6px 4px;border:0;border-radius:10px;background:none;color:var(--fg);font:600 10.5px var(--sans);cursor:pointer}
+.dk svg{width:20px;height:20px}
+.dk:hover{background:var(--field)}
+.dk[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
+.grp.flash{animation:flash 1.2s}
+@keyframes flash{0%,60%{box-shadow:0 0 0 2px var(--accent);border-radius:10px}100%{box-shadow:none}}
+.dsep{width:1px;align-self:stretch;margin:6px 4px;background:var(--line);flex:none}
 .hint span{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:12px;color:var(--muted);line-height:1.4;max-width:560px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .hint b{color:var(--fg);font-weight:600}
 #insp .in{padding:16px 14px 28px;display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
@@ -217,6 +225,8 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
   .hint{display:none}
   .views{top:8px}
   .netw{top:52px;right:8px}
+  .dock{bottom:8px}
+  .hint{bottom:74px;right:8px}
   .sheets{top:52px;left:8px;transform:none;max-width:calc(100% - 110px)}
   #pname{width:120px}
   .hide-s{display:none!important}
@@ -276,11 +286,6 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
 
   <aside class="panel" id="lib">
     <div class="ptop">
-      <div class="tools">
-        <button class="tool" type="button" data-tool="select" aria-pressed="false" title="Стрелка — выбрать и двигать (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m5 3 14 8-6 1.5L10 19z"/></svg>Стрелка</button>
-        <button class="tool" type="button" data-tool="hand" aria-pressed="true" title="Рука — крутить, двигать и приближать вид (H или зажатый пробел)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5V4a1.5 1.5 0 0 1 3 0v7.5M14 11.5V5.5a1.5 1.5 0 0 1 3 0V13M17 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15.6a1.6 1.6 0 0 1 2.4-2.1L8 14.6"/></svg>Рука</button>
-        <button class="tool" type="button" data-tool="wall" aria-pressed="false" title="Рисовать стены кликами по полу"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V8h8V4h8"/><circle cx="4" cy="20" r="1.6" fill="currentColor"/><circle cx="20" cy="4" r="1.6" fill="currentColor"/></svg>Стена</button>
-      </div>
       <input class="q" id="q" type="search" placeholder="Найти: кофемашина, стол…" aria-label="Поиск по каталогу">
       <div class="cats" id="cats"></div>
     </div>
@@ -310,6 +315,8 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
         <div class="nrow"><button class="btn pri" type="button" id="netAuto">Разложить заново</button><button class="btn" type="button" id="netOff">Скрыть сети</button></div>
         <div class="nsum" id="netSum"></div>
       </div></div>
+
+    <div class="dock" id="dock" role="toolbar" aria-label="Инструменты"><button class="dk" type="button" data-tool="select" aria-pressed="false" title="Стрелка — выбрать и двигать (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m5 3 14 8-6 1.5L10 19z"/></svg><span>Стрелка</span></button><button class="dk" type="button" data-tool="hand" aria-pressed="true" title="Рука — крутить, двигать и приближать вид (H или зажатый пробел)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5V4a1.5 1.5 0 0 1 3 0v7.5M14 11.5V5.5a1.5 1.5 0 0 1 3 0V13M17 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15.6a1.6 1.6 0 0 1 2.4-2.1L8 14.6"/></svg><span>Рука</span></button><i class="dsep"></i><button class="dk" type="button" data-tool="wall" aria-pressed="false" title="Рисовать стены кликами по полу"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V8h8V4h8"/><circle cx="4" cy="20" r="1.6" fill="currentColor"/><circle cx="20" cy="4" r="1.6" fill="currentColor"/></svg><span>Стены</span></button><button class="dk" type="button" data-dock="floor" title="Размер пола и покрытие"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l9 4 9-4-9-4z"/><path d="M3 17V7l9-4 9 4v10"/></svg><span>Пол</span></button><i class="dsep"></i><button class="dk" type="button" data-dock="door" title="Дверь — ведите вдоль стены и кликните"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4h10v17M4 21h16"/><circle cx="13" cy="12.5" r=".9"/></svg><span>Дверь</span></button><button class="dk" type="button" data-dock="window" title="Окно"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M12 4v16M4 12h16"/></svg><span>Окно</span></button><button class="dk" type="button" data-dock="entrance" title="Входная группа со стеклом"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5h16v16M12 5v16M4 21h16"/><path d="M9.5 13h-1M15.5 13h-1"/></svg><span>Вход</span></button><button class="dk" type="button" data-dock="zone" title="Зона помещения: зал, бар, кухня, склад…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6M14 4h6v6M20 14v6h-6M10 20H4v-6M4 10V4" stroke-dasharray="0"/><path d="M9 9h6v6H9z"/></svg><span>Зона</span></button></div>
     <div class="hint" id="hint"><span id="hintT"></span></div>
     <div class="corner">
       <button class="ibtn" id="fitBtn" type="button" title="Показать всё помещение" aria-label="Показать всё"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -1246,7 +1253,7 @@ function select(s){ const wasNet = sel?.t === 'net'; sel = s; if (wasNet || s?.t
 let hist = [], fut = [];
 function snap(){ hist.push(JSON.stringify(P)); if (hist.length > 100) hist.shift(); fut = []; undoBtns(); }
 function undoBtns(){ $('undo').disabled = !hist.length; $('redo').disabled = !fut.length; }
-function changed(full = true){ if (full) rebuild(); else drawSel(); renderInsp(); autosave(); undoBtns(); }
+function changed(full = true){ if (full){ const poly = innerPoly(); for (const it of P.items) keepInside(it, poly); rebuild(); } else drawSel(); renderInsp(); autosave(); undoBtns(); }
 function undo(){ if (!hist.length) return; fut.push(JSON.stringify(P)); P = JSON.parse(hist.pop()); $('pname').value = P.name; changed(); }
 function redo(){ if (!fut.length) return; hist.push(JSON.stringify(P)); P = JSON.parse(fut.pop()); $('pname').value = P.name; changed(); }
 
@@ -1302,11 +1309,25 @@ function showGuides(it){ clearGuides(); if (view !== 'plan' || !it || it.kind ==
     gLine(DMAT, a, b); for (const p of [a, b]) gLine(DMAT, ax === 'x' ? [p[0], p[1] - .08] : [p[0] - .08, p[1]], ax === 'x' ? [p[0], p[1] + .08] : [p[0] + .08, p[1]]);
     const o = lbl(cm(best) + ' см', 'acc'); o.position.set((a[0] + b[0]) / 2, .35, (a[1] + b[1]) / 2); guideG.add(o); }
   need(); }
+// the floor inside the walls; nothing may stand outside it
+function innerPoly(){ const L = roomLoop(); if (L){ const ws = P.walls.filter(W => loopIds.has(W.id)), t = ws.reduce((s, W) => s + (W.t || .15), 0) / Math.max(1, ws.length) / 2;
+    const A = L.reduce((s, p, i) => { const q = L[(i + 1) % L.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0) > 0 ? 1 : -1, n = L.length;
+    const nrm = (a, b) => { const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [A * -dz / l, A * dx / l]; };
+    return L.map((p, i) => { const n1 = nrm(L[(i - 1 + n) % n], p), n2 = nrm(p, L[(i + 1) % n]), k = 1 + n1[0] * n2[0] + n1[1] * n2[1]; return k < .2 ? [p[0] + n2[0] * t, p[1] + n2[1] * t] : [p[0] + t * (n1[0] + n2[0]) / k, p[1] + t * (n1[1] + n2[1]) / k]; }); }
+  return null; }   // walls not closed yet (still being drawn): no limits
+function keepInside(it, poly = innerPoly()){ const D = DEF[it.kind]; if (!poly || !D || D.place === 'wall') return false; let moved = false;
+  const pts = o => D.place === 'ceil' || D.place === 'hang' ? [[o.x, o.z]] : itemPoly(o);
+  for (let k = 0; k < 8; k++){ let worst = null;
+    for (const c of pts(it)) if (!inPoly(c, poly)){ let best = null;
+      for (let i = 0; i < poly.length; i++){ const q = segProj(c, poly[i], poly[(i + 1) % poly.length]), d = Math.hypot(q[0] - c[0], q[1] - c[1]); if (!best || d < best.d) best = {d, q}; }
+      if (!worst || best.d > worst.d) worst = {d:best.d, v:[best.q[0] - c[0], best.q[1] - c[1]]}; }
+    if (!worst) break; const l = Math.hypot(...worst.v) || 1; it.x += worst.v[0] + worst.v[0] / l * .003; it.z += worst.v[1] + worst.v[1] / l * .003; moved = true; }
+  return moved; }
 function moveItemTo(it, x, z, free){
   const D = DEF[it.kind]; if (!free){ x = snapv(x); z = snapv(z); }
   it.x = x; it.z = z; gAlign = []; if (!free) alignTo(it);
   if (D.place === 'wall' || (D.snap && !free)){ const s = wallSnap(it, x, z, D.place === 'wall' ? 99 : .3); if (s){ it.x = s.x; it.z = s.z; it.rot = s.rot; } }
-  if (!free && !xHeld) unclash(it); delete it.auto;
+  if (!free && !xHeld) unclash(it); keepInside(it); delete it.auto;
   const g = itemObj.get(it.id); if (g){ g.position.set(it.x, baseY(it), it.z); g.rotation.y = it.rot || 0; } needShadow(); }
 /* things do not go inside each other: a moved item is pushed out to stand flush next to what it hits.
    Height counts — a machine on a counter does not hit a stool below; chairs may slide under tables and counters. Alt = no push. */
@@ -1464,6 +1485,9 @@ function camTool(t){ const hand = t === 'hand';
   ctl3.mouseButtons.LEFT = hand ? THREE.MOUSE.ROTATE : null; ctl3.mouseButtons.RIGHT = THREE.MOUSE.PAN; ctl3.touches.ONE = hand ? THREE.TOUCH.ROTATE : null;
   ctlP.mouseButtons.LEFT = hand ? THREE.MOUSE.PAN : null; ctlP.touches.ONE = hand ? THREE.TOUCH.PAN : null; if (t === 'wall'){ select(null); if (view !== 'plan') setView('plan'); } hintUpdate(); }
 document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+$('dock').addEventListener('click', e => { const b = e.target.closest('[data-dock]'); if (!b) return; const k = b.dataset.dock;
+  if (k === 'floor'){ setTool('select'); select(null); requestAnimationFrame(() => { const g = $('floorGrp'); if (!g) return; g.scrollIntoView({block:'start', behavior:'smooth'}); g.classList.add('flash'); setTimeout(() => g.classList.remove('flash'), 1200); g.querySelector('input')?.focus(); }); return; }
+  startPlace(k); });
 setTool('hand');   // the view moves by default; the arrow (V) is for moving things
 
 /* ---------- views and camera ---------- */
@@ -1588,18 +1612,18 @@ function techInsp(d){ const t = tech(d); if (!t || !t.kwDef && !t.w && !t.dr) re
   const parts = [t.kw ? `${String(+t.kw.toFixed(2)).replace('.', ',')} кВт${t.ph === 3 ? ', 3 фазы' : ''}` : '', t.w === 'ch' ? 'холодная и горячая вода' : t.w ? 'вода' : '', t.dr === 'i' ? 'слив через приямок' : t.dr ? 'слив' : '', t.hood ? 'нужна вытяжка' : ''].filter(Boolean);
   const feed = t.sym === 'light' ? '' : `<div class="chips" style="margin:6px 0 2px">${[['', 'Как у сети'], ['ceil', 'Сверху'], ['floor', 'Из пола'], ['wall', 'По стене']].map(([k, n]) => `<button class="chip" type="button" data-feed="${k || 'def'}" aria-pressed="${(d.feed || '') === k}">${n}</button>`).join('')}</div><p class="note" style="margin-top:0">Как подвести провода и трубы к этому предмету.</p>`;
   return `<div class="grp"><h3>Подключение</h3>${feed}${t.kwDef ? `<label class="f">Мощность, кВт (из паспорта)<input type="number" data-f="kw" value="${+t.kw.toFixed(2)}" step="0.05" min="0"></label>` : ''}<p class="note">${parts.join(' · ') || 'без подключения'}. Попадёт в «Документы».</p></div>`; }
-function roomPanel(){ const L = roomLoop(), area = L ? polyArea(L) : null, per = P.walls.reduce((s, W) => s + wallInfo(W).L, 0), b = bounds();
+function roomPanel(){ const wb = wallBounds(), L = roomLoop(), area = L ? polyArea(L) : null, per = P.walls.reduce((s, W) => s + wallInfo(W).L, 0), b = bounds();
   const cnt = P.items.length;
   return `<div class="ih"><b>Помещение</b><span>Ничего не выбрано — здесь настройки всей комнаты</span></div>
     <div class="stat"><div><b>${area != null ? area.toFixed(1).replace('.', ',') : '—'}</b><span>м², по осям стен</span></div><div><b>${cnt}</b><span>предметов</span></div><div><b>${(per).toFixed(1).replace('.', ',')}</b><span>м стен</span></div><div><b>${cm(b.x1 - b.x0)}×${cm(b.z1 - b.z0)}</b><span>см габарит</span></div></div>
+    <div class="grp" id="floorGrp"><h3>Размер пола, см</h3><div class="row2">${num('rw', 'Ширина', cm(wb.x1 - wb.x0))}${num('rd', 'Глубина', cm(wb.z1 - wb.z0))}</div>
+      <button class="btn" type="button" data-a="rect">Применить размер</button><p class="note">Стены встанут по краю пола. Предметы всегда остаются внутри помещения — то, что окажется снаружи, само вернётся внутрь.</p></div>
     <div class="grp"><h3>Высота потолка, см</h3><input type="number" data-f="H" value="${cm(P.H)}" min="220" max="800" step="5"></div>
     <div class="grp"><h3>Потолок</h3><div class="chips">${Object.entries(CEILS).map(([k, n]) => `<button class="chip" type="button" data-ceil="${k}" aria-pressed="${(P.ceil || 'open') === k}">${n}</button>`).join('')}</div><p class="note">Потолок виден в режиме «Глазами гостя». Трубы и короба над подвесным потолком прячутся.</p></div>
     <div class="grp"><h3>Цвет стен</h3><div class="sw">${WALL_COLS.map(c => `<button type="button" data-rcol="${c}" aria-pressed="${P.wallCol === c}" style="background:${c}"></button>`).join('')}<label title="Свой цвет">+<input type="color" data-f="rcol" value="${P.wallCol}"></label></div></div>
     <div class="grp"><h3>Пол</h3><div class="floors">${Object.entries(FLOORS).map(([k, f]) => `<button type="button" data-floor="${k}" aria-pressed="${P.floor === k}"><i style="background-image:url(${floorPrev(k)})"></i>${f.n}</button>`).join('')}</div></div>
     <div class="grp"><h3>Свет</h3><div class="seg" style="width:max-content"><button class="tab" type="button" data-light="day" aria-selected="${P.light !== 'eve'}">День</button><button class="tab" type="button" data-light="eve" aria-selected="${P.light === 'eve'}">Вечер</button></div>
       <label class="chk"><input type="checkbox" data-f="fade" ${P.fade ? 'checked' : ''}>Прятать стены, которые закрывают вид</label></div>
-    <div class="grp"><h3>Перестроить комнату</h3><div class="row2">${num('rw', 'Ширина', cm(b.x1 - b.x0))}${num('rd', 'Глубина', cm(b.z1 - b.z0))}</div>
-      <button class="btn" type="button" data-a="rect">Сделать прямоугольник этого размера</button><p class="note">Старые стены заменятся. Мебель останется на месте.</p></div>
     <div class="grp"><h3>Управление</h3><div class="keys">
       <div>Каталог слева: нажмите на предмет и кликните по полу. Или перетащите.</div>
       <div><kbd>R</kbd> повернуть на 90° · <kbd>Q</kbd>/<kbd>E</kbd> на 15°</div>
@@ -1709,7 +1733,7 @@ addEventListener('keydown', e => {
   if (sel.t === 'item'){
     if (k === 'r' || k === 'q' || k === 'e'){ snap(); d.rot = (d.rot || 0) + (k === 'r' ? (e.shiftKey ? 1 : -1) * Math.PI / 2 : k === 'q' ? 15 * DEG : -15 * DEG); changed(); return; }
     const st = e.shiftKey ? .1 : .01, mv = {arrowleft:[-st, 0], arrowright:[st, 0], arrowup:[0, -st], arrowdown:[0, st]}[k];
-    if (mv){ e.preventDefault(); if (!e.repeat) snap(); d.x += mv[0]; d.z += mv[1]; const g = itemObj.get(d.id); g.position.set(d.x, baseY(d), d.z);
+    if (mv){ e.preventDefault(); if (!e.repeat) snap(); d.x += mv[0]; d.z += mv[1]; keepInside(d); const g = itemObj.get(d.id); g.position.set(d.x, baseY(d), d.z);
       for (const o of P.items) if (DEF[o.kind].place === 'on'){ const gg = itemObj.get(o.id); if (gg) gg.position.y = baseY(o); } needShadow(); renderInspPos(); autosave(); } }
   if (sel.t === 'op'){ const mv = {arrowleft:-1, arrowright:1}[k]; if (mv){ e.preventDefault(); if (!e.repeat) snap(); d.pos += mv * (e.shiftKey ? .1 : .01); changed(); } }
 });
@@ -2481,6 +2505,7 @@ window.__cafeMk = {keys:() => [...Object.keys(OPS), ...Object.keys(DEF)], thumb:
   starter:k => starterShot(STARTERS.find(x => x[0] === k)[3]), heights:() => P.items.map(i => [i.kind, +baseY(i).toFixed(3)]),
   add:(k, x, z, rot, e) => { snap(); P.items.push(newItem(k, x, z, rot, e)); changed(); },
   net:() => netCache, scr3:(x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam()), r = R3.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; }, scr:(x, z) => { const v = new THREE.Vector3(x, .5, z).project(cam()), r = R3.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; },
+  outside:() => { const poly = innerPoly(); return P.items.filter(it => { const c = {...it}; return keepInside(c, poly); }).map(i => i.kind); },
   drop:(k, x, z, rot = 0) => { const it = newItem(k, x, z, rot); P.items.push(it); buildItems(); moveItemTo(it, x, z, false); changed(); return [k, +it.x.toFixed(3), +it.z.toFixed(3), +baseY(it).toFixed(3)]; }};
 (async () => {
   if (!SB.user) return;
