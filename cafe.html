@@ -566,7 +566,8 @@ const DEF = {
       if (flut) for (let x = -w / 2 + .03; x <= w / 2 - .03 + 1e-6; x += .06) cy(g, F, x, kick, d / 2 - .004, .028, .028, h - tk - kick, 14);
       if (o.ledge){ bx(g, F, 0, h, d / 2 - .04, w, .2, .06); bx(g, T, 0, h + .2, d / 2 - .06, w + .03, .035, .3); } }},
   corner:{cat:'bar', n:'Угловая стойка', w:2.2, d:1.6, h:.9, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'marble', sup:true, snap:true,
-    rects: o => [[0, -o.d / 2 + .3, o.w, .6], [-o.w / 2 + .3, .3, .6, o.d - .6]],
+    legs:'ab',   // each side has its own length and depth: A is the long back side, B the side going forward on the left
+    rects: o => { const da = o.da ?? .6, db = o.db ?? .6; return [[0, -o.d / 2 + da / 2, o.w, da], [-o.w / 2 + db / 2, da / 2, db, o.d - da]]; },
     build(g, o){ const F = finMat(o.fin), T = finMat(o.top); for (const [cx, cz, w, d] of DEF.corner.rects(o)) counterBody(g, o, cx, cz, w, d, o.h, F, T); }},
   backbar:{cat:'bar', n:'Задний бар со шкафами', presets:PW([1.2, 1.8, 2.4, 3.0]), w:2.4, d:.6, h:.9, rs:'wdh', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), T = finMat(o.top); counterBody(g, o, 0, 0, w, d, h, F, T);
@@ -796,7 +797,9 @@ const DEF = {
   barRound:{cat:'bar', n:'Стойка со скруглёнными краями', w:2.6, d:.6, h:.95, rs:'wdh', fins:BODY, fin:'terrazzo', tops:TOPS, top:'white', sup:true, snap:true, presets:PW([1.8, 2.4, 3.0, 3.6]),
     build(g, o){ const {w, d, h} = o; slab(g, DARK, capsule(w - .08, d - .1), 0, .1); slab(g, finMat(o.fin), capsule(w, d), .1, h - .14); slab(g, finMat(o.top), capsule(w + .03, d + .03), h - .04, .04); }},
   barU:{cat:'bar', n:'П-образная стойка', w:3.0, d:2.0, h:.9, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'marble', sup:true,
-    rects: o => [[0, -o.d / 2 + .3, o.w, .6], [-o.w / 2 + .3, .3, .6, o.d - .6], [o.w / 2 - .3, .3, .6, o.d - .6]],
+    legs:'abc',
+    rects: o => { const da = o.da ?? .6, db = o.db ?? .6, dc = o.dc ?? .6, lc = Math.min(o.lc ?? o.d, o.d);
+      return [[0, -o.d / 2 + da / 2, o.w, da], [-o.w / 2 + db / 2, da / 2, db, o.d - da], [o.w / 2 - dc / 2, -o.d / 2 + (da + lc) / 2, dc, lc - da]]; },
     build(g, o){ const F = finMat(o.fin), T = finMat(o.top); for (const [cx, cz, w, d] of DEF.barU.rects(o)) counterBody(g, o, cx, cz, w, d, o.h, F, T); }},
   // ---- cabinets and storage ----
   cabD:{cat:'store', n:'Тумба с ящиками', w:.6, d:.6, h:.86, rs:'wdh', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true, presets:PW([.4, .6, .8, 1.0]),
@@ -1247,7 +1250,7 @@ function drawSel(){
   const [w, h, d, y0, x0 = 0] = o.userData.box;
   selLine = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w + .03, h + .03, d + .03)), selMat); selLine.renderOrder = 999;
   selLine.position.set(x0, y0 + h / 2, 0); selLine.userData.nopick = true; o.add(selLine);
-  if (view === 'plan' && sel.t === 'item'){ const it = selData(); selLbl = lbl(`${cm(it.w)} × ${cm(it.d)}`, 'acc'); selLbl.position.set(0, h + .05, d / 2 + .18); o.add(selLbl); }
+  if (view === 'plan' && sel.t === 'item'){ const it = selData(); selLbl = lbl(DEF[it.kind].legs ? `A ${cm(it.w)} · B ${cm(it.d)}${DEF[it.kind].legs.includes('c') ? ' · C ' + cm(Math.min(it.lc ?? it.d, it.d)) : ''}` : `${cm(it.w)} × ${cm(it.d)}`, 'acc'); selLbl.position.set(0, h + .05, d / 2 + .18); o.add(selLbl); }
   if (view === 'plan' && sel.t === 'wall'){ const W = selData();
     for (const end of ['a', 'b']){ const hm = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .02, 24), new THREE.MeshBasicMaterial({color:selMat.color, depthTest:false}));
       hm.renderOrder = 1000; hm.position.set(W[end][0], (W.h || P.H) + .05, W[end][1]); hm.userData.sel = {t:'wend', id:W.id, end}; roots.ui.add(hm); handles.push(hm); } }
@@ -1338,6 +1341,9 @@ function moveItemTo(it, x, z, free){
    Height counts — a machine on a counter does not hit a stool below; chairs may slide under tables and counters. Alt = no push. */
 const solid = o => { const D = DEF[o.kind]; return !!D && (!D.place || D.place === 'on') && !['zone', 'rug', 'fdrain', 'fsink', 'socketFloor'].includes(o.kind); };
 function obb(o){ const c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0); return {c:[o.x, o.z], a:[[c, -s], [s, c]], h:[o.w / 2, o.d / 2]}; }
+// L- and U-shaped counters collide piece by piece, so things can stand in the inner corner
+function obbs(o){ const D = DEF[o.kind]; if (!D?.rects) return [obb(o)]; const c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0);
+  return D.rects(o).map(([cx, cz, w, d]) => ({c:[o.x + cx * c + cz * s, o.z - cx * s + cz * c], a:[[c, -s], [s, c]], h:[w / 2, d / 2]})); }
 function mtv(A, B){ let best = null; const d = [B.c[0] - A.c[0], B.c[1] - A.c[1]];
   for (const ax of [...A.a, ...B.a]){ const r = X => X.h[0] * Math.abs(ax[0] * X.a[0][0] + ax[1] * X.a[0][1]) + X.h[1] * Math.abs(ax[0] * X.a[1][0] + ax[1] * X.a[1][1]);
     const dist = d[0] * ax[0] + d[1] * ax[1], ov = r(A) + r(B) - Math.abs(dist); if (ov <= .004) return null;
@@ -1348,7 +1354,7 @@ function unclash(it){ if (!solid(it)) return; const skip = new Set([it.id, ...ri
     for (const o of P.items){ if (skip.has(o.id) || !solid(o)) continue; const b0 = baseY(o), b1 = b0 + (DEF[o.kind].full ? P.H : o.h);
       if (Math.min(y1, b1) - Math.max(y0, b0) < .015) continue;                     // different heights
       if ((SEATS.has(it.kind) && isSup(o)) || (SEATS.has(o.kind) && isSup(it))) continue;   // a chair tucks under a table
-      const m = mtv(obb(it), obb(o)); if (m && (!worst || m.ov > worst.ov)) worst = m; }
+      for (const A of obbs(it)) for (const B of obbs(o)){ const m = mtv(A, B); if (m && (!worst || m.ov > worst.ov)) worst = m; } }
     if (!worst) return; it.x += worst.x * (worst.ov + .002); it.z += worst.z * (worst.ov + .002); } }
 // hold X (Ч on the Russian layout) while dragging: items may go into each other
 let xHeld = false;
@@ -1583,7 +1589,12 @@ function renderInsp(){
       <div class="grp"><h3>Положение, см</h3><div class="row3">${num('x', 'X', cm(d.x - ox))}${num('z', 'Y', cm(d.z - oz))}${num('rot', 'Поворот, °', ang, 'step="15"')}</div>
         ${D.place === 'wall' || D.place === 'hang' ? `<div class="row2">${num('elev', D.place === 'hang' ? 'Низ плафона от пола' : 'Низ от пола', cm(d.elev ?? D.elev))}</div>` : ''}
         <div class="acts2"><button class="btn" type="button" data-a="rotL">⟲ 90°</button><button class="btn" type="button" data-a="rotR">⟳ 90°</button></div></div>
-      <div class="grp"><h3>Размер, см</h3><div class="row3">${num('w', 'Ширина', cm(d.w), rs.includes('w') ? '' : 'disabled')}${num('d', 'Глубина', cm(d.d), rs.includes('d') ? '' : 'disabled')}${num('h', 'Высота', cm(D.full ? P.H : d.h), rs.includes('h') ? '' : 'disabled')}</div>${rs ? '' : '<p class="note">Размер как у настоящей модели.</p>'}</div>
+      ${D.legs ? `<div class="grp"><h3>Стороны стойки, см</h3>
+        <div class="row2">${num('w', 'A — длина (сзади)', cm(d.w))}${num('da', 'A — глубина', cm(d.da ?? .6))}</div>
+        <div class="row2">${num('d', 'B — длина (слева)', cm(d.d))}${num('db', 'B — глубина', cm(d.db ?? .6))}</div>
+        ${D.legs.includes('c') ? `<div class="row2">${num('lc', 'C — длина (справа)', cm(Math.min(d.lc ?? d.d, d.d)))}${num('dc', 'C — глубина', cm(d.dc ?? .6))}</div>` : ''}
+        <div class="row2">${num('h', 'Высота', cm(d.h))}</div><p class="note">Длина стороны — по внешнему краю, от угла до конца.</p></div>` : ''}
+      <div class="grp"${D.legs ? ' hidden' : ''}><h3>Размер, см</h3><div class="row3">${num('w', 'Ширина', cm(d.w), rs.includes('w') ? '' : 'disabled')}${num('d', 'Глубина', cm(d.d), rs.includes('d') ? '' : 'disabled')}${num('h', 'Высота', cm(D.full ? P.H : d.h), rs.includes('h') ? '' : 'disabled')}</div>${rs ? '' : '<p class="note">Размер как у настоящей модели.</p>'}</div>
       ${d.kind === 'zone' ? `<div class="grp"><h3>Что это за зона</h3><div class="chips">${Object.entries(ZT).map(([k, z]) => `<button type="button" class="chip" data-zt="${k}" aria-pressed="${d.zt === k}">${z[0]}</button>`).join('')}</div>
         <p class="note">${(d.w * d.d).toFixed(1).replace('.', ',')} м². Нужна для вместимости и экспликации в «Документах». Видна на «Плане», двигается за край.</p></div>` : ''}
       ${techInsp(d)}
@@ -1654,6 +1665,8 @@ $('inspIn').addEventListener('change', e => {
   if (sel.t === 'item'){ const D = DEF[d.kind], [ox, oz] = origin();
     if (f === 'x') d.x = v / 100 + ox; else if (f === 'z') d.z = v / 100 + oz; else if (f === 'rot') d.rot = v * DEG;
     else if (f === 'elev') d.elev = clamp(v / 100, 0, P.H); else if (f === 'text'){ d.text = String(v).slice(0, 24); Object.assign(d, D.size?.(d) || {}); }
+    else if (['da', 'db', 'dc'].includes(f)) d[f] = clamp(v / 100, .2, Math.max(.2, (f === 'da' ? d.d : d.w / 2) - .2));
+    else if (f === 'lc') d.lc = clamp(v / 100, (d.da ?? .6) + .2, d.d);
     else if (f === 'ledge') d.ledge = v; else if (f === 'kw') d.kw = clamp(v, 0, 60);
     else if (['w', 'd', 'h'].includes(f)){ d[f] = clamp(v / 100, .02, 20); if (D.round && f === 'w') d.d = d.w; Object.assign(d, D.size?.(d) || {}); }
     return changed(); }
@@ -2319,6 +2332,7 @@ async function buildPdf(){
       doc.setLineWidth(o.light ? .12 : .22); doc.setDrawColor(o.light ? 170 : 40); doc.setFillColor(255, 255, 255);
       if (up) doc.setLineDashPattern([1, .7], 0);
       if (D.round || it.kind === 'lamp' || it.kind === 'pouf'){ const [x, y] = T(it.x, it.z); doc.circle(x, y, Math.max(.6, it.w / 2 * k), up ? 'S' : 'FD'); }
+      else if (D.rects) for (const [cx, cz, w, d] of D.rects(it)) poly([[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]].map(([lx, lz]) => T(...toWorld(it, cx + lx, cz + lz))), 'FD');
       else poly(itemPoly(it).map(p => T(...p)), up || it.kind === 'rug' ? 'S' : 'FD');
       doc.setLineDashPattern([], 0); }
     doc.setDrawColor(0);
