@@ -1353,6 +1353,7 @@ stage.addEventListener('pointerdown', e => {
   down = {x:e.clientX, y:e.clientY, t:performance.now(), s:null};
   if (placing){ e.stopPropagation(); down.placed = true; finishPlace(); return; }
   if (tool === 'wall'){ e.stopPropagation(); wallClick(e); return; }
+  const hp = netPtPick(e); if (hp){ ctl().enabled = false; e.stopPropagation(); drag = {t:'netpt', ...hp, gy:view === 'plan' ? 0 : hp.y, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
   if (tool === 'hand'){ stage.style.cursor = 'grabbing'; return; }   // the hand only moves the view
   const np = netPick(e); if (np){ const gy = view === 'plan' ? 0 : np.y, hit = floorHit(e, gy); if (!hit) return; ctl().enabled = false; e.stopPropagation(); if (sel?.t !== 'net' || sel.k !== np.k || sel.id !== np.id) select({t:'net', k:np.k, id:np.id});
     drag = {t:'net', k:np.k, id:np.id, gy, hx:hit.x, hz:hit.z, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
@@ -1388,6 +1389,7 @@ stage.addEventListener('pointermove', e => {
       if (selLbl) selLbl.element.textContent = `${cm(it.w)} × ${cm(it.d)}`; renderInspPos(); showGuides(it); }
     else if (drag.t === 'op'){ moveOpTo(drag.op, hit.x, hit.z); buildWalls(); drawSel(); }
     else if (drag.t === 'net') netDrag(drag, hit, e.altKey);
+    else if (drag.t === 'netpt') netPtDrag(drag, hit, e.altKey);
     else if (drag.t === 'wend'){ const x = e.altKey ? hit.x : snapv(hit.x), z = e.altKey ? hit.z : snapv(hit.z); for (const [V, end] of drag.linked) V[end] = [x, z]; buildWalls(); buildFloor(); drawSel(); }
     else if (drag.t === 'wall'){ const {dx, dz} = wallInfo(drag.W), nx = -dz, nz = dx; let dd = (hit.x - drag.hx) * nx + (hit.z - drag.hz) * nz; if (!e.altKey) dd = snapv(dd);
       for (const [V, end, o] of drag.linked) V[end] = [o[0] + nx * dd, o[1] + nz * dd]; buildWalls(); buildFloor(); drawSel(); }
@@ -1397,20 +1399,22 @@ stage.addEventListener('pointermove', e => {
 stage.addEventListener('pointerup', e => {
   if (placing && placing.fromLib && placing.moved){ finishPlace(); return; }
   if (tool === 'wall'){ return; }
-  if (tool === 'hand'){ stage.style.cursor = 'grab';   // a plain click with the hand still selects, to see the settings on the right
+  if (tool === 'hand' && !drag){ stage.style.cursor = 'grab';   // a plain click with the hand still selects, to see the settings on the right
     if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 4 && performance.now() - down.t < 600){ const np = netPick(e);
       if (np) select({t:'net', k:np.k, id:np.id}); else { const p = pick(e); select(p && ['item', 'op', 'wall'].includes(p.s.t) ? {t:p.s.t, id:p.s.id} : null); } }
     down = null; return; }
   ctl().enabled = true;
   if (down?.placed){ down = null; return; }
   if (drag){ const d = drag; drag = null; clearGuides(); try { stage.releasePointerCapture(e.pointerId); } catch {}
-    if (d.t === 'net' && d.moved){ const it = P.items.find(i => i.id === d.id), c = it?.net?.[d.k]; if (c?.pts) c.pts = tidyPts(c.pts); }
+    if ((d.t === 'net' || d.t === 'netpt') && d.moved){ const it = P.items.find(i => i.id === d.id), c = it?.net?.[d.k]; if (c?.pts) c.pts = tidyPts(c.pts); }
     if (d.moved){ hist.push(d.start); fut = []; changed(); } return; }
   if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 4 && performance.now() - down.t < 600){
     const p = pick(e); if (p && p.s.t === 'wall') select({t:'wall', id:p.s.id}); else if (!p) select(null); }
   down = null;
 });
-stage.addEventListener('dblclick', e => { if (tool === 'wall'){ endChain(); } });
+stage.addEventListener('dblclick', e => { if (tool === 'wall'){ endChain(); return; }
+  const hp = netPtPick(e); if (hp?.i){ const it = P.items.find(i => i.id === hp.id), pts = ownerPts(hp.k, hp.id); if (!it || !pts) return;   // double click on a bend removes it
+    snap(); pts.splice(hp.i, 1); it.net ??= {}; it.net[hp.k] = {...(it.net[hp.k] || {}), pts:tidyPts(pts)}; changed(); } });
 stage.addEventListener('contextmenu', e => { if (tool === 'wall' || placing){ e.preventDefault(); if (placing) cancelPlace(); else endChain(); } });
 
 /* placing a new thing from the catalogue: it follows the pointer until a click */
@@ -1899,7 +1903,8 @@ const NLAYER = {e:'e', l:'l', c:'w', h:'w', d:'w', v:'v'};
 function nMat(k, plan){ const key = k + plan; if (!NMAT.has(key)) NMAT.set(key, plan ? new THREE.MeshBasicMaterial({color:NETC[k], depthTest:false, transparent:true, opacity:k === 'v' ? .4 : .95})
   : new THREE.MeshStandardMaterial({color:k === 'v' ? '#c3c8cd' : NETC[k], ...(k === 'sel' ? {emissive:'#7048e8', emissiveIntensity:.5} : {}), roughness:k === 'v' ? .35 : .5, metalness:k === 'v' ? .75 : .1})); return NMAT.get(key); }
 let netCache = null;
-const NHIT = new THREE.MeshBasicMaterial({visible:false});   // invisible, a bit fatter copies of the lines, so a click finds them easily
+const NHIT = new THREE.MeshBasicMaterial({visible:false});
+const NPM = new THREE.MeshBasicMaterial({color:'#7048e8', depthTest:false}), NPM2 = new THREE.MeshBasicMaterial({color:'#7048e8', depthTest:false, transparent:true, opacity:.45});   // invisible, a bit fatter copies of the lines, so a click finds them easily
 /* plan sheets, like the drawing set of a real project: each shows its own things, the rest as pale outlines */
 const SHEETS = [['all', 'Всё'], ['furn', 'Мебель'], ['zones', 'Зоны'], ['e', 'Электрика'], ['l', 'Свет'], ['w', 'Вода и канализация'], ['v', 'Вентиляция']];
 let SHEET = 'all';
@@ -1932,9 +1937,12 @@ const netY3 = (k, m) => { const H = P.H; return m === 'floor' ? {e:.012, c:.03, 
 function buildNet(){
   disposeTree(roots.net); netCache = null; const LY = netLayers(); if (!LY || netSuspend){ renderNetSum(null); return; }
   const N = netCache = netPlan(), plan = view === 'plan', acc = new Map(), H = P.H, closed = view === 'eye' && (P.ceil || 'open') !== 'open';
-  const box = (k, x, y, z, sx, sy, sz) => { const g = new THREE.BoxGeometry(sx, sy, sz); g.translate(x, y, z); const m = nMat(k, plan); if (!acc.has(m)) acc.set(m, []); acc.get(m).push(g); };
-  const seg = (k, a, b, y, t, th = t) => box(k, (a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) + t, th, Math.abs(b[1] - a[1]) + t);
-  const hitBox = (k, id, ly, x, y, z, sx, sy, sz) => { const h = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), NHIT); h.position.set(x, y, z); h.userData.net = {k, id, y:ly}; roots.net.add(h); };
+  const put = (k, g) => { const m = nMat(k, plan); if (!acc.has(m)) acc.set(m, []); acc.get(m).push(g); };
+  const box = (k, x, y, z, sx, sy, sz) => { const g = new THREE.BoxGeometry(sx, sy, sz); g.translate(x, y, z); put(k, g); };
+  const skew = (a, b) => Math.abs(b[0] - a[0]) > .01 && Math.abs(b[1] - a[1]) > .01;   // a slanted piece after a bend point was moved freely
+  const seg = (k, a, b, y, t, th = t) => { if (!skew(a, b)) return box(k, (a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) + t, th, Math.abs(b[1] - a[1]) + t);
+    const g = new THREE.BoxGeometry(Math.hypot(b[0] - a[0], b[1] - a[1]) + t, th, t); g.rotateY(-Math.atan2(b[1] - a[1], b[0] - a[0])); g.translate((a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2); put(k, g); };
+  const hitBox = (k, id, ly, x, y, z, sx, sy, sz, ry = 0) => { const h = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), NHIT); h.position.set(x, y, z); h.rotation.y = ry; h.userData.net = {k, id, y:ly}; roots.net.add(h); };
   const dash = (k, a, b, y, t, th) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]), at = u => [a[0] + (b[0] - a[0]) * u / L, a[1] + (b[1] - a[1]) * u / L];
     for (let u = 0; u < L; u += .26) seg(k, at(u), at(Math.min(L, u + .16)), y, t, th); };
   const off = NOFF, YP = NYP, TT = {e:.035, l:.025, c:.03, h:.03, d:.06, v:.3}, Y3 = netY3;
@@ -1943,14 +1951,19 @@ function buildNet(){
     for (const [a, b, m, id] of N[k]){ const A = sh(a), B = sh(b); if (hide(m)) continue; const y = plan ? YP[k] : Y3(k, m);
       if (plan) (k === 'l' || m === 'floor' ? dash : seg)(k, A, B, YP[k], k === 'v' ? .3 : TT[k] * 1.3, .002);
       else if (k === 'v') seg(k, A, B, Y3('v', m), .3, .2); else seg(k, A, B, Y3(k, m), TT[k]);
-      if (id) hitBox(k, id, y, (A[0] + B[0]) / 2, y, (A[1] + B[1]) / 2, Math.abs(B[0] - A[0]) + .14, k === 'v' ? .3 : .14, Math.abs(B[1] - A[1]) + .14); }
+      if (id){ const sk = skew(A, B); hitBox(k, id, y, (A[0] + B[0]) / 2, y, (A[1] + B[1]) / 2, sk ? Math.hypot(B[0] - A[0], B[1] - A[1]) + .14 : Math.abs(B[0] - A[0]) + .14, k === 'v' ? .3 : .14, sk ? .14 : Math.abs(B[1] - A[1]) + .14, sk ? -Math.atan2(B[1] - A[1], B[0] - A[0]) : 0); } }
     if (!plan) for (const r of N.roots) if (r.k === k && !hide(r.m)){ const p = sh(r.p), y = Y3(k, r.m); if (Math.abs(r.y - y) > .03) box(k, p[0], (r.y + y) / 2, p[1], TT[k], Math.abs(r.y - y), TT[k]); }
     for (const n of N.ends[k] || []){ const p = sh(n.p), y = Y3(k, n.mode || 'ceil'); if (hide(n.mode || 'ceil')) continue;
       if (plan) box(k, p[0], YP[k] + .01, p[1], .1, .002, .1);
       else if (Math.abs(n.y - y) > .03){ box(k, p[0], (n.y + y) / 2, p[1], TT[k], Math.abs(n.y - y), TT[k]); hitBox(k, n.it.id, y, p[0], (n.y + y) / 2, p[1], .14, Math.abs(n.y - y), .14); } } }
   if (sel?.t === 'net' && LY[NLAYER[sel.k]]){ const k = sel.k, o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]], mine = N[k].filter(sg => sg[3] === sel.id);   // the selected line
     for (const [a, b, m] of mine){ const A = sh(a), B = sh(b); if (plan) seg('sel', A, B, YP[k] + .03, .09, .002); else if (!(closed && m === 'ceil')) seg('sel', A, B, k === 'v' ? Y3('v', m) : Y3(k, m), k === 'v' ? .34 : TT[k] * 2.4, k === 'v' ? .24 : TT[k] * 2.4); }
-    if (plan) for (const [a] of mine.slice(1)){ const A = sh(a); box('sel', A[0], YP[k] + .05, A[1], .14, .002, .14); } }
+    if (mine.length){ const pts = [mine[0][0], ...mine.map(sg => sg[1])], r = plan ? .09 : .07;   // bend points, and half-see-through ones in the middle of each piece to add a new bend
+      const hy = i => plan ? YP[k] + .06 : Y3(k, mine[Math.min(i, mine.length - 1)][2]);
+      const handle = (m, p, y, rr, u) => { const h = new THREE.Mesh(plan ? new THREE.CylinderGeometry(rr, rr, .01, 20) : new THREE.SphereGeometry(rr, 16, 10), m); h.position.set(p[0], y, p[1]); h.renderOrder = 12; h.userData.netPt = u; roots.net.add(h); };
+      for (let i = 1; i < pts.length - 1; i++) handle(NPM, sh(pts[i]), hy(i), r, {k, id:sel.id, i, y:hy(i)});
+      for (let i = 0; i < pts.length - 1; i++){ const a = sh(pts[i]), b = sh(pts[i + 1]); if (Math.hypot(b[0] - a[0], b[1] - a[1]) < .4) continue;
+        handle(NPM2, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], hy(i), r * .75, {k, id:sel.id, ins:i + 1, y:hy(i)}); } } }
   if (LY.v) for (const p of N.diff){ if (plan) box('v', p[0], YP.v + .01, p[1], .45, .002, .45); else if (closed) box('v', p[0], H - .006, p[1], .5, .01, .5); else { box('v', p[0], H - .33, p[1], .45, .06, .45); } }
   for (const [m, l] of acc){ const geo = mergeGeometries(l, false); l.forEach(g => g.dispose()); const me = new THREE.Mesh(geo, m); me.userData.nopick = true;
     if (plan) me.renderOrder = 6; else me.castShadow = me.receiveShadow = false; roots.net.add(me); }
@@ -1982,6 +1995,14 @@ function netPick(e){ const LY = netLayers(); if (!LY || !netCache) return null; 
       const A = scr(a[0] + o[0], y, a[1] + o[1]), B = scr(b[0] + o[0], y, b[1] + o[1]); if (!A || !B) continue;
       const q = segProj([mx, my], A, B), d = Math.hypot(mx - q[0], my - q[1]); if (d < (k === 'v' ? 14 : 10) && (!best || d < best.d)) best = {d, k, id, y}; } }
   return best; }
+function netPtPick(e){ if (!netCache || sel?.t !== 'net') return null; setRay(e); const h = ray.intersectObjects(roots.net.children.filter(o => o.userData.netPt), false)[0]; return h ? h.object.userData.netPt : null; }
+const ownerPts = (k, id) => { const segs = (netCache?.[k] || []).filter(sg => sg[3] === id); return segs.length ? [segs[0][0], ...segs.map(sg => sg[1])].map(p => [...p]) : null; };
+function netPtDrag(dr, hit, free){ const it = P.items.find(i => i.id === dr.id); if (!it) return;
+  if (!dr.base){ dr.base = ownerPts(dr.k, dr.id); if (!dr.base) return; if (dr.ins){ const a = dr.base[dr.ins - 1], b = dr.base[dr.ins]; dr.base.splice(dr.ins, 0, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); dr.i = dr.ins; } }
+  const o = NOFF[dr.k] || [0, 0], wb = wallBounds(); let x = clamp(hit.x - o[0], wb.x0, wb.x1), z = clamp(hit.z - o[1], wb.z0, wb.z1); if (!free){ x = snapv(x); z = snapv(z); }
+  const pts = dr.base.map(p => [...p]);
+  if (!free) for (const q of [pts[dr.i - 1], pts[dr.i + 1]]) if (q){ if (Math.abs(q[0] - x) < .12) x = q[0]; if (Math.abs(q[1] - z) < .12) z = q[1]; }   // clicks to a straight angle
+  pts[dr.i] = [x, z]; it.net ??= {}; it.net[dr.k] = {...(it.net[dr.k] || {}), pts}; buildNet(); need(); }
 function netDrag(dr, hit, free){ const it = P.items.find(i => i.id === dr.id); if (!it || !netCache) return;
   if (!dr.base){ const segs = netCache[dr.k].filter(sg => sg[3] === dr.id); if (!segs.length) return; const pts = [segs[0][0], ...segs.map(sg => sg[1])].map(p => [...p]);
     let i = 0, bd = Infinity; segs.forEach(([a, b], j) => { const q = segProj([dr.hx, dr.hz], a, b), d = Math.hypot(dr.hx - q[0], dr.hz - q[1]); if (d < bd){ bd = d; i = j; } });
@@ -1999,7 +2020,7 @@ function netInsp(it){ const k = sel.k, c = it.net?.[k], m = c?.m || it.feed || (
   const len = (netCache?.[k] || []).filter(sg => sg[3] === it.id).reduce((s, [a, b]) => s + Math.hypot(b[0] - a[0], b[1] - a[1]), 0);
   return `<div class="ih"><b>Линия: ${NET_N[k]}</b><span>к «${esc(DEF[it.kind].n)}» · длина ${String((len).toFixed(1)).replace('.', ',')} м</span></div>
     ${k === 'l' || k === 'v' ? '' : `<div class="grp"><h3>Как вести</h3><div class="chips">${[['ceil', 'По потолку'], ['floor', 'В полу'], ['wall', 'По низу стен']].filter(([q]) => !(k === 'd' && q === 'ceil')).map(([q, n]) => `<button class="chip" type="button" data-nm="${q}" aria-pressed="${m === q}">${n}</button>`).join('')}</div></div>`}
-    <div class="grp"><h3>Путь</h3><p class="note">${c?.pts ? 'Проложен вручную.' : 'Проложен автоматически.'} Тяните любой отрезок этой линии на плане — он сдвинется, углы останутся прямыми. Конец линии сам идёт за предметом.</p>
+    <div class="grp"><h3>Путь</h3><p class="note">${c?.pts ? 'Проложен вручную.' : 'Проложен автоматически.'} Кружки — точки сгиба, тяните их куда нужно. Полупрозрачный кружок на середине отрезка — потяните, и появится новый сгиб. Двойной клик по точке — убрать её. Стрелкой можно тянуть и целый отрезок. Конец линии сам идёт за предметом.</p>
       <div class="row2"><button class="btn" type="button" data-na="reset" ${c?.pts ? '' : 'disabled'}>Сбросить к авто</button><button class="btn" type="button" data-na="item">Выбрать предмет</button></div></div>`; }
 function netUI(){ $('routeE').value = routeOf('e'); $('routeW').value = routeOf('w'); $('netBtn').setAttribute('aria-pressed', NET.on); $('netBtn').setAttribute('aria-expanded', !$('netPop').hidden); document.querySelectorAll('[data-net]').forEach(c => c.checked = !!NET[c.dataset.net]); }
 $('netBtn').addEventListener('click', e => { e.stopPropagation(); const pop = $('netPop');
