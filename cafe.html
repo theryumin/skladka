@@ -277,7 +277,8 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
   <aside class="panel" id="lib">
     <div class="ptop">
       <div class="tools">
-        <button class="tool" type="button" data-tool="select" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m5 3 14 8-6 1.5L10 19z"/></svg>Выбрать</button>
+        <button class="tool" type="button" data-tool="select" aria-pressed="true" title="Стрелка — выбрать и двигать (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m5 3 14 8-6 1.5L10 19z"/></svg>Стрелка</button>
+        <button class="tool" type="button" data-tool="hand" aria-pressed="false" title="Рука — двигать вид (H или зажатый пробел)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5V4a1.5 1.5 0 0 1 3 0v7.5M14 11.5V5.5a1.5 1.5 0 0 1 3 0V13M17 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15.6a1.6 1.6 0 0 1 2.4-2.1L8 14.6"/></svg>Рука</button>
         <button class="tool" type="button" data-tool="wall" aria-pressed="false" title="Рисовать стены кликами по полу"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V8h8V4h8"/><circle cx="4" cy="20" r="1.6" fill="currentColor"/><circle cx="20" cy="4" r="1.6" fill="currentColor"/></svg>Стена</button>
       </div>
       <input class="q" id="q" type="search" placeholder="Найти: кофемашина, стол…" aria-label="Поиск по каталогу">
@@ -1352,8 +1353,9 @@ stage.addEventListener('pointerdown', e => {
   down = {x:e.clientX, y:e.clientY, t:performance.now(), s:null};
   if (placing){ e.stopPropagation(); down.placed = true; finishPlace(); return; }
   if (tool === 'wall'){ e.stopPropagation(); wallClick(e); return; }
-  const np = netPick(e); if (np){ const hit = floorHit(e); ctl().enabled = false; e.stopPropagation(); if (sel?.t !== 'net' || sel.k !== np.k || sel.id !== np.id) select({t:'net', k:np.k, id:np.id});
-    drag = {t:'net', k:np.k, id:np.id, hx:hit.x, hz:hit.z, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
+  if (tool === 'hand'){ stage.style.cursor = 'grabbing'; return; }   // the hand only moves the view
+  const np = netPick(e); if (np){ const gy = view === 'plan' ? 0 : np.y, hit = floorHit(e, gy); if (!hit) return; ctl().enabled = false; e.stopPropagation(); if (sel?.t !== 'net' || sel.k !== np.k || sel.id !== np.id) select({t:'net', k:np.k, id:np.id});
+    drag = {t:'net', k:np.k, id:np.id, gy, hx:hit.x, hz:hit.z, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
   const p = pick(e); if (!p) return; down.s = p.s;
   // the item is dragged in the horizontal plane at the height where it was grabbed, so it stays under the cursor
   // (the floor point behind a tall fridge in 3D can be metres away and jumps wildly at a low camera angle)
@@ -1395,6 +1397,7 @@ stage.addEventListener('pointermove', e => {
 stage.addEventListener('pointerup', e => {
   if (placing && placing.fromLib && placing.moved){ finishPlace(); return; }
   if (tool === 'wall'){ return; }
+  if (tool === 'hand'){ stage.style.cursor = 'grab'; down = null; return; }
   ctl().enabled = true;
   if (down?.placed){ down = null; return; }
   if (drag){ const d = drag; drag = null; clearGuides(); try { stage.releasePointerCapture(e.pointerId); } catch {}
@@ -1447,7 +1450,8 @@ function wallPreview(e){ const p = wallPoint(e);
 function endChain(){ if (wallPrev){ scene.remove(wallPrev); wallPrev.geometry.dispose(); wallPrev = null; } if (wallPrevLbl){ scene.remove(wallPrevLbl); wallPrevLbl = null; }
   if (chain){ if (!chain.n) hist.pop(); else changed(); } chain = null; undoBtns(); }
 function setTool(t){ if (tool === 'wall' && t !== 'wall') endChain(); tool = t; document.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === t));
-  ctl().enabled = true; stage.style.cursor = t === 'wall' ? 'crosshair' : ''; if (t === 'wall'){ select(null); if (view !== 'plan') setView('plan'); } hintUpdate(); }
+  ctl().enabled = true; stage.style.cursor = t === 'wall' ? 'crosshair' : t === 'hand' ? 'grab' : '';
+  ctl3.mouseButtons.LEFT = t === 'hand' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE; ctl3.touches.ONE = t === 'hand' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE; if (t === 'wall'){ select(null); if (view !== 'plan') setView('plan'); } hintUpdate(); }
 document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
 /* ---------- views and camera ---------- */
@@ -1674,6 +1678,8 @@ function dup(){ const d = selData(); if (!d || sel.t === 'wall') return; snap();
   changed(); }
 
 /* ---------- keyboard ---------- */
+let spaceTool = null;   // holding space = the hand for a moment
+addEventListener('keyup', e => { if (e.code === 'Space' && spaceTool){ setTool(spaceTool); spaceTool = null; } });
 addEventListener('keydown', e => {
   if ($('app').hidden || isTyping() || document.querySelector('dialog[open]')) return;
   const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
@@ -1681,6 +1687,8 @@ addEventListener('keydown', e => {
   if (mod && k === 'y'){ e.preventDefault(); redo(); return; }
   if (e.key === 'Escape'){ if (placing) cancelPlace(); else if (tool === 'wall'){ if (chain) endChain(); else setTool('select'); } else select(null); return; }
   if (e.key === 'Enter' && tool === 'wall'){ endChain(); return; }
+  if (!mod && !placing && (e.code === 'KeyV' || e.code === 'KeyH')){ setTool(e.code === 'KeyH' ? 'hand' : 'select'); return; }
+  if (e.code === 'Space' && !e.repeat && tool !== 'hand' && tool !== 'wall' && !drag){ e.preventDefault(); spaceTool = tool; setTool('hand'); return; }
   const d = selData();
   if (placing && (k === 'r' || k === 'q' || k === 'e')){ const it = P.items.find(i => i.id === placing.id); if (it){ it.rot = (it.rot || 0) + (k === 'r' ? -Math.PI / 2 : k === 'q' ? 15 * DEG : -15 * DEG); moveItemTo(it, it.x, it.z, true); drawSel(); } return; }
   if (!d) return;
@@ -1698,6 +1706,7 @@ function hintUpdate(){ const t = $('hintT');
   if (placing) t.innerHTML = placing.t === 'op' ? '<b>Ведите вдоль стены</b> и кликните, чтобы поставить. Esc — отмена.' : '<b>Кликните по полу</b>, чтобы поставить. <b>R</b> — повернуть, Esc — отмена. Возле стены предмет прилипает к ней.';
   else if (tool === 'wall') t.innerHTML = chain ? '<b>Кликайте</b> — следующий угол. Двойной клик, Enter или правая кнопка — закончить. Shift — любой угол.' : '<b>Кликните по полу</b> — первый угол стены. Шаг 5 см, концы липнут к другим стенам.';
   else if (sel?.t === 'item') t.innerHTML = '<b>Тяните</b>, чтобы двигать, с зажатой <b>X</b> — заедет в другой предмет. R — повернуть, Del — удалить, Ctrl+D — копия.';
+  else if (tool === 'hand') t.innerHTML = '<b>Рука:</b> тяните, чтобы двигать вид, колесо — зум. <b>V</b> — стрелка, чтобы снова выбирать и двигать.';
   else if (sel?.t === 'net') t.innerHTML = '<b>Тяните отрезок линии</b>, чтобы провести её по-другому. Справа — как вести. Del — вернуть автоматический путь.';
   else if (sel?.t === 'wall') t.innerHTML = view === 'plan' ? '<b>Тяните стену</b>, чтобы сдвинуть, или кружок на конце. Справа — длина и проёмы.' : 'Длину, цвет и проёмы стены меняйте справа.';
   else t.innerHTML = view === 'plan' ? 'План сверху. <b>Тяните</b> — двигать вид, колесо — зум. Выберите предмет в каталоге слева.' : 'Выберите предмет в каталоге слева и <b>кликните по полу</b>. Или перетащите.';
@@ -1909,7 +1918,8 @@ function setSheet(k){ SHEET = k; document.querySelectorAll('[data-sheet]').forEa
   need(); }
 $('sheets').innerHTML = SHEETS.map(([k, n]) => `<button class="tab" type="button" role="tab" data-sheet="${k}" aria-selected="${k === 'all'}">${n}</button>`).join('');
 $('sheets').addEventListener('click', e => { const b = e.target.closest('[data-sheet]'); if (b) setSheet(b.dataset.sheet); });
-const NOFF = {h:[.07, .07], d:[-.07, -.07]};
+const NOFF = {h:[.07, .07], d:[-.07, -.07]}, NYP = {v:.4, d:.45, c:.5, h:.55, e:.6, l:.65};
+const netY3 = (k, m) => { const H = P.H; return m === 'floor' ? {e:.012, c:.03, h:.03, d:.02}[k] ?? .02 : m === 'wall' ? {e:.3, c:.16, h:.16, d:.07}[k] ?? .2 : {e:H - .06, l:H - .03, c:H - .14, h:H - .14, d:H - .2, v:H - .2}[k]; };
 function buildNet(){
   disposeTree(roots.net); netCache = null; const LY = netLayers(); if (!LY || netSuspend){ renderNetSum(null); return; }
   const N = netCache = netPlan(), plan = view === 'plan', acc = new Map(), H = P.H, closed = view === 'eye' && (P.ceil || 'open') !== 'open';
@@ -1917,8 +1927,7 @@ function buildNet(){
   const seg = (k, a, b, y, t, th = t) => box(k, (a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) + t, th, Math.abs(b[1] - a[1]) + t);
   const dash = (k, a, b, y, t, th) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]), at = u => [a[0] + (b[0] - a[0]) * u / L, a[1] + (b[1] - a[1]) * u / L];
     for (let u = 0; u < L; u += .26) seg(k, at(u), at(Math.min(L, u + .16)), y, t, th); };
-  const off = NOFF, YP = {v:.4, d:.45, c:.5, h:.55, e:.6, l:.65}, TT = {e:.035, l:.025, c:.03, h:.03, d:.06, v:.3};
-  const Y3 = (k, m) => m === 'floor' ? {e:.012, c:.03, h:.03, d:.02}[k] ?? .02 : m === 'wall' ? {e:.3, c:.16, h:.16, d:.07}[k] ?? .2 : {e:H - .06, l:H - .03, c:H - .14, h:H - .14, d:H - .2, v:H - .2}[k];
+  const off = NOFF, YP = NYP, TT = {e:.035, l:.025, c:.03, h:.03, d:.06, v:.3}, Y3 = netY3;
   for (const k of ['v', 'd', 'c', 'h', 'e', 'l']){ if (!LY[NLAYER[k]]) continue;
     const o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]], hide = m => closed && m === 'ceil';   // above a suspended ceiling
     for (const [a, b, m] of N[k]){ const A = sh(a), B = sh(b); if (hide(m)) continue;
@@ -1950,11 +1959,14 @@ function buildCeil(){ disposeTree(roots.ceil); const k = P.ceil || 'open'; if (v
   const c = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:'#ffffff', roughness:.92, side:THREE.DoubleSide, map:k === 'grid' ? ceilTex : null}));
   c.rotation.x = -Math.PI / 2; c.position.y = P.H - .002; c.castShadow = c.receiveShadow = false; c.userData.nopick = true; roots.ceil.add(c); }
 // clicking a line on the plan selects it; dragging one of its pieces re-draws the line by hand
-function netPick(e){ const LY = netLayers(); if (!LY || view !== 'plan' || !netCache) return null; const hit = floorHit(e); if (!hit) return null;
-  const r = R3.domElement.getBoundingClientRect(), tol = (ortho.top - ortho.bottom) / ortho.zoom / r.height * 7; let best = null;
+function netPick(e){ const LY = netLayers(); if (!LY || !netCache) return null; const r = R3.domElement.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const closed = view === 'eye' && (P.ceil || 'open') !== 'open', v3 = new THREE.Vector3();
+  const scr = (x, y, z) => { v3.set(x, y, z).project(cam()); return v3.z > 1 ? null : [(v3.x + 1) / 2 * r.width, (1 - v3.y) / 2 * r.height]; };
+  let best = null;
   for (const k of ['l', 'e', 'h', 'c', 'd', 'v']){ if (!LY[NLAYER[k]]) continue; const o = NOFF[k] || [0, 0];
-    for (const [a, b, , id] of netCache[k]){ if (!id) continue; const A = [a[0] + o[0], a[1] + o[1]], B = [b[0] + o[0], b[1] + o[1]], q = segProj([hit.x, hit.z], A, B), d = Math.hypot(hit.x - q[0], hit.z - q[1]);
-      if (d < (k === 'v' ? Math.max(tol, .15) : tol) && (!best || d < best.d)) best = {d, k, id}; } }
+    for (const [a, b, m, id] of netCache[k]){ if (!id || (closed && m === 'ceil')) continue; const y = view === 'plan' ? NYP[k] : netY3(k, m);
+      const A = scr(a[0] + o[0], y, a[1] + o[1]), B = scr(b[0] + o[0], y, b[1] + o[1]); if (!A || !B) continue;
+      const q = segProj([mx, my], A, B), d = Math.hypot(mx - q[0], my - q[1]); if (d < (k === 'v' ? 12 : 8) && (!best || d < best.d)) best = {d, k, id, y}; } }
   return best; }
 function netDrag(dr, hit, free){ const it = P.items.find(i => i.id === dr.id); if (!it || !netCache) return;
   if (!dr.base){ const segs = netCache[dr.k].filter(sg => sg[3] === dr.id); if (!segs.length) return; const pts = [segs[0][0], ...segs.map(sg => sg[1])].map(p => [...p]);
@@ -1962,7 +1974,8 @@ function netDrag(dr, hit, free){ const it = P.items.find(i => i.id === dr.id); i
     const a = pts[i], b = pts[i + 1]; dr.ax = Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]) ? 1 : 0;   // a piece along x moves in z and the other way round
     if (i === pts.length - 2){ pts.push([...pts[pts.length - 1]]); } if (i === 0){ pts.unshift([...pts[0]]); i++; }
     dr.base = pts; dr.i = i; }
-  let d = dr.ax ? hit.z - dr.hz : hit.x - dr.hx; if (!free) d = snapv(d); const pts = dr.base.map(p => [...p]); pts[dr.i][dr.ax] += d; pts[dr.i + 1][dr.ax] += d;
+  const wb = wallBounds(), hx = clamp(hit.x, wb.x0, wb.x1), hz = clamp(hit.z, wb.z0, wb.z1);
+  let d = dr.ax ? hz - dr.hz : hx - dr.hx; if (!free) d = snapv(d); const pts = dr.base.map(p => [...p]); pts[dr.i][dr.ax] += d; pts[dr.i + 1][dr.ax] += d;
   it.net ??= {}; it.net[dr.k] = {...(it.net[dr.k] || {}), pts}; buildNet(); need(); }
 function tidyPts(pts){ const out = []; for (const p of pts){ const l = out[out.length - 1]; if (l && Math.hypot(p[0] - l[0], p[1] - l[1]) < .01) continue; out.push(p); }
   for (let i = out.length - 2; i > 0; i--){ const a = out[i - 1], b = out[i], c = out[i + 1]; if ((Math.abs(a[0] - b[0]) < .005 && Math.abs(b[0] - c[0]) < .005) || (Math.abs(a[1] - b[1]) < .005 && Math.abs(b[1] - c[1]) < .005)) out.splice(i, 1); }
@@ -2432,7 +2445,7 @@ addEventListener('beforeunload', () => { if (saveT && pid && P){ LS.set('skladka
 window.__cafeMk = {keys:() => [...Object.keys(OPS), ...Object.keys(DEF)], thumb:k => makeThumb(k, 'image/webp'), big:(k, e, dv) => makeThumb(k, 'image/png', e, [800, 600], dv),
   starter:k => starterShot(STARTERS.find(x => x[0] === k)[3]), heights:() => P.items.map(i => [i.kind, +baseY(i).toFixed(3)]),
   add:(k, x, z, rot, e) => { snap(); P.items.push(newItem(k, x, z, rot, e)); changed(); },
-  net:() => netCache, scr:(x, z) => { const v = new THREE.Vector3(x, .5, z).project(cam()), r = R3.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; },
+  net:() => netCache, scr3:(x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam()), r = R3.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; }, scr:(x, z) => { const v = new THREE.Vector3(x, .5, z).project(cam()), r = R3.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; },
   drop:(k, x, z, rot = 0) => { const it = newItem(k, x, z, rot); P.items.push(it); buildItems(); moveItemTo(it, x, z, false); changed(); return [k, +it.x.toFixed(3), +it.z.toFixed(3), +baseY(it).toFixed(3)]; }};
 (async () => {
   if (!SB.user) return;
