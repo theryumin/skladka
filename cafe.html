@@ -300,7 +300,7 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
         <label><input type="checkbox" data-net="v"><i style="background:#8a949e"></i>Вентиляция и вытяжка</label>
         <div class="nroute"><span>Электрику вести</span><select id="routeE"><option value="ceil">по потолку</option><option value="floor">в полу</option><option value="wall">по низу стен</option></select></div>
         <div class="nroute"><span>Воду и слив вести</span><select id="routeW"><option value="floor">в полу</option><option value="wall">по низу стен</option><option value="ceil">по потолку (слив — в полу)</option></select></div>
-        <p>Пунктир — трасса в полу. У отдельной техники подвод можно поменять справа, в «Подключении».</p>
+        <p>Пунктир — трасса в полу. На «Плане» кликните по любой линии, чтобы поправить её: тяните отрезки, меняйте, как её вести.</p>
         <div class="nrow"><button class="btn pri" type="button" id="netAuto">Разложить заново</button><button class="btn" type="button" id="netOff">Скрыть сети</button></div>
         <div class="nsum" id="netSum"></div>
       </div></div>
@@ -1217,14 +1217,14 @@ let sel = null;   // {t:'item'|'op'|'wall', id}
 const selMat = new THREE.LineBasicMaterial({color:new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#731eff'), depthTest:false, transparent:true});
 let selLine = null, selLbl = null, handles = [];
 function findOp(id){ let r = null; roots.walls.traverse(o => { if (o.userData.sel?.t === 'op' && o.userData.sel.id === id) r = o; }); return r; }
-function selData(){ if (!sel) return null; return sel.t === 'item' ? P.items.find(i => i.id === sel.id) : sel.t === 'op' ? P.ops.find(o => o.id === sel.id) : P.walls.find(w => w.id === sel.id); }
+function selData(){ if (!sel) return null; return sel.t === 'item' || sel.t === 'net' ? P.items.find(i => i.id === sel.id) : sel.t === 'op' ? P.ops.find(o => o.id === sel.id) : P.walls.find(w => w.id === sel.id); }
 function drawSel(){
   need();
   if (selLine){ selLine.parent?.remove(selLine); selLine.geometry.dispose(); selLine = null; }
   if (selLbl){ selLbl.parent?.remove(selLbl); selLbl = null; }
   for (const h of handles){ h.parent?.remove(h); h.geometry.dispose(); } handles = [];
   if (sel && !selData()) sel = null;
-  const o = sel && (sel.t === 'op' ? findOp(sel.id) : sel.t === 'item' ? itemObj.get(sel.id) : wallObj.get(sel.id)); if (!o) return;
+  const o = sel && (sel.t === 'op' ? findOp(sel.id) : sel.t === 'item' || sel.t === 'net' ? itemObj.get(sel.id) : wallObj.get(sel.id)); if (!o) return;
   const [w, h, d, y0, x0 = 0] = o.userData.box;
   selLine = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w + .03, h + .03, d + .03)), selMat); selLine.renderOrder = 999;
   selLine.position.set(x0, y0 + h / 2, 0); selLine.userData.nopick = true; o.add(selLine);
@@ -1233,7 +1233,7 @@ function drawSel(){
     for (const end of ['a', 'b']){ const hm = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .02, 24), new THREE.MeshBasicMaterial({color:selMat.color, depthTest:false}));
       hm.renderOrder = 1000; hm.position.set(W[end][0], (W.h || P.H) + .05, W[end][1]); hm.userData.sel = {t:'wend', id:W.id, end}; roots.ui.add(hm); handles.push(hm); } }
 }
-function select(s){ sel = s; drawSel(); renderInsp(); hintUpdate(); }
+function select(s){ const wasNet = sel?.t === 'net'; sel = s; if (wasNet || s?.t === 'net') buildNet(); drawSel(); renderInsp(); hintUpdate(); }
 
 /* ---------- history ---------- */
 let hist = [], fut = [];
@@ -1346,6 +1346,8 @@ stage.addEventListener('pointerdown', e => {
   down = {x:e.clientX, y:e.clientY, t:performance.now(), s:null};
   if (placing){ e.stopPropagation(); down.placed = true; finishPlace(); return; }
   if (tool === 'wall'){ e.stopPropagation(); wallClick(e); return; }
+  const np = netPick(e); if (np){ const hit = floorHit(e); ctl().enabled = false; e.stopPropagation(); if (sel?.t !== 'net' || sel.k !== np.k || sel.id !== np.id) select({t:'net', k:np.k, id:np.id});
+    drag = {t:'net', k:np.k, id:np.id, hx:hit.x, hz:hit.z, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
   const p = pick(e); if (!p) return; down.s = p.s;
   // the item is dragged in the horizontal plane at the height where it was grabbed, so it stays under the cursor
   // (the floor point behind a tall fridge in 3D can be metres away and jumps wildly at a low camera angle)
@@ -1377,6 +1379,7 @@ stage.addEventListener('pointermove', e => {
       for (const o of P.items) if (DEF[o.kind].place === 'on' && !drag.riders.some(r => r.o === o)){ const g = itemObj.get(o.id); if (g) g.position.y = baseY(o); }
       if (selLbl) selLbl.element.textContent = `${cm(it.w)} × ${cm(it.d)}`; renderInspPos(); showGuides(it); }
     else if (drag.t === 'op'){ moveOpTo(drag.op, hit.x, hit.z); buildWalls(); drawSel(); }
+    else if (drag.t === 'net') netDrag(drag, hit, e.altKey);
     else if (drag.t === 'wend'){ const x = e.altKey ? hit.x : snapv(hit.x), z = e.altKey ? hit.z : snapv(hit.z); for (const [V, end] of drag.linked) V[end] = [x, z]; buildWalls(); buildFloor(); drawSel(); }
     else if (drag.t === 'wall'){ const {dx, dz} = wallInfo(drag.W), nx = -dz, nz = dx; let dd = (hit.x - drag.hx) * nx + (hit.z - drag.hz) * nz; if (!e.altKey) dd = snapv(dd);
       for (const [V, end, o] of drag.linked) V[end] = [o[0] + nx * dd, o[1] + nz * dd]; buildWalls(); buildFloor(); drawSel(); }
@@ -1389,6 +1392,7 @@ stage.addEventListener('pointerup', e => {
   ctl().enabled = true;
   if (down?.placed){ down = null; return; }
   if (drag){ const d = drag; drag = null; clearGuides(); try { stage.releasePointerCapture(e.pointerId); } catch {}
+    if (d.t === 'net' && d.moved){ const it = P.items.find(i => i.id === d.id), c = it?.net?.[d.k]; if (c?.pts) c.pts = tidyPts(c.pts); }
     if (d.moved){ hist.push(d.start); fut = []; changed(); } return; }
   if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 4 && performance.now() - down.t < 600){
     const p = pick(e); if (p && p.s.t === 'wall') select({t:'wall', id:p.s.id}); else if (!p) select(null); }
@@ -1522,6 +1526,7 @@ const num = (k, label, v, o = '') => `<label class="f">${label}<input type="numb
 function renderInsp(){
   const el = $('inspIn'), d = selData();
   if (!d){ el.innerHTML = roomPanel(); return; }
+  if (sel.t === 'net'){ el.innerHTML = netInsp(d); return; }
   if (sel.t === 'item'){ const D = DEF[d.kind], [ox, oz] = origin(), rs = D.rs || '', ang = Math.round(((((d.rot || 0) / DEG) % 360) + 360) % 360);
     el.innerHTML = `<div class="ih"><b>${esc(D.n)}</b><span>${esc(CATS.find(c => c[0] === D.cat)?.[1] || '')} · ${sizeTxt(d.w, d.d, D.full ? P.H : d.h)} см</span></div>
       <div class="grp"><h3>Положение, см</h3><div class="row3">${num('x', 'X', cm(d.x - ox))}${num('z', 'Y', cm(d.z - oz))}${num('rot', 'Поворот, °', ang, 'step="15"')}</div>
@@ -1616,6 +1621,10 @@ $('inspIn').addEventListener('change', e => {
 });
 $('inspIn').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return; const d = selData(), ds = b.dataset;
+  if (sel?.t === 'net' && d){ const k = sel.k;
+    if (ds.nm){ snap(); d.net ??= {}; d.net[k] = {m:ds.nm}; return changed(); }
+    if (ds.na === 'reset'){ snap(); if (d.net?.[k]) delete d.net[k].pts; return changed(); }
+    if (ds.na === 'item') return select({t:'item', id:d.id}); return; }
   if (!d){
     if (ds.rcol){ snap(); P.wallCol = ds.rcol; return changed(); }
     if (ds.floor){ snap(); P.floor = ds.floor; return changed(); }
@@ -1648,6 +1657,7 @@ $('inspIn').addEventListener('click', e => {
 function freeSpot(W, w){ const {L} = wallInfo(W), taken = P.ops.filter(o => o.wall === W.id).map(o => [o.pos - o.w / 2 - .1, o.pos + o.w / 2 + .1]);
   for (let s = L / 2, k = 0; k < 40; k++){ for (const c of [L / 2 + k * .1, L / 2 - k * .1]){ if (c - w / 2 < .1 || c + w / 2 > L - .1) continue; if (!taken.some(([a, b]) => c + w / 2 > a && c - w / 2 < b)) return c; } } return null; }
 function del(){ if (!sel) return; snap();
+  if (sel.t === 'net'){ const it = selData(); if (it?.net?.[sel.k]) delete it.net[sel.k].pts; return changed(); }
   if (sel.t === 'item') P.items = P.items.filter(i => i.id !== sel.id);
   else if (sel.t === 'op') P.ops = P.ops.filter(o => o.id !== sel.id);
   else { P.walls = P.walls.filter(w => w.id !== sel.id); P.ops = P.ops.filter(o => o.wall !== sel.id); }
@@ -1669,7 +1679,7 @@ addEventListener('keydown', e => {
   if (placing && (k === 'r' || k === 'q' || k === 'e')){ const it = P.items.find(i => i.id === placing.id); if (it){ it.rot = (it.rot || 0) + (k === 'r' ? -Math.PI / 2 : k === 'q' ? 15 * DEG : -15 * DEG); moveItemTo(it, it.x, it.z, true); drawSel(); } return; }
   if (!d) return;
   if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); del(); return; }
-  if (mod && k === 'd'){ e.preventDefault(); dup(); return; }
+  if (mod && k === 'd' && sel.t !== 'net'){ e.preventDefault(); dup(); return; }
   if (sel.t === 'item'){
     if (k === 'r' || k === 'q' || k === 'e'){ snap(); d.rot = (d.rot || 0) + (k === 'r' ? (e.shiftKey ? 1 : -1) * Math.PI / 2 : k === 'q' ? 15 * DEG : -15 * DEG); changed(); return; }
     const st = e.shiftKey ? .1 : .01, mv = {arrowleft:[-st, 0], arrowright:[st, 0], arrowup:[0, -st], arrowdown:[0, st]}[k];
@@ -1682,6 +1692,7 @@ function hintUpdate(){ const t = $('hintT');
   if (placing) t.innerHTML = placing.t === 'op' ? '<b>Ведите вдоль стены</b> и кликните, чтобы поставить. Esc — отмена.' : '<b>Кликните по полу</b>, чтобы поставить. <b>R</b> — повернуть, Esc — отмена. Возле стены предмет прилипает к ней.';
   else if (tool === 'wall') t.innerHTML = chain ? '<b>Кликайте</b> — следующий угол. Двойной клик, Enter или правая кнопка — закончить. Shift — любой угол.' : '<b>Кликните по полу</b> — первый угол стены. Шаг 5 см, концы липнут к другим стенам.';
   else if (sel?.t === 'item') t.innerHTML = '<b>Тяните</b>, чтобы двигать, с зажатой <b>X</b> — заедет в другой предмет. R — повернуть, Del — удалить, Ctrl+D — копия.';
+  else if (sel?.t === 'net') t.innerHTML = '<b>Тяните отрезок линии</b>, чтобы провести её по-другому. Справа — как вести. Del — вернуть автоматический путь.';
   else if (sel?.t === 'wall') t.innerHTML = view === 'plan' ? '<b>Тяните стену</b>, чтобы сдвинуть, или кружок на конце. Справа — длина и проёмы.' : 'Длину, цвет и проёмы стены меняйте справа.';
   else t.innerHTML = view === 'plan' ? 'План сверху. <b>Тяните</b> — двигать вид, колесо — зум. Выберите предмет в каталоге слева.' : 'Выберите предмет в каталоге слева и <b>кликните по полу</b>. Или перетащите.';
   $('hint').hidden = false; }
@@ -1797,12 +1808,19 @@ function netNode(it){ const D = DEF[it.kind]; let x = it.x, z = it.z, y;
   const fx = Math.sin(it.rot || 0), fz = Math.cos(it.rot || 0); return {p:[x, z], y, it, ax:Math.abs(fx) > Math.abs(fz)}; }
 function lpath(q, p, ax){ const pts = Math.abs(p[0] - q[0]) < .01 || Math.abs(p[1] - q[1]) < .01 ? [q, p] : ax ? [q, [p[0], q[1]], p] : [q, [q[0], p[1]], p], segs = [];
   for (let k = 0; k < pts.length - 1; k++) if (Math.hypot(pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1]) > .005) segs.push([pts[k], pts[k + 1]]); return segs; }
-function netTree(root, nodes){ if (!root) return []; const segs = [], left = nodes.filter(n => n.it !== root.it);
+// a line the user re-drew by hand: kept as drawn, its end follows the item
+function customPts(n, k){ const c = n.it.net?.[k]?.pts; if (!c || c.length < 2) return null; const pts = c.map(p => [...p]), L = pts.length, e = pts[L - 1];
+  if (Math.hypot(e[0] - n.p[0], e[1] - n.p[1]) < .005) return pts;
+  if (L === 2) return [pts[0], ...lpath(pts[0], n.p, false).map(sg => sg[1])];
+  const a = pts[L - 2]; if (Math.abs(a[0] - e[0]) < Math.abs(a[1] - e[1])) a[0] = n.p[0]; else a[1] = n.p[1]; pts[L - 1] = [...n.p]; return pts; }
+const ownSegs = (pts, id) => pts.slice(0, -1).map((p, i) => [p, pts[i + 1], id]);
+function netTree(root, nodes, k){ if (!root) return []; const segs = [], left = [];
+  for (const n of nodes){ if (n.it === root.it) continue; const cp = customPts(n, k); if (cp) segs.push(...ownSegs(cp, n.it.id)); else left.push(n); }
   while (left.length){ let best = null;
     for (let i = 0; i < left.length; i++){ const p = left[i].p; let q = root.p, ax = root.ax, d = Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]);
       for (const s of segs){ const r = segProj(p, s[0], s[1]), dd = Math.abs(p[0] - r[0]) + Math.abs(p[1] - r[1]); if (dd < d - 1e-6){ d = dd; q = r; ax = Math.abs(s[0][1] - s[1][1]) > Math.abs(s[0][0] - s[1][0]); } }
       if (!best || d < best.d) best = {i, q, ax, d}; }
-    const n = left.splice(best.i, 1)[0]; segs.push(...lpath(best.q, n.p, best.ax)); }
+    const n = left.splice(best.i, 1)[0]; segs.push(...lpath(best.q, n.p, best.ax).map(sg => [...sg, n.it.id])); }
   return segs; }
 // trace modes: 'ceil' over the ceiling, 'floor' in a floor channel, 'wall' low along the walls (skirting channel)
 const ROUTE_N = {ceil:'По потолку', floor:'В полу', wall:'По низу стен'};
@@ -1819,29 +1837,31 @@ function perim(){ const L = roomLoop(); if (!L) return null; const A = L.reduce(
     out.push(at(s1)); return out; };
   return {proj, walk}; }
 function routeGroup(k, root, nodes, def, out, N){ if (!root) return; const per = perim(), by = {ceil:[], floor:[], wall:[]};
-  for (const n of nodes){ let m = n.it.feed || def; if (m === 'wall' && !per) m = 'floor'; if (k === 'd' && m === 'ceil') m = 'floor'; n.mode = m; by[m].push(n); }
-  for (const m of ['ceil', 'floor']) if (by[m].length){ for (const sg of netTree(root, by[m])) out.push([sg[0], sg[1], m]); N.roots.push({k, p:root.p, y:root.y, m}); }
+  for (const n of nodes){ let m = n.it.net?.[k]?.m || n.it.feed || def; if (m === 'wall' && !per) m = 'floor'; if (k === 'd' && m === 'ceil') m = 'floor'; n.mode = m; by[m].push(n); }
+  for (const m of ['ceil', 'floor']) if (by[m].length){ for (const sg of netTree(root, by[m], k)) out.push([sg[0], sg[1], m, sg[2]]); N.roots.push({k, p:root.p, y:root.y, m}); }
   if (by.wall.length){ const r0 = per.proj(root.p); N.roots.push({k, p:r0.q, y:root.y, m:'wall'}); for (const sg of lpath(root.p, r0.q, root.ax)) out.push([...sg, 'wall']);
-    for (const n of by.wall){ const q = per.proj(n.p), pts = per.walk(r0.s, q.s); for (let i = 0; i < pts.length - 1; i++) out.push([pts[i], pts[i + 1], 'wall']);
-      for (const sg of lpath(q.q, n.p, Math.abs(q.q[0] - n.p[0]) > Math.abs(q.q[1] - n.p[1]))) out.push([...sg, 'wall']); } } }
+    for (const n of by.wall){ const cp = customPts(n, k); if (cp){ for (const sg of ownSegs(cp, n.it.id)) out.push([sg[0], sg[1], 'wall', n.it.id]); continue; }
+      const q = per.proj(n.p), pts = per.walk(r0.s, q.s); for (let i = 0; i < pts.length - 1; i++) out.push([pts[i], pts[i + 1], 'wall', n.it.id]);
+      for (const sg of lpath(q.q, n.p, Math.abs(q.q[0] - n.p[0]) > Math.abs(q.q[1] - n.p[1]))) out.push([...sg, 'wall', n.it.id]); } } }
 function netPlan(){
   const items = P.items.filter(i => DEF[i.kind]), T = i => tech(i) || {}, K = k => items.filter(i => i.kind === k);
-  const N = {e:[], l:[], c:[], h:[], d:[], v:[], ends:{e:[], l:[], c:[], h:[], d:[]}, diff:[], roots:[]}, re = routeOf('e'), rw = routeOf('w'), C = segs => segs.map(sg => [sg[0], sg[1], 'ceil']);
+  const N = {e:[], l:[], c:[], h:[], d:[], v:[], ends:{e:[], l:[], c:[], h:[], d:[]}, diff:[], roots:[]}, re = routeOf('e'), rw = routeOf('w'), C = segs => segs.map(sg => [sg[0], sg[1], 'ceil', sg[2]]);
   const panel = K('panel')[0], riser = K('riser')[0], heater = K('whtr')[0];
   if (panel){ const pn = netNode(panel);
     N.ends.e = items.filter(i => i !== panel && ((T(i).kw && !T(i).sym) || i.kind === 'socket' || i.kind === 'socket3')).map(netNode); routeGroup('e', pn, N.ends.e, re, N.e, N);
-    N.ends.l = items.filter(i => ['light', 'el', 'exit'].includes(T(i).sym)).map(netNode); N.ends.l.forEach(n => n.mode = 'ceil'); N.l = C(netTree(pn, N.ends.l)); }
+    N.ends.l = items.filter(i => ['light', 'el', 'exit'].includes(T(i).sym)).map(netNode); N.ends.l.forEach(n => n.mode = 'ceil'); N.l = C(netTree(pn, N.ends.l, 'l')); }
   if (riser){ const rn = netNode(riser);
     N.ends.c = items.filter(i => T(i).w || i === heater).map(netNode); routeGroup('c', rn, N.ends.c, rw, N.c, N);
     if (heater){ N.ends.h = items.filter(i => T(i).w === 'ch').map(netNode); routeGroup('h', netNode(heater), N.ends.h, rw, N.h, N); }
     const traps = items.filter(i => ['fsink', 'fdrain', 'grease'].includes(i.kind)), dN = items.filter(i => T(i).dr === 'd' || traps.includes(i)).map(netNode);
     for (const it of items.filter(i => T(i).dr === 'i')){ const n = netNode(it);   // indirect waste: short pipe to the nearest floor sink
       const t = traps.filter(x => x.kind !== 'grease').map(x => [x, Math.hypot(x.x - n.p[0], x.z - n.p[1])]).sort((a, b) => a[1] - b[1])[0];
-      if (t && t[1] < 4){ n.mode = 'floor'; N.ends.d.push(n); N.d.push(...lpath(n.p, [t[0].x, t[0].z], false).map(sg => [...sg, 'floor'])); } else dN.push(n); }
+      if (t && t[1] < 4){ n.mode = 'floor'; N.ends.d.push(n); const cp = customPts(n, 'd'); N.d.push(...(cp ? ownSegs(cp, it.id) : lpath([t[0].x, t[0].z], n.p, true).map(sg => [...sg, it.id])).map(sg => [sg[0], sg[1], 'floor', it.id])); } else dN.push(n); }
     routeGroup('d', rn, dN, rw, N.d, N); N.ends.d.push(...dN); }
   const outs = K('ventOut'), hoods = K('hood'), near = (a, o) => a.slice().sort((p, q) => Math.hypot(p.x - o.x, p.z - o.z) - Math.hypot(q.x - o.x, q.z - o.z))[0];
   const used = new Set();
-  for (const h of hoods){ const o = near(outs, h); if (!o) continue; used.add(o.id); N.v.push(...C(lpath(netNode(o).p, [h.x, h.z], netNode(o).ax))); }
+  for (const h of hoods){ const o = near(outs, h); if (!o) continue; used.add(o.id); const cp = customPts({it:h, p:[h.x, h.z]}, 'v');
+    N.v.push(...C(cp ? ownSegs(cp, h.id) : lpath(netNode(o).p, [h.x, h.z], netNode(o).ax).map(sg => [...sg, h.id]))); }
   if (outs.length){   // general supply/exhaust: a duct along the long side of the room with ceiling diffusers
     const o = outs.find(x => !used.has(x.id)) || outs[0], out = roomOutline(), xs = out.map(p => p[0]), zs = out.map(p => p[1]);
     const x0 = Math.min(...xs) + .9, x1 = Math.max(...xs) - .9, z0 = Math.min(...zs) + .9, z1 = Math.max(...zs) - .9, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
@@ -1851,18 +1871,20 @@ function netPlan(){
         if (!hoods.some(h => inPoly(p, itemPoly(h, .2)))) N.diff.push(p); } } }
   return N; }
 
-const NETC = {e:'#f08c00', l:'#e8c400', c:'#1c7ed6', h:'#e03131', d:'#7b5e3b', v:'#8a949e'}, NMAT = new Map();
+const NETC = {e:'#f08c00', l:'#e8c400', c:'#1c7ed6', h:'#e03131', d:'#7b5e3b', v:'#8a949e', sel:'#7048e8'}, NMAT = new Map();
 const NLAYER = {e:'e', l:'l', c:'w', h:'w', d:'w', v:'v'};
 function nMat(k, plan){ const key = k + plan; if (!NMAT.has(key)) NMAT.set(key, plan ? new THREE.MeshBasicMaterial({color:NETC[k], depthTest:false, transparent:true, opacity:k === 'v' ? .4 : .95})
-  : new THREE.MeshStandardMaterial({color:k === 'v' ? '#c3c8cd' : NETC[k], roughness:k === 'v' ? .35 : .5, metalness:k === 'v' ? .75 : .1})); return NMAT.get(key); }
+  : new THREE.MeshStandardMaterial({color:k === 'v' ? '#c3c8cd' : NETC[k], ...(k === 'sel' ? {emissive:'#7048e8', emissiveIntensity:.5} : {}), roughness:k === 'v' ? .35 : .5, metalness:k === 'v' ? .75 : .1})); return NMAT.get(key); }
+let netCache = null;
+const NOFF = {h:[.07, .07], d:[-.07, -.07]};
 function buildNet(){
-  disposeTree(roots.net); if (!NET.on || netSuspend){ renderNetSum(null); return; }
-  const N = netPlan(), plan = view === 'plan', acc = new Map(), H = P.H, closed = view === 'eye' && (P.ceil || 'open') !== 'open';
+  disposeTree(roots.net); netCache = null; if (!NET.on || netSuspend){ renderNetSum(null); return; }
+  const N = netCache = netPlan(), plan = view === 'plan', acc = new Map(), H = P.H, closed = view === 'eye' && (P.ceil || 'open') !== 'open';
   const box = (k, x, y, z, sx, sy, sz) => { const g = new THREE.BoxGeometry(sx, sy, sz); g.translate(x, y, z); const m = nMat(k, plan); if (!acc.has(m)) acc.set(m, []); acc.get(m).push(g); };
   const seg = (k, a, b, y, t, th = t) => box(k, (a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) + t, th, Math.abs(b[1] - a[1]) + t);
   const dash = (k, a, b, y, t, th) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]), at = u => [a[0] + (b[0] - a[0]) * u / L, a[1] + (b[1] - a[1]) * u / L];
     for (let u = 0; u < L; u += .26) seg(k, at(u), at(Math.min(L, u + .16)), y, t, th); };
-  const off = {h:[.07, .07], d:[-.07, -.07]}, YP = {v:.4, d:.45, c:.5, h:.55, e:.6, l:.65}, TT = {e:.035, l:.025, c:.03, h:.03, d:.06, v:.3};
+  const off = NOFF, YP = {v:.4, d:.45, c:.5, h:.55, e:.6, l:.65}, TT = {e:.035, l:.025, c:.03, h:.03, d:.06, v:.3};
   const Y3 = (k, m) => m === 'floor' ? {e:.012, c:.03, h:.03, d:.02}[k] ?? .02 : m === 'wall' ? {e:.3, c:.16, h:.16, d:.07}[k] ?? .2 : {e:H - .06, l:H - .03, c:H - .14, h:H - .14, d:H - .2, v:H - .2}[k];
   for (const k of ['v', 'd', 'c', 'h', 'e', 'l']){ if (!NET[NLAYER[k]]) continue;
     const o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]], hide = m => closed && m === 'ceil';   // above a suspended ceiling
@@ -1873,6 +1895,9 @@ function buildNet(){
     for (const n of N.ends[k] || []){ const p = sh(n.p), y = Y3(k, n.mode || 'ceil'); if (hide(n.mode || 'ceil')) continue;
       if (plan) box(k, p[0], YP[k] + .01, p[1], .1, .002, .1);
       else if (Math.abs(n.y - y) > .03) box(k, p[0], (n.y + y) / 2, p[1], TT[k], Math.abs(n.y - y), TT[k]); } }
+  if (sel?.t === 'net' && NET[NLAYER[sel.k]]){ const k = sel.k, o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]], mine = N[k].filter(sg => sg[3] === sel.id);   // the selected line
+    for (const [a, b, m] of mine){ const A = sh(a), B = sh(b); if (plan) seg('sel', A, B, YP[k] + .03, .09, .002); else if (!(closed && m === 'ceil')) seg('sel', A, B, k === 'v' ? Y3('v', m) : Y3(k, m), k === 'v' ? .34 : TT[k] * 2.4, k === 'v' ? .24 : TT[k] * 2.4); }
+    if (plan) for (const [a] of mine.slice(1)){ const A = sh(a); box('sel', A[0], YP[k] + .05, A[1], .14, .002, .14); } }
   if (NET.v) for (const p of N.diff){ if (plan) box('v', p[0], YP.v + .01, p[1], .45, .002, .45); else if (closed) box('v', p[0], H - .006, p[1], .5, .01, .5); else { box('v', p[0], H - .33, p[1], .45, .06, .45); } }
   for (const [m, l] of acc){ const geo = mergeGeometries(l, false); l.forEach(g => g.dispose()); const me = new THREE.Mesh(geo, m); me.userData.nopick = true;
     if (plan) me.renderOrder = 6; else me.castShadow = me.receiveShadow = false; roots.net.add(me); }
@@ -1891,6 +1916,31 @@ function buildCeil(){ disposeTree(roots.ceil); const k = P.ceil || 'open'; if (v
   const geo = new THREE.ShapeGeometry(new THREE.Shape(roomOutline().map(p => new THREE.Vector2(p[0], -p[1]))));
   const c = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:'#ffffff', roughness:.92, side:THREE.DoubleSide, map:k === 'grid' ? ceilTex : null}));
   c.rotation.x = -Math.PI / 2; c.position.y = P.H - .002; c.castShadow = c.receiveShadow = false; c.userData.nopick = true; roots.ceil.add(c); }
+// clicking a line on the plan selects it; dragging one of its pieces re-draws the line by hand
+function netPick(e){ if (!NET.on || view !== 'plan' || !netCache) return null; const hit = floorHit(e); if (!hit) return null;
+  const r = R3.domElement.getBoundingClientRect(), tol = (ortho.top - ortho.bottom) / ortho.zoom / r.height * 7; let best = null;
+  for (const k of ['l', 'e', 'h', 'c', 'd', 'v']){ if (!NET[NLAYER[k]]) continue; const o = NOFF[k] || [0, 0];
+    for (const [a, b, , id] of netCache[k]){ if (!id) continue; const A = [a[0] + o[0], a[1] + o[1]], B = [b[0] + o[0], b[1] + o[1]], q = segProj([hit.x, hit.z], A, B), d = Math.hypot(hit.x - q[0], hit.z - q[1]);
+      if (d < (k === 'v' ? Math.max(tol, .15) : tol) && (!best || d < best.d)) best = {d, k, id}; } }
+  return best; }
+function netDrag(dr, hit, free){ const it = P.items.find(i => i.id === dr.id); if (!it || !netCache) return;
+  if (!dr.base){ const segs = netCache[dr.k].filter(sg => sg[3] === dr.id); if (!segs.length) return; const pts = [segs[0][0], ...segs.map(sg => sg[1])].map(p => [...p]);
+    let i = 0, bd = Infinity; segs.forEach(([a, b], j) => { const q = segProj([dr.hx, dr.hz], a, b), d = Math.hypot(dr.hx - q[0], dr.hz - q[1]); if (d < bd){ bd = d; i = j; } });
+    const a = pts[i], b = pts[i + 1]; dr.ax = Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]) ? 1 : 0;   // a piece along x moves in z and the other way round
+    if (i === pts.length - 2){ pts.push([...pts[pts.length - 1]]); } if (i === 0){ pts.unshift([...pts[0]]); i++; }
+    dr.base = pts; dr.i = i; }
+  let d = dr.ax ? hit.z - dr.hz : hit.x - dr.hx; if (!free) d = snapv(d); const pts = dr.base.map(p => [...p]); pts[dr.i][dr.ax] += d; pts[dr.i + 1][dr.ax] += d;
+  it.net ??= {}; it.net[dr.k] = {...(it.net[dr.k] || {}), pts}; buildNet(); need(); }
+function tidyPts(pts){ const out = []; for (const p of pts){ const l = out[out.length - 1]; if (l && Math.hypot(p[0] - l[0], p[1] - l[1]) < .01) continue; out.push(p); }
+  for (let i = out.length - 2; i > 0; i--){ const a = out[i - 1], b = out[i], c = out[i + 1]; if ((Math.abs(a[0] - b[0]) < .005 && Math.abs(b[0] - c[0]) < .005) || (Math.abs(a[1] - b[1]) < .005 && Math.abs(b[1] - c[1]) < .005)) out.splice(i, 1); }
+  return out.map(p => [+p[0].toFixed(3), +p[1].toFixed(3)]); }
+const NET_N = {e:'Электрика', l:'Освещение', c:'Холодная вода', h:'Горячая вода', d:'Канализация', v:'Вентиляция'};
+function netInsp(it){ const k = sel.k, c = it.net?.[k], m = c?.m || it.feed || (k === 'l' || k === 'v' ? 'ceil' : routeOf(k === 'e' ? 'e' : 'w'));
+  const len = (netCache?.[k] || []).filter(sg => sg[3] === it.id).reduce((s, [a, b]) => s + Math.hypot(b[0] - a[0], b[1] - a[1]), 0);
+  return `<div class="ih"><b>Линия: ${NET_N[k]}</b><span>к «${esc(DEF[it.kind].n)}» · длина ${String((len).toFixed(1)).replace('.', ',')} м</span></div>
+    ${k === 'l' || k === 'v' ? '' : `<div class="grp"><h3>Как вести</h3><div class="chips">${[['ceil', 'По потолку'], ['floor', 'В полу'], ['wall', 'По низу стен']].filter(([q]) => !(k === 'd' && q === 'ceil')).map(([q, n]) => `<button class="chip" type="button" data-nm="${q}" aria-pressed="${m === q}">${n}</button>`).join('')}</div></div>`}
+    <div class="grp"><h3>Путь</h3><p class="note">${c?.pts ? 'Проложен вручную.' : 'Проложен автоматически.'} Тяните любой отрезок этой линии на плане — он сдвинется, углы останутся прямыми. Конец линии сам идёт за предметом.</p>
+      <div class="row2"><button class="btn" type="button" data-na="reset" ${c?.pts ? '' : 'disabled'}>Сбросить к авто</button><button class="btn" type="button" data-na="item">Выбрать предмет</button></div></div>`; }
 function netUI(){ $('routeE').value = routeOf('e'); $('routeW').value = routeOf('w'); $('netBtn').setAttribute('aria-pressed', NET.on); $('netBtn').setAttribute('aria-expanded', !$('netPop').hidden); document.querySelectorAll('[data-net]').forEach(c => c.checked = !!NET[c.dataset.net]); }
 $('netBtn').addEventListener('click', e => { e.stopPropagation(); const pop = $('netPop');
   if (!NET.on){ NET.on = true; saveNet(); pop.hidden = false;
@@ -2349,6 +2399,7 @@ addEventListener('beforeunload', () => { if (saveT && pid && P){ LS.set('skladka
 window.__cafeMk = {keys:() => [...Object.keys(OPS), ...Object.keys(DEF)], thumb:k => makeThumb(k, 'image/webp'), big:(k, e, dv) => makeThumb(k, 'image/png', e, [800, 600], dv),
   starter:k => starterShot(STARTERS.find(x => x[0] === k)[3]), heights:() => P.items.map(i => [i.kind, +baseY(i).toFixed(3)]),
   add:(k, x, z, rot, e) => { snap(); P.items.push(newItem(k, x, z, rot, e)); changed(); },
+  net:() => netCache, scr:(x, z) => { const v = new THREE.Vector3(x, .5, z).project(cam()), r = R3.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; },
   drop:(k, x, z, rot = 0) => { const it = newItem(k, x, z, rot); P.items.push(it); buildItems(); moveItemTo(it, x, z, false); changed(); return [k, +it.x.toFixed(3), +it.z.toFixed(3), +baseY(it).toFixed(3)]; }};
 (async () => {
   if (!SB.user) return;
