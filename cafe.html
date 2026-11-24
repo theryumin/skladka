@@ -574,6 +574,8 @@ const DEF = {
     legs:'ab',   // each side has its own length and depth: A is the long back side, B the side going forward on the left
     rects: o => { const da = o.da ?? .6, db = o.db ?? .6; return [[0, -o.d / 2 + da / 2, o.w, da], [-o.w / 2 + db / 2, da / 2, db, o.d - da]]; },
     build(g, o){ const F = finMat(o.fin), T = finMat(o.top); for (const [cx, cz, w, d] of DEF.corner.rects(o)) counterBody(g, o, cx, cz, w, d, o.h, F, T); }},
+  straight:{cat:'bar', n:'Прямая стойка', w:2.4, d:.6, h:.9, rs:'wdh', fins:BODY, fin:'oak', tops:TOPS, top:'marble', sup:true, snap:true, presets:PW([1.2, 1.8, 2.4, 3.0, 3.6]),
+    build(g, o){ counterBody(g, o, 0, 0, o.w, o.d, o.h, finMat(o.fin), finMat(o.top)); }},
   backbar:{cat:'bar', n:'Задний бар со шкафами', presets:PW([1.2, 1.8, 2.4, 3.0]), w:2.4, d:.6, h:.9, rs:'wdh', fins:BODY, fin:'white', tops:TOPS, top:'oak', sup:true, snap:true,
     build(g, o){ const {w, d, h} = o, F = finMat(o.fin), T = finMat(o.top); counterBody(g, o, 0, 0, w, d, h, F, T);
       const n = Math.max(1, Math.round(w / .5)), dw = w / n;
@@ -1607,7 +1609,7 @@ $('q').addEventListener('input', renderLib);
 $('libBody').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); if (!b || e.button !== 0) return; e.preventDefault(); startPlace(b.dataset.k, true); placing && (placing.moved = false); });
 
 /* catalogue pictures, rendered once from the same 3D models */
-const TV = 5, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
+const TV = 6, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
 function queueThumbs(){ document.querySelectorAll('img[data-th]').forEach(img => { const k = img.dataset.th; if (!THUMBS.has(k) && !thumbQ.includes(k)) thumbQ.push(k); }); if (!thumbBusy) thumbStep(); }
 function thumbStep(){ if (!thumbQ.length){ thumbBusy = false; return; } thumbBusy = true;
   const k = thumbQ.shift(); try { THUMBS.set(k, makeThumb(k)); document.querySelectorAll(`img[data-th="${k}"]`).forEach(i => i.src = THUMBS.get(k)); } catch (e){ console.warn('thumb', k, e); }
@@ -2185,7 +2187,7 @@ const line2 = (doc, a, b, c, d) => doc.line(a, b, c, d);
 function netLegend(doc, rows, x, y){ doc.setFontSize(6.5); rows.forEach(([c, t, dash], i) => { const ly = y + i * 4; doc.setDrawColor(...c); doc.setLineWidth(c[0] === 178 ? 1.6 : .5); doc.setLineDashPattern(dash ? [1.2, .8] : [], 0);
   doc.line(x, ly - 1, x + 6, ly - 1); doc.setLineDashPattern([], 0); doc.text(pt(t), x + 8, ly); }); doc.setDrawColor(0); doc.setLineWidth(.2); }
 // names for the drawings: [en, es]
-const TRN = {bar:['Service counter', 'Barra de servicio'], corner:['L-shaped counter', 'Barra en L'], backbar:['Back bar cabinets', 'Mueble de contrabarra'], shelf:['Wall shelf', 'Estante de pared'],
+const TRN = {bar:['Service counter', 'Barra de servicio'], corner:['L-shaped counter', 'Barra en L'], straight:['Straight counter', 'Barra recta'], backbar:['Back bar cabinets', 'Mueble de contrabarra'], shelf:['Wall shelf', 'Estante de pared'],
   menu:['Menu board', 'Pizarra de menú'], neon:['Neon sign', 'Rótulo de neón'], pos:['POS terminal', 'Terminal TPV'], pastry:['Refrigerated pastry case', 'Vitrina refrigerada de pastelería'],
   espresso:['Espresso machine', 'Cafetera espresso'], linea:['Espresso machine, Linea type', 'Cafetera espresso tipo Linea'], lineaMini:['Espresso machine, compact 1 group', 'Cafetera espresso compacta 1 grupo'], grinder:['Espresso grinder', 'Molino de espresso'], grinder2:['Bulk coffee grinder', 'Molino de café en grano'], batch:['Batch brewer', 'Cafetera de filtro'],
   knock:['Knock box', 'Cajón de posos'], kettle:['Kettle', 'Hervidor'], blender:['Blender', 'Batidora de vaso'], milk:['Countertop milk fridge', 'Refrigerador de leche'],
