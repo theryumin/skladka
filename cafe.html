@@ -1106,6 +1106,8 @@ function roomLoop(){   // the walls as one closed outline, if they form one; inn
   while (left.length){ const i = left.findIndex(W => ptKey(W.a) === ptKey(at) || ptKey(W.b) === ptKey(at)); if (i < 0) return null;
     const W = left.splice(i, 1)[0]; pts.push(at); at = ptKey(W.a) === ptKey(at) ? W.b : W.a; }
   return ptKey(at) === ptKey(pts[0]) ? pts : null; }
+function wallBounds(){ if (!P.walls.length) return bounds(); const xs = P.walls.flatMap(W => [W.a[0], W.b[0]]), zs = P.walls.flatMap(W => [W.a[1], W.b[1]]);
+  return {x0:Math.min(...xs), z0:Math.min(...zs), x1:Math.max(...xs), z1:Math.max(...zs)}; }
 function bounds(){ const xs = [], zs = []; for (const W of P.walls) for (const p of [W.a, W.b]){ xs.push(p[0]); zs.push(p[1]); }
   for (const it of P.items){ xs.push(it.x); zs.push(it.z); }
   if (!xs.length) return {x0:0, z0:0, x1:6, z1:4};
@@ -1304,10 +1306,12 @@ stage.addEventListener('pointerdown', e => {
   if (placing){ e.stopPropagation(); down.placed = true; finishPlace(); return; }
   if (tool === 'wall'){ e.stopPropagation(); wallClick(e); return; }
   const p = pick(e); if (!p) return; down.s = p.s;
-  if (p.s.t === 'item'){ const it = P.items.find(i => i.id === p.s.id), hit = floorHit(e); if (!it || !hit) return;
+  // the item is dragged in the horizontal plane at the height where it was grabbed, so it stays under the cursor
+  // (the floor point behind a tall fridge in 3D can be metres away and jumps wildly at a low camera angle)
+  if (p.s.t === 'item'){ const gy = view === 'plan' ? 0 : clamp(p.point.y, 0, P.H), it = P.items.find(i => i.id === p.s.id), hit = floorHit(e, gy); if (!it || !hit) return;
     ctl().enabled = false; e.stopPropagation(); if (sel?.id !== it.id) select({t:'item', id:it.id});
     const riders = ridersOf(it).map(o => ({o, dx:o.x - it.x, dz:o.z - it.z}));
-    drag = {t:'item', it, ox:hit.x - it.x, oz:hit.z - it.z, moved:false, riders, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
+    drag = {t:'item', it, gy, ox:hit.x - it.x, oz:hit.z - it.z, moved:false, riders, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
   if (p.s.t === 'op'){ const op = P.ops.find(o => o.id === p.s.id); ctl().enabled = false; e.stopPropagation(); if (sel?.id !== op.id) select({t:'op', id:op.id});
     drag = {t:'op', op, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
   if (p.s.t === 'wend'){ const W = P.walls.find(w => w.id === p.s.id); ctl().enabled = false; e.stopPropagation();
@@ -1321,9 +1325,13 @@ stage.addEventListener('pointerdown', e => {
 stage.addEventListener('pointermove', e => {
   if (placing){ placeMove(e); return; }
   if (tool === 'wall'){ wallPreview(e); return; }
-  if (drag){ const hit = floorHit(e); if (!hit) return;
+  if (drag){ const hit = floorHit(e, drag.gy || 0); if (!hit) return;
     if (!drag.moved && down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 3) return; drag.moved = true;
-    if (drag.t === 'item'){ const it = drag.it, px = it.x, pz = it.z; moveItemTo(it, hit.x - drag.ox, hit.z - drag.oz, e.altKey);
+    if (drag.t === 'item'){ const it = drag.it, b = wallBounds(), m = Math.max(it.w, it.d) / 2 + .5;
+      let nx = hit.x - drag.ox, nz = hit.z - drag.oz;
+      if (Math.hypot(nx - it.x, nz - it.z) > 4 && view !== 'plan') return;          // the cursor slid towards the horizon: ignore that jump
+      nx = clamp(nx, b.x0 - m, b.x1 + m); nz = clamp(nz, b.z0 - m, b.z1 + m);       // never fly out of the room
+      moveItemTo(it, nx, nz, e.altKey);
       for (const r of drag.riders){ r.o.x = it.x + r.dx; r.o.z = it.z + r.dz; const g = itemObj.get(r.o.id); if (g) g.position.set(r.o.x, baseY(r.o), r.o.z); }
       for (const o of P.items) if (DEF[o.kind].place === 'on' && !drag.riders.some(r => r.o === o)){ const g = itemObj.get(o.id); if (g) g.position.y = baseY(o); }
       if (selLbl) selLbl.element.textContent = `${cm(it.w)} × ${cm(it.d)}`; renderInspPos(); }
