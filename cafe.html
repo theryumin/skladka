@@ -135,6 +135,18 @@ main{position:relative;min-width:0;min-height:0;background:var(--stage);overflow
 .lbl.soft{background:rgba(255,255,255,.88);color:#333;border:1px solid rgba(0,0,0,.08)}
 .views{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:3;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .corner{position:absolute;right:12px;bottom:12px;display:flex;gap:6px;z-index:3}
+.netw{position:absolute;top:12px;right:12px;z-index:4}
+.nbtn{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 13px var(--sans);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.nbtn svg{width:16px;height:16px}
+.nbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.npop{position:absolute;right:0;top:40px;width:282px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:7px;font-size:13px}
+.npop[hidden]{display:none}
+.npop p{margin:0 0 4px;color:var(--muted);font-size:12px;line-height:1.4}
+.npop label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.npop label i{width:22px;height:5px;border-radius:3px;flex:none}
+.npop .nrow{display:flex;gap:6px;margin-top:4px}.npop .nrow .btn{flex:1;padding:7px 8px;font-size:12px}
+.nsum{font-size:11.5px;color:var(--muted);line-height:1.45;border-top:1px solid var(--line);padding-top:7px}
+.nsum:empty{display:none}
 .corner .ibtn{background:var(--panel);border:1px solid var(--line)}
 .hint{position:absolute;left:12px;bottom:12px;right:140px;z-index:3;pointer-events:none;display:flex}
 .hint span{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:12px;color:var(--muted);line-height:1.4;max-width:560px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
@@ -199,6 +211,7 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
   .lgrid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
   .hint{display:none}
   .views{top:8px}
+  .netw{top:52px;right:8px}
   #pname{width:120px}
   .hide-s{display:none!important}
 }
@@ -276,6 +289,16 @@ table.spec tr.h td{font-weight:700;background:var(--hover);font-size:12px}
       <button class="tab" role="tab" data-view="3d" aria-selected="true">3D</button>
       <button class="tab" role="tab" data-view="eye" aria-selected="false" title="Вид от входа на высоте глаз">Глазами гостя</button>
     </div>
+    <div class="netw" id="netW"><button class="nbtn" id="netBtn" type="button" aria-pressed="false" aria-expanded="false" title="Электрика, свет, вода, канализация, вентиляция"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h7v6h9M4 18h5v-6M20 12v6h-6"/><circle cx="4" cy="6" r="1.6"/><circle cx="4" cy="18" r="1.6"/><circle cx="14" cy="18" r="1.6"/></svg>Сети</button>
+      <div class="npop" id="netPop" hidden>
+        <b>Инженерные сети</b><p>Строятся сами по тому, что стоит в кофейне. Двигайте щит, стояк, выход вентиляции, светильники и технику — линии перестроятся.</p>
+        <label><input type="checkbox" data-net="e"><i style="background:#f08c00"></i>Электрика и розетки</label>
+        <label><input type="checkbox" data-net="l"><i style="background:#e8c400"></i>Освещение</label>
+        <label><input type="checkbox" data-net="w"><i style="background:linear-gradient(90deg,#1c7ed6 33%,#e03131 33% 66%,#7b5e3b 66%)"></i>Вода и канализация</label>
+        <label><input type="checkbox" data-net="v"><i style="background:#8a949e"></i>Вентиляция и вытяжка</label>
+        <div class="nrow"><button class="btn pri" type="button" id="netAuto">Разложить заново</button><button class="btn" type="button" id="netOff">Скрыть сети</button></div>
+        <div class="nsum" id="netSum"></div>
+      </div></div>
     <div class="hint" id="hint"><span id="hintT"></span></div>
     <div class="corner">
       <button class="ibtn" id="fitBtn" type="button" title="Показать всё помещение" aria-label="Показать всё"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -898,6 +921,16 @@ const DEF = {
     build(g){ cy(g, matC('#f1f0ec', .35), 0, 0, 0, .215, .215, .85, 32); cy(g, matC('#d7d6d2', .4), 0, -.06, 0, .03, .03, .06, 10); bx(g, DARK, 0, .1, .2, .1, .06, .03, .01); }},
   hood:{cat:'eng', n:'Вытяжной зонт', w:1.2, d:.9, h:.6, rs:'wdh', place:'ceil', planRect:true, presets:PW([.9, 1.2, 1.5, 2.0]),
     build(g, o){ const {w, d, h} = o; bx(g, STEEL, 0, 0, 0, w, .3, d, .01); bx(g, matC('#9aa0a6', .3, .8), 0, -.001, 0, w - .1, .004, d - .1); bx(g, STEEL, 0, .3, -d / 2 + .2, w * .5, Math.max(.05, h - .3), .3); }},
+  riser:{cat:'eng', n:'Стояк: канализация и ввод воды', w:.32, d:.2, h:.01, place:'wall', elev:0, full:true,
+    build(g, o, c){ const H = c?.H || P.H; cy(g, matC('#8d9399', .5, .2), -.06, 0, 0, .055, .055, H, 20); cy(g, matC('#2f6fd6', .45, .3), .09, 0, -.02, .016, .016, 1.1, 12);
+      bx(g, matC('#2f6fd6', .4), .09, .95, .02, .07, .05, .05, .008); cy(g, matC('#8d9399', .5, .2), -.06, .4, 0, .068, .068, .1, 20); }},
+  ventOut:{cat:'eng', n:'Выход вентиляции наружу', w:.45, d:.06, h:.3, rs:'wh', place:'wall', elev:2.5,
+    build(g, o){ const {w, h} = o; bx(g, matC('#c4c8cc', .4, .7), 0, 0, 0, w, h, .06, .008); for (let y = .04; y < h - .02; y += .035) bx(g, matC('#6f757b', .5, .5), 0, y, .031, w - .05, .012, .012); }},
+  ceilLight:{cat:'eng', n:'Потолочный светильник', w:.6, d:.6, h:.04, rs:'wd', place:'ceil', presets:[['Панель 60×60', {w:.6, d:.6}], ['Даунлайт', {w:.18, d:.18}], ['Линия 120', {w:1.2, d:.1}]],
+    build(g, o, ctx){ const {w, d} = o, glow = matC('#ffffff', .4, 0, {emissive:'#fff6e6', emissiveIntensity:ctx?.eve ? 1.6 : .8});
+      if (w < .3 && d < .3){ cy(g, matC('#f2f2f0', .4), 0, 0, 0, w / 2, w / 2, .04, 24); cy(g, glow, 0, -.002, 0, w / 2 - .02, w / 2 - .02, .004, 24); }
+      else { bx(g, matC('#f2f2f0', .4), 0, 0, 0, w, .04, d); bx(g, glow, 0, -.002, 0, w - .04, .004, d - .04); }
+      lampLight(g, ctx, 0, -.1, 0); }},
   mop:{cat:'eng', n:'Мойка для уборочного инвентаря', w:.6, d:.6, h:.3, snap:true,
     build(g){ bx(g, matC('#f1f0ec', .35), 0, 0, 0, .6, .3, .6, .03); bx(g, matC('#9aa0a6', .3, .6), 0, .29, .03, .5, .012, .48); cy(g, STEEL, 0, .3, -.27, .015, .015, .6, 10); bx(g, STEEL, 0, .85, -.21, .025, .025, .14, .008); }},
   sink3:{cat:'wash', n:'Мойка трёхсекционная', w:1.8, d:.6, h:.9, rs:'w', snap:true, presets:PW([1.5, 1.8, 2.1, 2.4]),
@@ -1034,7 +1067,7 @@ const ctl3 = new OrbitControls(persp, R3.domElement); ctl3.enableDamping = true;
 const ctlP = new OrbitControls(ortho, R3.domElement); ctlP.enableRotate = false; ctlP.enableDamping = true; ctlP.dampingFactor = .15; ctlP.screenSpacePanning = true;
 ctlP.mouseButtons = {LEFT:THREE.MOUSE.PAN, MIDDLE:THREE.MOUSE.DOLLY, RIGHT:THREE.MOUSE.PAN}; ctlP.touches = {ONE:THREE.TOUCH.PAN, TWO:THREE.TOUCH.DOLLY_PAN};
 ctlP.minZoom = .2; ctlP.maxZoom = 12; ctlP.enabled = false;
-const roots = {floor:new THREE.Group(), walls:new THREE.Group(), items:new THREE.Group(), ui:new THREE.Group(), labels:new THREE.Group(), zl:new THREE.Group()};
+const roots = {floor:new THREE.Group(), walls:new THREE.Group(), items:new THREE.Group(), ui:new THREE.Group(), labels:new THREE.Group(), zl:new THREE.Group(), net:new THREE.Group(), ceil:new THREE.Group()};
 for (const g of Object.values(roots)) scene.add(g);
 const grid = new THREE.GridHelper(60, 120, 0x9c98a6, 0xc9c6cf); grid.material.transparent = true; grid.material.opacity = .45; grid.position.y = .002; grid.visible = false; scene.add(grid);
 let view = '3d', ctx = {H:3, lights:[]}, itemObj = new Map(), wallObj = new Map();
@@ -1127,6 +1160,7 @@ function buildItems(){
     else if (D.place === 'zone'){ if (view === 'plan'){ D.build(g, it, ctx); bake(g); } }
     else { D.build(g, it, ctx); bake(g); } g.userData.sel = {t:'item', id:it.id}; g.userData.box = [it.w, D.full ? P.H : it.h, it.d, 0];
     g.rotation.y = it.rot || 0; g.position.set(it.x, baseY(it), it.z); roots.items.add(g); itemObj.set(it.id, g); }
+  buildNet(); buildCeil();
   for (const c of [...roots.zl.children]) roots.zl.remove(c);
   if (view === 'plan') for (const it of P.items) if (it.kind === 'zone'){ const o = lbl(`${it.text || ZT[it.zt]?.[0] || ''} · ${(it.w * it.d).toFixed(1).replace('.', ',')} м²`, 'soft'); o.position.set(it.x, .1, it.z); roots.zl.add(o); }
   applyLight(); }
@@ -1222,7 +1256,7 @@ function moveItemTo(it, x, z, free){
   const D = DEF[it.kind]; if (!free){ x = snapv(x); z = snapv(z); }
   it.x = x; it.z = z;
   if (D.place === 'wall' || (D.snap && !free)){ const s = wallSnap(it, x, z, D.place === 'wall' ? 99 : .3); if (s){ it.x = s.x; it.z = s.z; it.rot = s.rot; } }
-  if (!free && !xHeld) unclash(it);
+  if (!free && !xHeld) unclash(it); delete it.auto;
   const g = itemObj.get(it.id); if (g){ g.position.set(it.x, baseY(it), it.z); g.rotation.y = it.rot || 0; } needShadow(); }
 /* things do not go inside each other: a moved item is pushed out to stand flush next to what it hits.
    Height counts — a machine on a counter does not hit a stool below; chairs may slide under tables and counters. Alt = no push. */
@@ -1411,7 +1445,7 @@ $('q').addEventListener('input', renderLib);
 $('libBody').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); if (!b || e.button !== 0) return; e.preventDefault(); startPlace(b.dataset.k, true); placing && (placing.moved = false); });
 
 /* catalogue pictures, rendered once from the same 3D models */
-const TV = 2, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
+const TV = 3, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
 function queueThumbs(){ document.querySelectorAll('img[data-th]').forEach(img => { const k = img.dataset.th; if (!THUMBS.has(k) && !thumbQ.includes(k)) thumbQ.push(k); }); if (!thumbBusy) thumbStep(); }
 function thumbStep(){ if (!thumbQ.length){ thumbBusy = false; return; } thumbBusy = true;
   const k = thumbQ.shift(); try { THUMBS.set(k, makeThumb(k)); document.querySelectorAll(`img[data-th="${k}"]`).forEach(i => i.src = THUMBS.get(k)); } catch (e){ console.warn('thumb', k, e); }
@@ -1482,6 +1516,7 @@ function roomPanel(){ const L = roomLoop(), area = L ? polyArea(L) : null, per =
   return `<div class="ih"><b>Помещение</b><span>Ничего не выбрано — здесь настройки всей комнаты</span></div>
     <div class="stat"><div><b>${area != null ? area.toFixed(1).replace('.', ',') : '—'}</b><span>м², по осям стен</span></div><div><b>${cnt}</b><span>предметов</span></div><div><b>${(per).toFixed(1).replace('.', ',')}</b><span>м стен</span></div><div><b>${cm(b.x1 - b.x0)}×${cm(b.z1 - b.z0)}</b><span>см габарит</span></div></div>
     <div class="grp"><h3>Высота потолка, см</h3><input type="number" data-f="H" value="${cm(P.H)}" min="220" max="800" step="5"></div>
+    <div class="grp"><h3>Потолок</h3><div class="chips">${Object.entries(CEILS).map(([k, n]) => `<button class="chip" type="button" data-ceil="${k}" aria-pressed="${(P.ceil || 'open') === k}">${n}</button>`).join('')}</div><p class="note">Потолок виден в режиме «Глазами гостя». Трубы и короба над подвесным потолком прячутся.</p></div>
     <div class="grp"><h3>Цвет стен</h3><div class="sw">${WALL_COLS.map(c => `<button type="button" data-rcol="${c}" aria-pressed="${P.wallCol === c}" style="background:${c}"></button>`).join('')}<label title="Свой цвет">+<input type="color" data-f="rcol" value="${P.wallCol}"></label></div></div>
     <div class="grp"><h3>Пол</h3><div class="floors">${Object.entries(FLOORS).map(([k, f]) => `<button type="button" data-floor="${k}" aria-pressed="${P.floor === k}"><i style="background-image:url(${floorPrev(k)})"></i>${f.n}</button>`).join('')}</div></div>
     <div class="grp"><h3>Свет</h3><div class="seg" style="width:max-content"><button class="tab" type="button" data-light="day" aria-selected="${P.light !== 'eve'}">День</button><button class="tab" type="button" data-light="eve" aria-selected="${P.light === 'eve'}">Вечер</button></div>
@@ -1505,7 +1540,7 @@ function renderInspPos(){ const d = selData(); if (!d || sel.t !== 'item') retur
 $('inspIn').addEventListener('change', e => {
   const f = e.target.dataset.f; if (!f) return; const d = selData(), v = e.target.type === 'checkbox' ? e.target.checked : e.target.type === 'number' ? +e.target.value : e.target.value;
   if (e.target.type === 'number' && !Number.isFinite(v)) return renderInsp();
-  snap();
+  snap(); if (d) delete d.auto;
   if (!d){   // room
     if (f === 'H') P.H = clamp(v / 100, 2.2, 8); else if (f === 'rcol') P.wallCol = v; else if (f === 'fade') P.fade = v;
     else if (f === 'rw' || f === 'rd'){ hist.pop(); return; }
@@ -1535,6 +1570,7 @@ $('inspIn').addEventListener('click', e => {
     if (ds.rcol){ snap(); P.wallCol = ds.rcol; return changed(); }
     if (ds.floor){ snap(); P.floor = ds.floor; return changed(); }
     if (ds.light){ snap(); P.light = ds.light; return changed(); }
+    if (ds.ceil){ snap(); P.ceil = ds.ceil; return changed(); }
     if (ds.a === 'rect'){ const W = +$('inspIn').querySelector('[data-f="rw"]').value / 100, D = +$('inspIn').querySelector('[data-f="rd"]').value / 100;
       if (!(W >= 1 && D >= 1)) return toast('Нужно хотя бы 100 × 100 см.'); snap(); const [ox, oz] = origin(), old = P.walls.map(w => w.id);
       P.walls = rectWalls(W, D).map(w => ({...w, a:[w.a[0] + ox, w.a[1] + oz], b:[w.b[0] + ox, w.b[1] + oz]}));
@@ -1649,11 +1685,161 @@ const TECH = {
   juicer:{kw:.25, food:1, prep:1}, boiler:{kw:2.8, w:'c', food:1, prep:1}, coldbrew:{food:1, prep:1}, kiosk:{kw:.2}, tvMenu:{kw:.45}, neon:{kw:.06},
   lamp:{kw:.06, sym:'light'}, floorLamp:{kw:.06, sym:'light'}, sconce:{kw:.04, sym:'light'}, track:{kw:.2, sym:'light'},
   handSink:{w:'ch', dr:'d'}, toilet:{w:'c', dr:'d'}, mop:{w:'ch', dr:'d'}, sink3:{w:'ch', dr:'d', food:1}, whtr:{kw:3.0, w:'c'}, hood:{kw:.35},
+  ceilLight:{kw:o => o.w * o.d > .2 ? .036 : o.w > .9 ? .03 : .01, sym:'light'}, riser:{sym:'riser'}, ventOut:{},
   fdrain:{sym:'fd'}, fsink:{sym:'fs'}, grease:{sym:'gi'}, socket:{sym:'socket'}, socket3:{sym:'socket3'}, panel:{sym:'panel'}, ext:{sym:'ext'}, emerg:{kw:.01, sym:'el'}, exitSign:{kw:.01, sym:'exit'},
 };
 function tech(it){ const T = TECH[it.kind]; if (!T) return null; const f = v => typeof v === 'function' ? v(it) : v;
   return {kw:it.kw ?? f(T.kw) ?? 0, ph:f(T.ph) || 1, w:T.w || '', dr:T.dr || '', hood:T.hood || '', food:!!T.food, prep:!!T.prep, sym:T.sym || '', kwDef:T.kw !== undefined}; }
 const SYMS = new Set(['socket', 'socket3', 'panel', 'ext', 'emerg', 'exitSign', 'fdrain', 'fsink']);
+
+/* ---------- engineering networks: drawn automatically from what stands in the room ----------
+   power and lighting from the panel, cold water and drains from the riser, hot water from the heater, ducts from hoods to the outside.
+   Lines are recalculated on every change, so moving the panel, the riser or any machine re-routes everything. */
+let NET = {on:false, e:true, l:true, w:true, v:true}, netSuspend = false;
+try { Object.assign(NET, JSON.parse(localStorage.getItem('cafe-net') || '{}')); } catch (e){}
+const saveNet = () => { try { localStorage.setItem('cafe-net', JSON.stringify(NET)); } catch (e){} };
+const CEILS = {open:'Открытый (лофт)', gyp:'Гипсокартон', grid:'Армстронг 60×60'};
+const loopWalls = () => { roomLoop(); return loopIds.size ? P.walls.filter(W => loopIds.has(W.id)) : P.walls; };
+function wallSpot(x, z, avoid = [], gap = .8){ let best = null;   // nearest free point on the room walls, away from doors and from other wall things
+  for (const W of loopWalls()){ const {L, dx, dz} = wallInfo(W), doors = P.ops.filter(o => o.wall === W.id);
+    for (let s = .45; s <= L - .45; s += .1){ if (doors.some(o => Math.abs(s - o.pos) < o.w / 2 + .25)) continue;
+      const p = [W.a[0] + dx * s, W.a[1] + dz * s]; if (avoid.some(a => Math.hypot(a[0] - p[0], a[1] - p[1]) < gap)) continue;
+      const d = Math.hypot(p[0] - x, p[1] - z); if (!best || d < best.d) best = {d, p, W, s}; } }
+  return best; }
+function roomOutline(){ const L = roomLoop(), b = bounds(); return L || [[b.x0, b.z0], [b.x1, b.z0], [b.x1, b.z1], [b.x0, b.z1]]; }
+
+// places the panel, riser, water heater, floor sink, hoods, outside vent, ceiling lights and wall sockets that are missing
+function autoNet(){
+  if (!P.walls.length) return 0;
+  P.items = P.items.filter(i => !i.auto);                       // what was placed automatically and never touched is laid out again
+  const items = P.items.filter(i => DEF[i.kind]), K = k => items.filter(i => i.kind === k), T = i => tech(i) || {};
+  const wallPts = () => P.items.filter(i => DEF[i.kind]?.place === 'wall').map(i => [i.x, i.z]);
+  const avg = (a, d) => a.length ? [a.reduce((s, i) => s + i.x, 0) / a.length, a.reduce((s, i) => s + i.z, 0) / a.length] : d;
+  const cen = centroid(); let n = 0;
+  const put = (kind, x, z, extra = {}, wall = false) => { const it = newItem(kind, x, z, extra.rot || 0, extra); P.items.push(it); if (wall) moveItemTo(it, x, z, true); it.auto = 1; n++; return it; };
+  const onWall = (kind, near, extra = {}, gap = .8) => { const sp = wallSpot(near[0], near[1], wallPts(), gap); return sp ? put(kind, sp.p[0], sp.p[1], extra, true) : null; };
+  const pw = items.filter(i => T(i).kw && !T(i).sym), wet = items.filter(i => T(i).w || T(i).dr);
+  const panel = K('panel')[0] || onWall('panel', avg(pw, cen));
+  const riser = K('riser')[0] || (wet.length ? onWall('riser', avg(wet, cen), {}, 1.2) : null);
+  if (!K('whtr').length && wet.some(i => T(i).w === 'ch')) onWall('whtr', riser ? [riser.x, riser.z] : avg(wet, cen));
+  const ind = items.filter(i => T(i).dr === 'i');
+  if (ind.length && !K('fsink').length && !K('fdrain').length) put('fsink', ind[0].x, ind[0].z);
+  const hoods = K('hood');
+  for (const it of items) if (T(it).hood && !hoods.some(h => inPoly([it.x, it.z], itemPoly(h, .05)))){ const [x, z] = toWorld(it, 0, -it.d / 2 + .45);
+    hoods.push(put('hood', x, z, {rot:it.rot || 0, w:Math.max(.9, Math.ceil((it.w + .3) * 10) / 10)})); }
+  if (!K('ventOut').length) onWall('ventOut', hoods.length ? avg(hoods, cen) : riser ? [riser.x, riser.z] : panel ? [panel.x, panel.z] : cen, {elev:Math.max(2.1, P.H - .45)});
+  // general lighting: a grid of ceiling lights, not over hoods and not next to pendants or tracks already there
+  const out = roomOutline(), xs = out.map(p => p[0]), zs = out.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+  const nx = Math.max(1, Math.round((x1 - x0) / 2.2)), nz = Math.max(1, Math.round((z1 - z0) / 2.2)), deco = items.filter(i => ['lamp', 'track', 'ceilLight'].includes(i.kind));
+  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++){ const p = [x0 + (x1 - x0) * (i + .5) / nx, z0 + (z1 - z0) * (j + .5) / nz];
+    if (!inPoly(p, out) || hoods.some(h => inPoly(p, itemPoly(h, .3))) || deco.some(o => Math.hypot(o.x - p[0], o.z - p[1]) < .9)) continue; put('ceilLight', p[0], p[1]); }
+  // general sockets roughly every 3 m along the walls
+  for (const W of loopWalls()){ const {L, dx, dz} = wallInfo(W), k = Math.floor(L / 3.2), doors = P.ops.filter(o => o.wall === W.id);
+    for (let i = 0; i < k; i++){ const s = L * (i + .5) / k; if (doors.some(o => Math.abs(s - o.pos) < o.w / 2 + .3)) continue;
+      const p = [W.a[0] + dx * s, W.a[1] + dz * s]; if (wallPts().some(a => Math.hypot(a[0] - p[0], a[1] - p[1]) < .6)) continue; put('socket', p[0], p[1], {}, true); } }
+  return n; }
+
+// the routes: trees of right-angled lines, each new point joins the nearest line already drawn
+function netNode(it){ const D = DEF[it.kind]; let x = it.x, z = it.z, y;
+  if (D.place === 'wall') y = baseY(it) + (D.full ? 1 : it.h / 2); else if (D.place === 'ceil' || D.place === 'hang') y = P.H;
+  else { [x, z] = toWorld(it, 0, -it.d / 2 + Math.min(.08, it.d / 4)); y = baseY(it) + (D.place === 'on' ? .04 : .25); }
+  const fx = Math.sin(it.rot || 0), fz = Math.cos(it.rot || 0); return {p:[x, z], y, it, ax:Math.abs(fx) > Math.abs(fz)}; }
+function lpath(q, p, ax){ const pts = Math.abs(p[0] - q[0]) < .01 || Math.abs(p[1] - q[1]) < .01 ? [q, p] : ax ? [q, [p[0], q[1]], p] : [q, [q[0], p[1]], p], segs = [];
+  for (let k = 0; k < pts.length - 1; k++) if (Math.hypot(pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1]) > .005) segs.push([pts[k], pts[k + 1]]); return segs; }
+function netTree(root, nodes){ if (!root) return []; const segs = [], left = nodes.filter(n => n.it !== root.it);
+  while (left.length){ let best = null;
+    for (let i = 0; i < left.length; i++){ const p = left[i].p; let q = root.p, ax = root.ax, d = Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]);
+      for (const s of segs){ const r = segProj(p, s[0], s[1]), dd = Math.abs(p[0] - r[0]) + Math.abs(p[1] - r[1]); if (dd < d - 1e-6){ d = dd; q = r; ax = Math.abs(s[0][1] - s[1][1]) > Math.abs(s[0][0] - s[1][0]); } }
+      if (!best || d < best.d) best = {i, q, ax, d}; }
+    const n = left.splice(best.i, 1)[0]; segs.push(...lpath(best.q, n.p, best.ax)); }
+  return segs; }
+function netPlan(){
+  const items = P.items.filter(i => DEF[i.kind]), T = i => tech(i) || {}, K = k => items.filter(i => i.kind === k);
+  const N = {e:[], l:[], c:[], h:[], d:[], v:[], ends:{e:[], l:[], c:[], h:[], d:[]}, diff:[]};
+  const panel = K('panel')[0], riser = K('riser')[0], heater = K('whtr')[0];
+  if (panel){ const pn = netNode(panel);
+    N.ends.e = items.filter(i => i !== panel && ((T(i).kw && !T(i).sym) || i.kind === 'socket' || i.kind === 'socket3')).map(netNode); N.e = netTree(pn, N.ends.e);
+    N.ends.l = items.filter(i => ['light', 'el', 'exit'].includes(T(i).sym)).map(netNode); N.l = netTree(pn, N.ends.l); }
+  if (riser){ const rn = netNode(riser);
+    N.ends.c = items.filter(i => T(i).w || i === heater).map(netNode); N.c = netTree(rn, N.ends.c);
+    if (heater){ N.ends.h = items.filter(i => T(i).w === 'ch').map(netNode); N.h = netTree(netNode(heater), N.ends.h); }
+    const traps = items.filter(i => ['fsink', 'fdrain', 'grease'].includes(i.kind)), dN = items.filter(i => T(i).dr === 'd' || traps.includes(i)).map(netNode);
+    for (const it of items.filter(i => T(i).dr === 'i')){ const n = netNode(it); N.ends.d.push(n);   // indirect waste: short pipe to the nearest floor sink
+      const t = traps.filter(x => x.kind !== 'grease').map(x => [x, Math.hypot(x.x - n.p[0], x.z - n.p[1])]).sort((a, b) => a[1] - b[1])[0];
+      if (t && t[1] < 4) N.d.push(...lpath(n.p, [t[0].x, t[0].z], false)); else dN.push(n); }
+    N.d.push(...netTree(rn, dN)); N.ends.d.push(...dN); }
+  const outs = K('ventOut'), hoods = K('hood'), near = (a, o) => a.slice().sort((p, q) => Math.hypot(p.x - o.x, p.z - o.z) - Math.hypot(q.x - o.x, q.z - o.z))[0];
+  const used = new Set();
+  for (const h of hoods){ const o = near(outs, h); if (!o) continue; used.add(o.id); N.v.push(...lpath(netNode(o).p, [h.x, h.z], netNode(o).ax)); }
+  if (outs.length){   // general supply/exhaust: a duct along the long side of the room with ceiling diffusers
+    const o = outs.find(x => !used.has(x.id)) || outs[0], out = roomOutline(), xs = out.map(p => p[0]), zs = out.map(p => p[1]);
+    const x0 = Math.min(...xs) + .9, x1 = Math.max(...xs) - .9, z0 = Math.min(...zs) + .9, z1 = Math.max(...zs) - .9, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    const tr = x1 - x0 >= z1 - z0 ? [[x0, cz], [x1, cz]] : [[cx, z0], [cx, z1]], L = Math.hypot(tr[1][0] - tr[0][0], tr[1][1] - tr[0][1]);
+    if (L > .5){ N.v.push(tr); const on = netNode(o), q = segProj(on.p, tr[0], tr[1]); N.v.push(...lpath(on.p, q, on.ax));
+      const k = Math.max(1, Math.round(L / 2.4)); for (let i = 0; i < k; i++){ const t = (i + .5) / k, p = [tr[0][0] + (tr[1][0] - tr[0][0]) * t, tr[0][1] + (tr[1][1] - tr[0][1]) * t];
+        if (!hoods.some(h => inPoly(p, itemPoly(h, .2)))) N.diff.push(p); } } }
+  return N; }
+
+const NETC = {e:'#f08c00', l:'#e8c400', c:'#1c7ed6', h:'#e03131', d:'#7b5e3b', v:'#8a949e'}, NMAT = new Map();
+const NLAYER = {e:'e', l:'l', c:'w', h:'w', d:'w', v:'v'};
+function nMat(k, plan){ const key = k + plan; if (!NMAT.has(key)) NMAT.set(key, plan ? new THREE.MeshBasicMaterial({color:NETC[k], depthTest:false, transparent:true, opacity:k === 'v' ? .4 : .95})
+  : new THREE.MeshStandardMaterial({color:k === 'v' ? '#c3c8cd' : NETC[k], roughness:k === 'v' ? .35 : .5, metalness:k === 'v' ? .75 : .1})); return NMAT.get(key); }
+function buildNet(){
+  disposeTree(roots.net); if (!NET.on || netSuspend){ renderNetSum(null); return; }
+  const N = netPlan(), plan = view === 'plan', acc = new Map(), H = P.H, closed = view === 'eye' && (P.ceil || 'open') !== 'open';
+  const box = (k, x, y, z, sx, sy, sz) => { const g = new THREE.BoxGeometry(sx, sy, sz); g.translate(x, y, z); const m = nMat(k, plan); if (!acc.has(m)) acc.set(m, []); acc.get(m).push(g); };
+  const seg = (k, a, b, y, t, th = t) => box(k, (a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) + t, th, Math.abs(b[1] - a[1]) + t);
+  const dash = (k, a, b, y, t, th) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]), at = u => [a[0] + (b[0] - a[0]) * u / L, a[1] + (b[1] - a[1]) * u / L];
+    for (let u = 0; u < L; u += .26) seg(k, at(u), at(Math.min(L, u + .16)), y, t, th); };
+  const off = {h:[.07, .07], d:[-.07, -.07]}, Y3 = {e:H - .06, l:H - .03, c:.05, h:.05, d:.03, v:H - .2}, YP = {v:.4, d:.45, c:.5, h:.55, e:.6, l:.65}, TT = {e:.035, l:.025, c:.03, h:.03, d:.06, v:.3};
+  for (const k of ['v', 'd', 'c', 'h', 'e', 'l']){ if (!NET[NLAYER[k]]) continue; if (closed && ['e', 'l', 'v'].includes(k)) continue;   // above a suspended ceiling
+    const o = off[k] || [0, 0], sh = p => [p[0] + o[0], p[1] + o[1]];
+    for (const [a, b] of N[k]){ const A = sh(a), B = sh(b);
+      if (plan) (k === 'l' ? dash : seg)(k, A, B, YP[k], k === 'v' ? .3 : TT[k] * 1.3, .002);
+      else if (k === 'v') seg(k, A, B, Y3.v, .3, .2); else seg(k, A, B, Y3[k], TT[k]); }
+    for (const n of N.ends[k] || []){ const p = sh(n.p);
+      if (plan) box(k, p[0], YP[k] + .01, p[1], .1, .002, .1);
+      else if (Math.abs(n.y - Y3[k]) > .03) box(k, p[0], (n.y + Y3[k]) / 2, p[1], TT[k], Math.abs(n.y - Y3[k]), TT[k]); } }
+  if (NET.v) for (const p of N.diff){ if (plan) box('v', p[0], YP.v + .01, p[1], .45, .002, .45); else if (closed) box('v', p[0], H - .006, p[1], .5, .01, .5); else { box('v', p[0], H - .33, p[1], .45, .06, .45); } }
+  for (const [m, l] of acc){ const geo = mergeGeometries(l, false); l.forEach(g => g.dispose()); const me = new THREE.Mesh(geo, m); me.userData.nopick = true;
+    if (plan) me.renderOrder = 6; else me.castShadow = me.receiveShadow = false; roots.net.add(me); }
+  renderNetSum(N); }
+function renderNetSum(N){ const el = $('netSum'); if (!el) return; if (!N){ el.innerHTML = ''; return; }
+  const items = P.items.filter(i => DEF[i.kind]), has = k => items.some(i => i.kind === k), T = i => tech(i) || {}, warn = [];
+  const kw = items.reduce((s, i) => s + (T(i).kw || 0), 0);
+  if (!has('panel') && items.some(i => T(i).kw)) warn.push('нет электрощита'); if (!has('riser') && items.some(i => T(i).w || T(i).dr)) warn.push('нет стояка');
+  if (!has('ventOut') && has('hood')) warn.push('вытяжке некуда выйти'); if (!has('whtr') && items.some(i => T(i).w === 'ch')) warn.push('нет водонагревателя');
+  el.innerHTML = `Мощность ≈ <b>${kw.toFixed(1).replace('.', ',')} кВт</b> · точек питания ${N.ends.e.length} · светильников ${N.ends.l.length}<br>Вода ${N.ends.c.length} · горячая ${N.ends.h.length} · слив ${N.ends.d.length}${has('hood') ? ' · вытяжек ' + items.filter(i => i.kind === 'hood').length : ''}`
+    + (warn.length ? `<br><span style="color:#d9480f">${warn.join(', ')} — нажмите «Разложить заново»</span>` : ''); }
+let ceilTex = null;
+function buildCeil(){ disposeTree(roots.ceil); const k = P.ceil || 'open'; if (view !== 'eye' || k === 'open') return;
+  if (k === 'grid' && !ceilTex){ const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d'); x.fillStyle = '#f3f2ef'; x.fillRect(0, 0, 128, 128);
+    x.strokeStyle = '#c4c2bd'; x.lineWidth = 5; x.strokeRect(0, 0, 128, 128); ceilTex = new THREE.CanvasTexture(cv); ceilTex.wrapS = ceilTex.wrapT = THREE.RepeatWrapping; ceilTex.repeat.set(1 / .6, 1 / .6); ceilTex.colorSpace = THREE.SRGBColorSpace; }
+  const geo = new THREE.ShapeGeometry(new THREE.Shape(roomOutline().map(p => new THREE.Vector2(p[0], -p[1]))));
+  const c = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:'#ffffff', roughness:.92, side:THREE.DoubleSide, map:k === 'grid' ? ceilTex : null}));
+  c.rotation.x = -Math.PI / 2; c.position.y = P.H - .002; c.castShadow = c.receiveShadow = false; c.userData.nopick = true; roots.ceil.add(c); }
+function netUI(){ $('netBtn').setAttribute('aria-pressed', NET.on); $('netBtn').setAttribute('aria-expanded', !$('netPop').hidden); document.querySelectorAll('[data-net]').forEach(c => c.checked = !!NET[c.dataset.net]); }
+$('netBtn').addEventListener('click', e => { e.stopPropagation(); const pop = $('netPop');
+  if (!NET.on){ NET.on = true; saveNet(); pop.hidden = false;
+    if (!P.netAuto){ snap(); const n = autoNet(); P.netAuto = 1; changed(); if (n) toast(`Разложил сети: щит, стояк, вытяжка, свет и розетки — ${n} шт. Двигайте как нужно.`); }
+    else buildNet(); }
+  else pop.hidden = !pop.hidden;
+  netUI(); need(); });
+$('netPop').addEventListener('change', e => { const k = e.target.dataset.net; if (!k) return; NET[k] = e.target.checked; saveNet(); buildNet(); need(); });
+$('netAuto').addEventListener('click', () => { snap(); const n = autoNet(); P.netAuto = 1; changed(); toast(n ? `Разложил заново: ${n} шт. Тронутые вами вещи остались на месте.` : 'Всё уже на месте'); });
+$('netOff').addEventListener('click', () => { NET.on = false; saveNet(); $('netPop').hidden = true; netUI(); buildNet(); need(); });
+addEventListener('pointerdown', e => { if (!e.target.closest('#netW')) $('netPop').hidden = true; });
+netUI();
+// drawings: the same routes on E-1 and P-1
+function netPdf(doc, V, keys){ const N = netPlan(), col = {e:[240, 140, 0], l:[205, 170, 0], c:[28, 126, 214], h:[224, 49, 49], d:[123, 94, 59], v:[178, 186, 194]}, off = {h:[.07, .07], d:[-.07, -.07]};
+  for (const k of keys){ doc.setDrawColor(...col[k]); doc.setLineWidth(k === 'v' ? 1.8 : k === 'd' ? .55 : .3); doc.setLineDashPattern(k === 'l' ? [1.2, .8] : [], 0); const o = off[k] || [0, 0];
+    for (const [a, b] of N[k]){ const A = V.T(a[0] + o[0], a[1] + o[1]), B = V.T(b[0] + o[0], b[1] + o[1]); doc.line(A[0], A[1], B[0], B[1]); } }
+  doc.setLineDashPattern([], 0);
+  if (keys.includes('v')){ doc.setDrawColor(90); doc.setLineWidth(.25); for (const p of N.diff){ const [x, y] = V.T(...p); doc.rect(x - 1.6, y - 1.6, 3.2, 3.2); line2(doc, x - 1.6, y - 1.6, x + 1.6, y + 1.6); line2(doc, x - 1.6, y + 1.6, x + 1.6, y - 1.6); } }
+  doc.setDrawColor(0); doc.setLineWidth(.2); }
+const line2 = (doc, a, b, c, d) => doc.line(a, b, c, d);
+function netLegend(doc, rows, x, y){ doc.setFontSize(6.5); rows.forEach(([c, t, dash], i) => { const ly = y + i * 4; doc.setDrawColor(...c); doc.setLineWidth(c[0] === 178 ? 1.6 : .5); doc.setLineDashPattern(dash ? [1.2, .8] : [], 0);
+  doc.line(x, ly - 1, x + 6, ly - 1); doc.setLineDashPattern([], 0); doc.text(pt(t), x + 8, ly); }); doc.setDrawColor(0); doc.setLineWidth(.2); }
 // names for the drawings: [en, es]
 const TRN = {bar:['Service counter', 'Barra de servicio'], corner:['L-shaped counter', 'Barra en L'], backbar:['Back bar cabinets', 'Mueble de contrabarra'], shelf:['Wall shelf', 'Estante de pared'],
   menu:['Menu board', 'Pizarra de menú'], neon:['Neon sign', 'Rótulo de neón'], pos:['POS terminal', 'Terminal TPV'], pastry:['Refrigerated pastry case', 'Vitrina refrigerada de pastelería'],
@@ -1674,6 +1860,7 @@ const TRN = {bar:['Service counter', 'Barra de servicio'], corner:['L-shaped cou
   tvMenu:['Digital menu screens', 'Pantallas de menú'], floorLamp:['Floor lamp', 'Lámpara de pie'], sconce:['Wall sconce', 'Aplique'], track:['Track lighting', 'Carril de focos'], poster:['Framed poster', 'Cuadro'],
   mirror:['Mirror', 'Espejo'], greenWall:['Green wall', 'Jardín vertical'], hangPlant:['Hanging planter', 'Macetero colgante'], coat:['Coat stand', 'Perchero'], toilet:['Water closet', 'Inodoro'],
   handSink:['Hand wash sink', 'Lavamanos'], zone:['Area', 'Zona'], socket:['Receptacle', 'Toma de corriente'], socket3:['Power receptacle, 3-phase', 'Toma de fuerza 400 V'], panel:['Electrical panel', 'Cuadro eléctrico'],
+  riser:['Plumbing riser and water service', 'Bajante y acometida de agua'], ventOut:['Exhaust outlet to outside', 'Salida de extracción al exterior'], ceilLight:['Ceiling light', 'Luminaria de techo'],
   fdrain:['Floor drain', 'Sumidero'], fsink:['Floor sink', 'Sumidero sifónico'], grease:['Grease interceptor', 'Separador de grasas'], whtr:['Water heater', 'Termo eléctrico'], hood:['Exhaust hood', 'Campana extractora'],
   mop:['Mop sink', 'Vertedero de limpieza'], sink3:['3-compartment sink', 'Fregadero de 3 senos'], ext:['Fire extinguisher', 'Extintor'], emerg:['Emergency light', 'Alumbrado de emergencia'], exitSign:['Exit sign', 'Señal de salida'],
   entrance:['Storefront entrance door', 'Puerta de entrada acristalada'], door:['Door', 'Puerta'], door2:['Double door', 'Puerta doble'], showcase:['Storefront window', 'Escaparate'], window:['Window', 'Ventana'], arch:['Opening', 'Hueco de paso']};
@@ -1814,9 +2001,9 @@ const TRL = {а:'a', б:'b', в:'v', г:'g', д:'d', е:'e', ё:'e', ж:'zh', з
 const pt = s => String(s ?? '').replace(/[а-яё]/gi, c => { const l = TRL[c.toLowerCase()] ?? ''; return c === c.toLowerCase() ? l : l.charAt(0).toUpperCase() + l.slice(1); })
   .replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”«»]/g, '"').replace(/…/g, '...').replace(/≈/g, '~').replace(/[^\x20-\x7e\xa0-\xff]/g, '');
 function shot3D(){ const v0 = view, sz = R3.getSize(new THREE.Vector2()), cp = persp.position.clone(), ct = ctl3.target.clone(), sv = selLine?.visible;
-  try { view = '3d'; rebuild(); if (selLine) selLine.visible = false; R3.setPixelRatio(1); R3.setSize(1600, 1000, false); persp.aspect = 1.6; persp.updateProjectionMatrix(); fit(1.6); ctl3.update(); fadeWalls();
+  try { view = '3d'; netSuspend = true; rebuild(); if (selLine) selLine.visible = false; R3.setPixelRatio(1); R3.setSize(1600, 1000, false); persp.aspect = 1.6; persp.updateProjectionMatrix(); fit(1.6); ctl3.update(); fadeWalls();
     R3.shadowMap.needsUpdate = true; R3.render(scene, persp); return R3.domElement.toDataURL('image/jpeg', .88); }
-  finally { view = v0; R3.setPixelRatio(DPR); R3.setSize(sz.x, sz.y, false); persp.aspect = sz.x / Math.max(1, sz.y); persp.updateProjectionMatrix(); persp.position.copy(cp); ctl3.target.copy(ct); ctl3.update();
+  finally { view = v0; netSuspend = false; R3.setPixelRatio(DPR); R3.setSize(sz.x, sz.y, false); persp.aspect = sz.x / Math.max(1, sz.y); persp.updateProjectionMatrix(); persp.position.copy(cp); ctl3.target.copy(ct); ctl3.update();
     rebuild(); if (selLine && sv !== undefined) selLine.visible = sv; need(); } }
 
 async function buildPdf(){
@@ -1963,7 +2150,7 @@ async function buildPdf(){
   table(16, y, [[tr('Area', 'Zona'), 70], [tr('Size', 'Superficie'), 30], [tr('Floor', 'Suelo'), 80], [tr('Walls', 'Paredes'), 80], [tr('Ceiling', 'Techo'), 60], [tr('Load factor', 'Densidad'), 32], [tr('Occupants', 'Ocupación'), 36]], zr, {onBreak:newA2});
 
   // ---- E-1 electrical ----
-  V = planView({x:14, y:14, w:268, h:231}); frame('E-1', titles.E1, V.label); drawPlan(V, {zones:'none', light:true}); scaleBar(V, 18, 238); heading(titles.E1, 18, 19);
+  V = planView({x:14, y:14, w:268, h:231}); frame('E-1', titles.E1, V.label); drawPlan(V, {zones:'none', light:true}); netPdf(doc, V, ['e', 'l']); scaleBar(V, 18, 238); heading(titles.E1, 18, 19);
   const circ = []; let cn = 0, light = 0;
   for (const it of items){ const t = tech(it); if (!t) continue;
     if (t.sym === 'light'){ light += t.kw; const [x, y] = T0(V, it); doc.setLineWidth(.2); doc.circle(x, y, 1.6); line([[x - 1.1, y - 1.1], [x + 1.1, y + 1.1]]); line([[x - 1.1, y + 1.1], [x + 1.1, y - 1.1]]); continue; }
@@ -1981,14 +2168,18 @@ async function buildPdf(){
   doc.setFontSize(6.8); doc.text(doc.splitTextToSize(tr(`Service: ${A.kw > 20 ? '208Y/120 V 3-phase' : '120/240 V or 208Y/120 V'}, approx. ${Math.round(A.kw * 1000 * .8 / (1.732 * 208))} A at 208 V 3PH. Dedicated circuits for equipment marked solid. GFCI receptacles within 6 ft of sinks and in kitchen areas (CEC 210.8). Final design by licensed electrical engineer/contractor.`,
     `Suministro recomendado: ${A.kw > 9.2 || A.kw3 ? 'trifásico 400/230 V' : 'monofásico 230 V'}. Circuitos independientes para receptores marcados en negro. Protección diferencial 30 mA. ${A.occ > 50 ? 'Local de pública concurrencia (ITC-BT-28): alumbrado de emergencia y proyecto por técnico titulado.' : ''} Instalación y boletín (CIE) por instalador autorizado.`), 116), 288, Math.min(y + 6, 236));
   doc.setFontSize(6.5); const lg = [[tr('Equipment connection (open: <2 kW, solid: dedicated)', 'Toma para receptor (relleno: circuito propio)'), 'o'], [tr('Receptacle (user-placed)', 'Toma de corriente'), 'r'], [tr('Light fixture', 'Punto de luz'), 'x']];
+  netLegend(doc, [[[240, 140, 0], tr('Power feeders (cable tray)', 'Líneas de fuerza (bandeja)')], [[205, 170, 0], tr('Lighting circuits', 'Circuitos de alumbrado'), 1]], 215, 236);
   lg.forEach(([t, s], i) => { const lx = 152, ly = 236 + i * 4; if (s === 'x'){ doc.circle(lx, ly - 1, 1.2); line([[lx - .8, ly - 1.8], [lx + .8, ly - .2]]); } else { doc.setFillColor(s === 'o' ? 0 : 255); doc.circle(lx, ly - 1, 1.2, 'FD'); } doc.text(pt(t), lx + 3, ly); });
 
   // ---- P-1 plumbing & mechanical ----
-  V = planView({x:14, y:14, w:268, h:231}); frame('P-1', titles.P1, V.label); drawPlan(V, {zones:'none', light:true}); scaleBar(V, 18, 238); heading(titles.P1, 18, 19);
+  V = planView({x:14, y:14, w:268, h:231}); frame('P-1', titles.P1, V.label); drawPlan(V, {zones:'none', light:true}); netPdf(doc, V, ['v', 'd', 'c', 'h']); scaleBar(V, 18, 238); heading(titles.P1, 18, 19);
+  netLegend(doc, [[[28, 126, 214], tr('Cold water', 'Agua fría')], [[224, 49, 49], tr('Hot water', 'Agua caliente')]], 150, 236); netLegend(doc, [[[123, 94, 59], tr('Waste', 'Saneamiento')], [[178, 186, 194], tr('Duct / diffuser', 'Conducto / difusor')]], 195, 236);
   const pRows = [];
   for (const it of items){ const t = tech(it); if (!t) continue; const D = DEF[it.kind];
     if (t.sym === 'fd' || t.sym === 'fs' || t.sym === 'gi'){ const [x, y] = T0(V, it); doc.setLineWidth(.25); doc.setFillColor(255); doc.rect(x - 1.8, y - 1.8, 3.6, 3.6, 'FD'); line([[x - 1.8, y - 1.8], [x + 1.8, y + 1.8]]); line([[x - 1.8, y + 1.8], [x + 1.8, y - 1.8]]);
       doc.setFontSize(5.5); doc.text({fd:tr('FD', 'SUM'), fs:'FS', gi:tr('GI', 'SG')}[t.sym], x + 2.4, y - 1.5); pRows.push({cells:[gno.get(it.id) || '', nm(it, es ? 'es' : 'en'), '', '', t.sym === 'gi' ? tr('Sized per LA Sanitation', 'Según ordenanza de vertidos') : '']}); continue; }
+    if (t.sym === 'riser'){ const [x, y] = T0(V, it); doc.setLineWidth(.3); doc.setFillColor(255); doc.circle(x, y, 2.2, 'FD'); doc.setFillColor(123, 94, 59); doc.circle(x, y, 1.2, 'F');
+      doc.setFontSize(5.5); doc.text(tr('RISER / WATER SERVICE', 'BAJANTE / ACOMETIDA'), x + 3, y - 2.2); pRows.push({cells:[gno.get(it.id) || '', nm(it, es ? 'es' : 'en'), tr('Service', 'Acometida'), tr('Stack', 'Bajante'), '']}); continue; }
     if (!t.w && !t.dr) continue;
     const base = D.place === 'wall' ? 0 : -it.d / 2 + Math.min(.1, it.d / 4), pts = [];
     if (t.w) pts.push(['C', [40, 110, 220], -.09]); if (t.w === 'ch') pts.push(['H', [215, 50, 50], .09]);
@@ -2041,7 +2232,7 @@ async function renderHome(){
   $('mine').innerHTML = list.map(r => `<div class="card" role="button" tabindex="0" data-open="${r.id}"><div class="pic">${r.thumb ? `<img src="${r.thumb}" alt="">` : CUP}</div><div class="txt"><b>${esc(r.name || 'Кофейня')}</b><span>${r.updated ? fmtDate(r.updated) : ''}</span></div><button class="del" type="button" data-del="${r.id}" aria-label="Удалить" title="Удалить">✕</button></div>`).join(''); }
 const STPIC = new Map();
 function starterShot(fn){   // render a starter layout off screen for its card
-  const keep = P; P = fn(); view = '3d'; rebuild(); R3.setSize(480, 300, false); persp.aspect = 1.6; persp.updateProjectionMatrix(); fit(1.6); ctl3.update(); fadeWalls();
+  const keep = P; P = fn(); view = '3d'; netSuspend = true; rebuild(); netSuspend = false; R3.setSize(480, 300, false); persp.aspect = 1.6; persp.updateProjectionMatrix(); fit(1.6); ctl3.update(); fadeWalls();
   R3.shadowMap.needsUpdate = true; R3.render(scene, persp); const u = R3.domElement.toDataURL(window.__mkType || 'image/jpeg', .82); P = keep; needShadow(); return u; }
 function starterPics(){ for (const [k, , , fn] of STARTERS){ if (!fn) continue; const img = document.querySelector(`img[data-sth="${k}"]`); if (!img) continue;
   const show = () => { img.hidden = false; img.nextElementSibling?.remove(); };
