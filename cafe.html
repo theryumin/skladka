@@ -928,6 +928,10 @@ const DEF = {
     build(g){ bx(g, matC('#f4f4f2', .4), 0, 0, 0, .09, .09, .03, .006); for (const x of [-.012, .012]) cy(g, DARK, x, .045, .016, .004, .004, .004, 8).rotation.x = Math.PI / 2; }},
   socket3:{cat:'eng', n:'Силовая розетка 380 В', w:.1, d:.06, h:.12, place:'wall', elev:.4,
     build(g){ bx(g, matC('#c73a32', .45), 0, 0, 0, .1, .12, .06, .01); cy(g, DARK, 0, .06, .031, .03, .03, .004, 16).rotation.x = Math.PI / 2; }},
+  socketTop:{cat:'eng', n:'Розетка в столешнице (на мебели)', w:.12, d:.08, h:.05, place:'on',
+    build(g){ bx(g, matC('#2b2b2e', .4, .3), 0, 0, 0, .12, .05, .08, .008); bx(g, matC('#f4f4f2', .4), 0, .045, 0, .1, .006, .06); for (const x of [-.02, .02]) cy(g, DARK, x, .05, 0, .004, .004, .003, 8); }},
+  socketFloor:{cat:'eng', n:'Розетка в полу (лючок)', w:.16, d:.16, h:.012,
+    build(g){ bx(g, STEEL, 0, 0, 0, .16, .008, .16); bx(g, matC('#cfd2d4', .4, .6), 0, .008, 0, .12, .004, .12); for (const x of [-.02, .02]) cy(g, DARK, x, .012, 0, .004, .004, .002, 8); }},
   panel:{cat:'eng', n:'Электрощит', w:.4, d:.12, h:.55, place:'wall', elev:1.3,
     build(g){ bx(g, matC('#d9dadb', .5), 0, 0, 0, .4, .55, .12, .01); bx(g, matC('#c2c4c6', .5), 0, .03, .061, .36, .49, .004); bx(g, DARK, .15, .26, .066, .015, .05, .01); }},
   fdrain:{cat:'eng', n:'Трап в полу', w:.2, d:.2, h:.01,
@@ -1192,7 +1196,7 @@ function rebuild(){ ctx.H = P.H; buildFloor(); buildWalls(); buildItems(); drawS
 function toLocal(o, x, z){ const dx = x - o.x, dz = z - o.z, c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0); return [dx * c - dz * s, dx * s + dz * c]; }
 // a worktop can lie on a fridge and a machine on the worktop: tops stack
 // what can carry things on top: counters and tables, and also any cabinet, fridge or box standing on the floor
-const NOSUP = new Set(['chair', 'stool', 'armchair', 'sofa', 'sofa2', 'pouf', 'bench', 'plant', 'coat', 'floorLamp', 'rug', 'zone', 'fdrain', 'fsink', 'kiosk', 'toilet', 'trash', 'slats', 'column', 'mop']);
+const NOSUP = new Set(['socketFloor', 'chair', 'stool', 'armchair', 'sofa', 'sofa2', 'pouf', 'bench', 'plant', 'coat', 'floorLamp', 'rug', 'zone', 'fdrain', 'fsink', 'kiosk', 'toilet', 'trash', 'slats', 'column', 'mop']);
 const SEATS = new Set(['chair', 'stool', 'pouf', 'bench', 'armchair']);
 const isSup = o => { const D = DEF[o.kind]; return !!D && (D.sup || (!D.place && !NOSUP.has(o.kind))); };
 function supTop(o, dep = 0){ return (DEF[o.kind].place === 'on' ? supportAt(o.x, o.z, o.id, dep + 1) : 0) + o.h; }
@@ -1332,7 +1336,7 @@ function moveItemTo(it, x, z, free){
   const g = itemObj.get(it.id); if (g){ g.position.set(it.x, baseY(it), it.z); g.rotation.y = it.rot || 0; } needShadow(); }
 /* things do not go inside each other: a moved item is pushed out to stand flush next to what it hits.
    Height counts — a machine on a counter does not hit a stool below; chairs may slide under tables and counters. Alt = no push. */
-const solid = o => { const D = DEF[o.kind]; return !!D && (!D.place || D.place === 'on') && !['zone', 'rug', 'fdrain', 'fsink'].includes(o.kind); };
+const solid = o => { const D = DEF[o.kind]; return !!D && (!D.place || D.place === 'on') && !['zone', 'rug', 'fdrain', 'fsink', 'socketFloor'].includes(o.kind); };
 function obb(o){ const c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0); return {c:[o.x, o.z], a:[[c, -s], [s, c]], h:[o.w / 2, o.d / 2]}; }
 function mtv(A, B){ let best = null; const d = [B.c[0] - A.c[0], B.c[1] - A.c[1]];
   for (const ax of [...A.a, ...B.a]){ const r = X => X.h[0] * Math.abs(ax[0] * X.a[0][0] + ax[1] * X.a[0][1]) + X.h[1] * Math.abs(ax[0] * X.a[1][0] + ax[1] * X.a[1][1]);
@@ -1545,7 +1549,7 @@ $('q').addEventListener('input', renderLib);
 $('libBody').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); if (!b || e.button !== 0) return; e.preventDefault(); startPlace(b.dataset.k, true); placing && (placing.moved = false); });
 
 /* catalogue pictures, rendered once from the same 3D models */
-const TV = 3, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
+const TV = 4, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
 function queueThumbs(){ document.querySelectorAll('img[data-th]').forEach(img => { const k = img.dataset.th; if (!THUMBS.has(k) && !thumbQ.includes(k)) thumbQ.push(k); }); if (!thumbBusy) thumbStep(); }
 function thumbStep(){ if (!thumbQ.length){ thumbBusy = false; return; } thumbBusy = true;
   const k = thumbQ.shift(); try { THUMBS.set(k, makeThumb(k)); document.querySelectorAll(`img[data-th="${k}"]`).forEach(i => i.src = THUMBS.get(k)); } catch (e){ console.warn('thumb', k, e); }
@@ -1800,7 +1804,7 @@ const TECH = {
   lamp:{kw:.06, sym:'light'}, floorLamp:{kw:.06, sym:'light'}, sconce:{kw:.04, sym:'light'}, track:{kw:.2, sym:'light'},
   handSink:{w:'ch', dr:'d'}, toilet:{w:'c', dr:'d'}, mop:{w:'ch', dr:'d'}, sink3:{w:'ch', dr:'d', food:1}, whtr:{kw:3.0, w:'c'}, hood:{kw:.35},
   ceilLight:{kw:o => o.w * o.d > .2 ? .036 : o.w > .9 ? .03 : .01, sym:'light'}, riser:{sym:'riser'}, ventOut:{},
-  fdrain:{sym:'fd'}, fsink:{sym:'fs'}, grease:{sym:'gi'}, socket:{sym:'socket'}, socket3:{sym:'socket3'}, panel:{sym:'panel'}, ext:{sym:'ext'}, emerg:{kw:.01, sym:'el'}, exitSign:{kw:.01, sym:'exit'},
+  fdrain:{sym:'fd'}, fsink:{sym:'fs'}, grease:{sym:'gi'}, socket:{sym:'socket'}, socket3:{sym:'socket3'}, socketTop:{sym:'socket'}, socketFloor:{sym:'socket'}, panel:{sym:'panel'}, ext:{sym:'ext'}, emerg:{kw:.01, sym:'el'}, exitSign:{kw:.01, sym:'exit'},
 };
 function tech(it){ const T = TECH[it.kind]; if (!T) return null; const f = v => typeof v === 'function' ? v(it) : v;
   return {kw:it.kw ?? f(T.kw) ?? 0, ph:f(T.ph) || 1, w:T.w || '', dr:T.dr || '', hood:T.hood || '', food:!!T.food, prep:!!T.prep, sym:T.sym || '', kwDef:T.kw !== undefined}; }
@@ -1847,6 +1851,18 @@ function autoNet(){
   const nx = Math.max(1, Math.round((x1 - x0) / 2.2)), nz = Math.max(1, Math.round((z1 - z0) / 2.2)), deco = items.filter(i => ['lamp', 'track', 'ceilLight'].includes(i.kind));
   for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++){ const p = [x0 + (x1 - x0) * (i + .5) / nx, z0 + (z1 - z0) * (j + .5) / nz];
     if (!inPoly(p, out) || hoods.some(h => inPoly(p, itemPoly(h, .3))) || deco.some(o => Math.hypot(o.x - p[0], o.z - p[1]) < .9)) continue; put('ceilLight', p[0], p[1]); }
+  // a socket beside every machine (not under it): on the wall it stands at, or on the counter / in the floor when there is no wall
+  const load = new Map(), sockAll = () => P.items.filter(i => SOCKETS.has(i.kind));
+  const free = (x, z, skip) => !P.items.some(o => o !== skip && DEF[o.kind] && (!DEF[o.kind].place || DEF[o.kind].place === 'on') && !['zone', 'rug'].includes(o.kind) && DEF[o.kind].place === DEF[skip.kind].place && inPoly([x, z], itemPoly(o, .02)));
+  for (const it of items.filter(plugged)){ const ph3 = (tech(it).ph || 1) === 3, near = sockAll().find(sk => (sk.kind === 'socket3') === ph3 && (load.get(sk.id) || 0) < 2 && Math.hypot(sk.x - it.x, sk.z - it.z) < Math.max(1, it.w / 2 + .6));
+    if (near){ load.set(near.id, (load.get(near.id) || 0) + 1); continue; }
+    const D = DEF[it.kind], top = D.place === 'on' ? baseY(it) : 0, [bx0, bz0] = toWorld(it, 0, -it.d / 2), nw = nearestWall(bx0, bz0, .5); let sk = null;
+    if (nw){ for (const sd of [1, -1]){ const s0 = nw.s + sd * (it.w / 2 + .14); if (s0 < .2 || s0 > nw.L - .2) continue; const x = nw.W.a[0] + nw.dx * s0, z = nw.W.a[1] + nw.dz * s0;
+        if (P.ops.some(o => o.wall === nw.W.id && Math.abs(s0 - o.pos) < o.w / 2 + .1)) continue;
+        sk = put(ph3 ? 'socket3' : 'socket', x, z, {elev:top ? top + .14 : .3}, true); break; } }
+    if (!sk && top) for (const lx of [it.w / 2 + .1, -it.w / 2 - .1]){ const [x, z] = toWorld(it, lx, 0); if (supportAt(x, z, it.id) > 0 && free(x, z, it)){ sk = put('socketTop', x, z, {rot:it.rot || 0}); break; } }
+    if (!sk){ const [x, z] = toWorld(it, it.w / 2 + .12, 0); sk = put('socketFloor', x, z); }
+    load.set(sk.id, 1); }
   // general sockets roughly every 3 m along the walls
   for (const W of loopWalls()){ const {L, dx, dz} = wallInfo(W), k = Math.floor(L / 3.2), doors = P.ops.filter(o => o.wall === W.id);
     for (let i = 0; i < k; i++){ const s = L * (i + .5) / k; if (doors.some(o => Math.abs(s - o.pos) < o.w / 2 + .3)) continue;
@@ -1879,7 +1895,10 @@ const ROUTE_N = {ceil:'По потолку', floor:'В полу', wall:'По н�
 const WALLM = new Set(['wall', 'walltop']);   // 'walltop': along the top of the walls, then straight down to each socket (the usual way for wiring)
 const wireOpen = () => (P?.route?.inst || 'hidden') === 'open';   // open = in a cable channel on the wall, hidden = chased into the wall
 const halfWall = () => { roomLoop(); const ws = P.walls.filter(W => loopIds.has(W.id)); return ws.reduce((s, W) => s + (W.t || .15), 0) / Math.max(1, ws.length) / 2; };
-const routeOf = k => { const r = P?.route || {}; return k === 'e' ? r.e || 'ceil' : r.w || 'floor'; };
+const routeOf = k => { const r = P?.route || {}; return k === 'e' ? r.e || 'walltop' : r.w || 'floor'; };
+// machines plug into sockets; only these are wired straight from the panel
+const SOCKETS = new Set(['socket', 'socket3', 'socketTop', 'socketFloor']), HARD = new Set(['whtr', 'hood', 'dish']);
+const plugged = i => { const t = tech(i); return !!t && t.kw > 0 && !t.sym && !HARD.has(i.kind); };
 function perim(d = .13){ const L = roomLoop(); if (!L) return null; const A = L.reduce((s, p, i) => { const q = L[(i + 1) % L.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0) > 0 ? 1 : -1, n = L.length;
   const nrm = (a, b) => { const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [A * -dz / l, A * dx / l]; };
   const pts = L.map((p, i) => { const n1 = nrm(L[(i - 1 + n) % n], p), n2 = nrm(p, L[(i + 1) % n]), k = 1 + n1[0] * n2[0] + n1[1] * n2[1];
@@ -1892,7 +1911,7 @@ function perim(d = .13){ const L = roomLoop(); if (!L) return null; const A = L.
     out.push(at(s1)); return out; };
   return {proj, walk}; }
 function routeGroup(k, root, nodes, def, out, N){ if (!root) return; const per = perim(k === 'e' ? halfWall() + (wireOpen() ? .022 : .004) : .13), by = {ceil:[], floor:[], wall:[], walltop:[]};
-  for (const n of nodes){ let m = n.it.net?.[k]?.m || n.it.feed || def; if (m === 'walltop' && k !== 'e') m = k === 'd' ? 'floor' : 'wall'; if (WALLM.has(m) && !per) m = 'floor'; if (k === 'd' && m === 'ceil') m = 'floor'; n.mode = m; by[m].push(n); }
+  for (const n of nodes){ let m = n.it.net?.[k]?.m || n.it.feed || (['socketTop', 'socketFloor'].includes(n.it.kind) ? 'floor' : def); if (m === 'walltop' && k !== 'e') m = k === 'd' ? 'floor' : 'wall'; if (WALLM.has(m) && !per) m = 'floor'; if (k === 'd' && m === 'ceil') m = 'floor'; n.mode = m; by[m].push(n); }
   for (const m of ['ceil', 'floor']) if (by[m].length){ for (const sg of netTree(root, by[m], k)) out.push([sg[0], sg[1], m, sg[2]]); N.roots.push({k, p:root.p, y:root.y, m}); }
   for (const wm of WALLM) if (by[wm].length){ const r0 = per.proj(root.p); N.roots.push({k, p:r0.q, y:root.y, m:wm}); for (const sg of lpath(root.p, r0.q, root.ax)) out.push([...sg, wm]);
     for (const n of by[wm]){ const cp = customPts(n, k); if (cp){ for (const sg of ownSegs(cp, n.it.id)) out.push([sg[0], sg[1], wm, n.it.id]); continue; }
@@ -1900,10 +1919,10 @@ function routeGroup(k, root, nodes, def, out, N){ if (!root) return; const per =
       for (const sg of lpath(q.q, n.p, Math.abs(q.q[0] - n.p[0]) > Math.abs(q.q[1] - n.p[1]))) out.push([...sg, wm, n.it.id]); } } }
 function netPlan(){
   const items = P.items.filter(i => DEF[i.kind]), T = i => tech(i) || {}, K = k => items.filter(i => i.kind === k);
-  const N = {e:[], l:[], c:[], h:[], d:[], v:[], ends:{e:[], l:[], c:[], h:[], d:[]}, diff:[], roots:[]}, re = routeOf('e'), rw = routeOf('w'), C = segs => segs.map(sg => [sg[0], sg[1], 'ceil', sg[2]]);
+  const N = {e:[], l:[], c:[], h:[], d:[], v:[], ends:{e:[], l:[], c:[], h:[], d:[]}, diff:[], roots:[], cords:[], unplugged:[]}, re = routeOf('e'), rw = routeOf('w'), C = segs => segs.map(sg => [sg[0], sg[1], 'ceil', sg[2]]);
   const panel = K('panel')[0], riser = K('riser')[0], heater = K('whtr')[0];
   if (panel){ const pn = netNode(panel);
-    N.ends.e = items.filter(i => i !== panel && ((T(i).kw && !T(i).sym) || i.kind === 'socket' || i.kind === 'socket3')).map(netNode); routeGroup('e', pn, N.ends.e, re, N.e, N);
+    N.ends.e = items.filter(i => i !== panel && (SOCKETS.has(i.kind) || (HARD.has(i.kind) && T(i).kw))).map(netNode); routeGroup('e', pn, N.ends.e, re, N.e, N);
     N.ends.l = items.filter(i => ['light', 'el', 'exit'].includes(T(i).sym)).map(netNode); N.ends.l.forEach(n => n.mode = 'ceil'); N.l = C(netTree(pn, N.ends.l, 'l')); }
   if (riser){ const rn = netNode(riser);
     N.ends.c = items.filter(i => T(i).w || i === heater).map(netNode); routeGroup('c', rn, N.ends.c, rw, N.c, N);
@@ -1913,6 +1932,9 @@ function netPlan(){
       const t = traps.filter(x => x.kind !== 'grease').map(x => [x, Math.hypot(x.x - n.p[0], x.z - n.p[1])]).sort((a, b) => a[1] - b[1])[0];
       if (t && t[1] < 4){ n.mode = 'floor'; N.ends.d.push(n); const cp = customPts(n, 'd'); N.d.push(...(cp ? ownSegs(cp, it.id) : lpath([t[0].x, t[0].z], n.p, true).map(sg => [...sg, it.id])).map(sg => [sg[0], sg[1], 'floor', it.id])); } else dN.push(n); }
     routeGroup('d', rn, dN, rw, N.d, N); N.ends.d.push(...dN); }
+  const socks = items.filter(i => SOCKETS.has(i.kind));   // which socket each machine plugs into (a cord, drawn on the plan)
+  for (const it of items.filter(plugged)){ const a = netNode(it).p; let best = null; for (const sk of socks){ const d = Math.hypot(sk.x - a[0], sk.z - a[1]); if (!best || d < best.d) best = {d, sk}; }
+    if (best && best.d < 2.5) N.cords.push([a, [best.sk.x, best.sk.z]]); else N.unplugged.push(it); }
   const outs = K('ventOut'), hoods = K('hood'), near = (a, o) => a.slice().sort((p, q) => Math.hypot(p.x - o.x, p.z - o.z) - Math.hypot(q.x - o.x, q.z - o.z))[0];
   const used = new Set();
   for (const h of hoods){ const o = near(outs, h); if (!o) continue; used.add(o.id); const cp = customPts({it:h, p:[h.x, h.z]}, 'v');
@@ -1926,7 +1948,7 @@ function netPlan(){
         if (!hoods.some(h => inPoly(p, itemPoly(h, .2)))) N.diff.push(p); } } }
   return N; }
 
-const NETC = {e:'#f08c00', l:'#e8c400', c:'#1c7ed6', h:'#e03131', d:'#7b5e3b', v:'#8a949e', sel:'#7048e8', chan:'#f2f1ec'}, NMAT = new Map();
+const NETC = {e:'#f08c00', l:'#e8c400', c:'#1c7ed6', h:'#e03131', d:'#7b5e3b', v:'#8a949e', sel:'#7048e8', chan:'#f2f1ec', cord:'#f7b267'}, NMAT = new Map();
 const NLAYER = {e:'e', l:'l', c:'w', h:'w', d:'w', v:'v'};
 // lines go under furniture (things are not see-through); only on a network sheet, where furniture is pale, or for the selected line are they drawn on top
 const netOnTop = () => onPlanSheet() && ['e', 'l', 'w', 'v'].includes(SHEET);
@@ -1995,6 +2017,7 @@ function buildNet(){
       for (let i = 1; i < pts.length - 1; i++) handle(NPM, sh(pts[i]), hy(i), r, {k, id:sel.id, i, y:hy(i)});
       for (let i = 0; i < pts.length - 1; i++){ const a = sh(pts[i]), b = sh(pts[i + 1]); if (Math.hypot(b[0] - a[0], b[1] - a[1]) < .4) continue;
         handle(NPM2, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], hy(i), r * .75, {k, id:sel.id, ins:i + 1, y:hy(i)}); } } }
+  if (plan && LY.e) for (const [a, b] of N.cords) dash('cord', a, b, YP.e + .02, .02, .002);
   if (LY.v) for (const p of N.diff){ if (plan) box('v', p[0], YP.v + .01, p[1], .45, .002, .45); else if (closed) box('v', p[0], H - .006, p[1], .5, .01, .5); else { box('v', p[0], H - .33, p[1], .45, .06, .45); } }
   for (const [m, l] of acc){ const geo = mergeGeometries(l, false); l.forEach(g => g.dispose()); const me = new THREE.Mesh(geo, m); me.userData.nopick = true;
     if (plan) me.renderOrder = 6; else me.castShadow = me.receiveShadow = false; roots.net.add(me); }
@@ -2004,7 +2027,8 @@ function renderNetSum(N){ const el = $('netSum'); if (!el) return; if (!N){ el.i
   const kw = items.reduce((s, i) => s + (T(i).kw || 0), 0);
   if (!has('panel') && items.some(i => T(i).kw)) warn.push('нет электрощита'); if (!has('riser') && items.some(i => T(i).w || T(i).dr)) warn.push('нет стояка');
   if (!has('ventOut') && has('hood')) warn.push('вытяжке некуда выйти'); if (!has('whtr') && items.some(i => T(i).w === 'ch')) warn.push('нет водонагревателя');
-  el.innerHTML = `Мощность ≈ <b>${kw.toFixed(1).replace('.', ',')} кВт</b> · точек питания ${N.ends.e.length} · светильников ${N.ends.l.length}<br>Вода ${N.ends.c.length} · горячая ${N.ends.h.length} · слив ${N.ends.d.length}${has('hood') ? ' · вытяжек ' + items.filter(i => i.kind === 'hood').length : ''}`
+  if (N.unplugged.length) warn.push(`без розетки рядом: ${N.unplugged.length}`);
+  el.innerHTML = `Мощность ≈ <b>${kw.toFixed(1).replace('.', ',')} кВт</b> · розеток и точек ${N.ends.e.length} · светильников ${N.ends.l.length}<br>Вода ${N.ends.c.length} · горячая ${N.ends.h.length} · слив ${N.ends.d.length}${has('hood') ? ' · вытяжек ' + items.filter(i => i.kind === 'hood').length : ''}`
     + (warn.length ? `<br><span style="color:#d9480f">${warn.join(', ')} — нажмите «Разложить заново»</span>` : ''); }
 let ceilTex = null;
 function buildCeil(){ disposeTree(roots.ceil); const k = P.ceil || 'open'; if (view !== 'eye' || k === 'open') return;
@@ -2097,6 +2121,7 @@ const TRN = {bar:['Service counter', 'Barra de servicio'], corner:['L-shaped cou
   tvMenu:['Digital menu screens', 'Pantallas de menú'], floorLamp:['Floor lamp', 'Lámpara de pie'], sconce:['Wall sconce', 'Aplique'], track:['Track lighting', 'Carril de focos'], poster:['Framed poster', 'Cuadro'],
   mirror:['Mirror', 'Espejo'], greenWall:['Green wall', 'Jardín vertical'], hangPlant:['Hanging planter', 'Macetero colgante'], coat:['Coat stand', 'Perchero'], toilet:['Water closet', 'Inodoro'],
   handSink:['Hand wash sink', 'Lavamanos'], zone:['Area', 'Zona'], socket:['Receptacle', 'Toma de corriente'], socket3:['Power receptacle, 3-phase', 'Toma de fuerza 400 V'], panel:['Electrical panel', 'Cuadro eléctrico'],
+  socketTop:['Countertop power outlet', 'Toma de corriente en encimera'], socketFloor:['Floor outlet box', 'Caja de suelo con tomas'],
   riser:['Plumbing riser and water service', 'Bajante y acometida de agua'], ventOut:['Exhaust outlet to outside', 'Salida de extracción al exterior'], ceilLight:['Ceiling light', 'Luminaria de techo'],
   fdrain:['Floor drain', 'Sumidero'], fsink:['Floor sink', 'Sumidero sifónico'], grease:['Grease interceptor', 'Separador de grasas'], whtr:['Water heater', 'Termo eléctrico'], hood:['Exhaust hood', 'Campana extractora'],
   mop:['Mop sink', 'Vertedero de limpieza'], sink3:['3-compartment sink', 'Fregadero de 3 senos'], ext:['Fire extinguisher', 'Extintor'], emerg:['Emergency light', 'Alumbrado de emergencia'], exitSign:['Exit sign', 'Señal de salida'],
