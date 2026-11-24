@@ -503,7 +503,7 @@ const spread = (n, span) => n <= 1 ? [0] : Array.from({length:n}, (_, i) => -spa
 
 function canvasTex(w, h, draw){ const cv = document.createElement('canvas'); cv.width = w; cv.height = h; draw(cv.getContext('2d'), w, h);
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }
-const MENU = [['Эспрессо', '150'], ['Американо', '180'], ['Капучино', '240'], ['Латте', '260'], ['Флэт уайт', '270'], ['Раф', '290'], ['Фильтр-кофе', '220'], ['Какао', '230']];
+const MENU = [['Espresso', '2.20'], ['Americano', '2.80'], ['Cappuccino', '3.40'], ['Latte', '3.60'], ['Flat White', '3.80'], ['Iced Latte', '4.00'], ['Filter Coffee', '3.00'], ['Hot Chocolate', '3.50']];
 const NEON = {pink:'#ff4fa3', warm:'#fff0cf', blue:'#59c8ff', orange:'#ffa040', green:'#6dff9e'};
 
 /* ---------- catalogue: every item is built from simple shapes at real sizes ---------- */
@@ -589,11 +589,11 @@ const DEF = {
       const n = Math.max(1, Math.floor((w - .08) / .11));
       spread(n, w - .16).forEach((x, i) => { if (i % 3 === 2){ cy(g, GLASS, x, .035, 0, .045, .045, .15); cy(g, bean, x, .036, 0, .04, .04, .1); cy(g, DARK, x, .185, 0, .047, .047, .012); }
         else { cy(g, cup, x, .035, 0, .042, .034, .085); } }); }},
-  menu:{cat:'bar', n:'Меню-борд', w:1.2, d:.03, h:.8, rs:'wh', place:'wall', elev:1.5, fins:['black', 'oak', 'walnut', 'white'], fin:'oak', text:'МЕНЮ',
+  menu:{cat:'bar', n:'Меню-борд', w:1.2, d:.03, h:.8, rs:'wh', place:'wall', elev:1.5, fins:['black', 'oak', 'walnut', 'white'], fin:'oak', text:'MENU',
     build(g, o){ const {w, h, d} = o; bx(g, finMat(o.fin), 0, 0, 0, w, h, d);
       const W = 1024, H = Math.round(1024 * (h - .06) / (w - .06)), tex = canvasTex(W, H, (x, W, H) => {
         x.fillStyle = '#1e2421'; x.fillRect(0, 0, W, H); x.fillStyle = '#f3efe6'; x.textAlign = 'center';
-        const s = W / 1024; x.font = `800 ${86 * s}px Manrope, sans-serif`; x.fillText(o.text || 'МЕНЮ', W / 2, 120 * s);
+        const s = W / 1024; x.font = `800 ${86 * s}px Manrope, sans-serif`; x.fillText(!o.text || o.text === 'МЕНЮ' ? 'MENU' : o.text, W / 2, 120 * s);
         x.font = `500 ${40 * s}px Manrope, sans-serif`; let y = 210 * s;
         for (const [a, b] of MENU){ if (y > H - 40 * s) break; x.textAlign = 'left'; x.fillText(a, 90 * s, y); x.textAlign = 'right'; x.fillText(b, W - 90 * s, y);
           x.globalAlpha = .25; x.fillRect(90 * s, y + 18 * s, W - 180 * s, 1.5 * s); x.globalAlpha = 1; y += 66 * s; } });
@@ -1609,7 +1609,7 @@ $('q').addEventListener('input', renderLib);
 $('libBody').addEventListener('pointerdown', e => { const b = e.target.closest('[data-k]'); if (!b || e.button !== 0) return; e.preventDefault(); startPlace(b.dataset.k, true); placing && (placing.moved = false); });
 
 /* catalogue pictures, rendered once from the same 3D models */
-const TV = 6, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
+const TV = 7, THUMBS = new Map(); let thumbR = null, thumbScene = null, thumbQ = [], thumbBusy = false;
 function queueThumbs(){ document.querySelectorAll('img[data-th]').forEach(img => { const k = img.dataset.th; if (!THUMBS.has(k) && !thumbQ.includes(k)) thumbQ.push(k); }); if (!thumbBusy) thumbStep(); }
 function thumbStep(){ if (!thumbQ.length){ thumbBusy = false; return; } thumbBusy = true;
   const k = thumbQ.shift(); try { THUMBS.set(k, makeThumb(k)); document.querySelectorAll(`img[data-th="${k}"]`).forEach(i => i.src = THUMBS.get(k)); } catch (e){ console.warn('thumb', k, e); }
@@ -2608,7 +2608,7 @@ let started = false;
 async function enterEditor(){
   $('home').hidden = true; $('app').hidden = false; document.title = (P.name || 'Кофейня') + ' — Кофейня 3D';
   P.H ??= 3; P.ops ??= []; P.items ??= []; P.walls ??= []; P.fade ??= true;
-  for (const it of P.items){ const D = DEF[it.kind]; if (D?.size) Object.assign(it, D.size(it)); }
+  for (const it of P.items){ const D = DEF[it.kind]; if (D?.size) Object.assign(it, D.size(it)); if (it.kind === 'menu' && it.text === 'МЕНЮ') it.text = 'MENU'; }
   if (!P.bq){ for (const it of P.items) if (DEF[it.kind]?.goods) it.goods = 'basque'; P.bq = 1; }
   P.items = P.items.filter(i => DEF[i.kind]); P.ops = P.ops.filter(o => OPS[o.kind]);
   $('pname').value = P.name || ''; sel = null;
