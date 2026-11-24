@@ -1924,7 +1924,9 @@ function netPlan(){
 
 const NETC = {e:'#f08c00', l:'#e8c400', c:'#1c7ed6', h:'#e03131', d:'#7b5e3b', v:'#8a949e', sel:'#7048e8'}, NMAT = new Map();
 const NLAYER = {e:'e', l:'l', c:'w', h:'w', d:'w', v:'v'};
-function nMat(k, plan){ const key = k + plan; if (!NMAT.has(key)) NMAT.set(key, plan ? new THREE.MeshBasicMaterial({color:NETC[k], depthTest:false, transparent:true, opacity:k === 'v' ? .4 : .95})
+// lines go under furniture (things are not see-through); only on a network sheet, where furniture is pale, or for the selected line are they drawn on top
+const netOnTop = () => onPlanSheet() && ['e', 'l', 'w', 'v'].includes(SHEET);
+function nMat(k, plan){ const top = plan && (k === 'sel' || netOnTop()), key = k + plan + top; if (!NMAT.has(key)) NMAT.set(key, plan ? new THREE.MeshBasicMaterial({color:NETC[k], depthTest:!top, transparent:true, opacity:k === 'v' ? .4 : .95})
   : new THREE.MeshStandardMaterial({color:k === 'v' ? '#c3c8cd' : NETC[k], ...(k === 'sel' ? {emissive:'#7048e8', emissiveIntensity:.5} : {}), roughness:k === 'v' ? .35 : .5, metalness:k === 'v' ? .75 : .1})); return NMAT.get(key); }
 let netCache = null;
 const NHIT = new THREE.MeshBasicMaterial({visible:false});
@@ -2008,9 +2010,10 @@ function buildCeil(){ disposeTree(roots.ceil); const k = P.ceil || 'open'; if (v
   c.rotation.x = -Math.PI / 2; c.position.y = P.H - .002; c.castShadow = c.receiveShadow = false; c.userData.nopick = true; roots.ceil.add(c); }
 // clicking a line on the plan selects it; dragging one of its pieces re-draws the line by hand
 function netPick(e){ const LY = netLayers(); if (!LY || !netCache) return null; const r = R3.domElement.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-  setRay(e); const blockers = view === 'plan' ? [] : ray.intersectObjects([roots.walls], true).filter(h => !h.object.userData.nopick && !(() => { let o = h.object; while (o){ if (o.userData.faded) return true; o = o.parent; } return false; })());
+  setRay(e); const blockers = netOnTop() ? [] : ray.intersectObjects(view === 'plan' ? [roots.items] : [roots.walls, roots.items], true).filter(h => h.object.isMesh).filter(h => !h.object.userData.nopick && !(() => { let o = h.object; while (o){ if (o.userData.faded) return true; o = o.parent; } return false; })());
   const hits = ray.intersectObjects(roots.net.children.filter(o => o.userData.net), false);
   if (hits.length && (!blockers.length || hits[0].distance < blockers[0].distance + .05)){ const u = hits[0].object.userData.net; return {d:0, k:u.k, id:u.id, y:u.y}; }
+  if (blockers.length) return null;   // a click on a piece of furniture or a wall is for that thing, not for a pipe behind it
   const closed = view === 'eye' && (P.ceil || 'open') !== 'open', v3 = new THREE.Vector3();
   const scr = (x, y, z) => { v3.set(x, y, z).project(cam()); return v3.z > 1 ? null : [(v3.x + 1) / 2 * r.width, (1 - v3.y) / 2 * r.height]; };
   let best = null;
