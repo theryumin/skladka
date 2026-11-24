@@ -1127,11 +1127,21 @@ function roomLoop(){   // the walls as one closed outline, if they form one; inn
   for (;;){ deg = new Map(); for (const W of ws) for (const p of [W.a, W.b]) deg.set(ptKey(p), (deg.get(ptKey(p)) || 0) + 1);
     const keep = ws.filter(W => deg.get(ptKey(W.a)) > 1 && deg.get(ptKey(W.b)) > 1); if (keep.length === ws.length) break; ws = keep; }
   loopIds = new Set(ws.map(W => W.id));
-  if (ws.length < 3 || [...deg.values()].some(v => v !== 2)) return null;
+  if (ws.length < 3) return null;
+  if ([...deg.values()].some(v => v !== 2)) return outerLoop(ws);   // partitions meet the outer walls at corners: take the outer outline
   const left = [...ws], pts = []; let cur = left.shift(), at = cur.b; pts.push(cur.a);
   while (left.length){ const i = left.findIndex(W => ptKey(W.a) === ptKey(at) || ptKey(W.b) === ptKey(at)); if (i < 0) return null;
     const W = left.splice(i, 1)[0]; pts.push(at); at = ptKey(W.a) === ptKey(at) ? W.b : W.a; }
   return ptKey(at) === ptKey(pts[0]) ? pts : null; }
+function outerLoop(ws){ const adj = new Map(), V = new Map(), add = (k, e) => (adj.get(k) || adj.set(k, []).get(k)).push(e);
+  for (const W of ws){ const ka = ptKey(W.a), kb = ptKey(W.b); V.set(ka, W.a); V.set(kb, W.b); add(ka, {k:kb, W}); add(kb, {k:ka, W}); }
+  const start = [...V.keys()].sort((a, b) => V.get(a)[0] - V.get(b)[0] || V.get(a)[1] - V.get(b)[1])[0]; let best = null;
+  for (const sg of [1, -1]){ let prev = [V.get(start)[0] - 1, V.get(start)[1]], cur = start, pts = [], ids = new Set(), n = 0;
+    do { const c = V.get(cur), back = Math.atan2(prev[1] - c[1], prev[0] - c[0]); let pk = null; pts.push(c);
+      for (const e of adj.get(cur)){ const q = V.get(e.k); let t = ((Math.atan2(q[1] - c[1], q[0] - c[0]) - back) * sg) % (2 * Math.PI); if (t <= 1e-9) t += 2 * Math.PI; if (!pk || t < pk.t) pk = {t, e}; }
+      ids.add(pk.e.W.id); prev = c; cur = pk.e.k; } while (cur !== start && ++n < 400);
+    if (cur === start && pts.length >= 3){ const a = polyArea(pts); if (!best || a > best.a) best = {a, pts, ids}; } }
+  if (!best) return null; loopIds = best.ids; return best.pts; }
 function wallBounds(){ if (!P.walls.length) return bounds(); const xs = P.walls.flatMap(W => [W.a[0], W.b[0]]), zs = P.walls.flatMap(W => [W.a[1], W.b[1]]);
   return {x0:Math.min(...xs), z0:Math.min(...zs), x1:Math.max(...xs), z1:Math.max(...zs)}; }
 function bounds(){ const xs = [], zs = []; for (const W of P.walls) for (const p of [W.a, W.b]){ xs.push(p[0]); zs.push(p[1]); }
@@ -1318,6 +1328,29 @@ function showGuides(it){ clearGuides(); if (view !== 'plan' || !it || it.kind ==
     const o = lbl(cm(best) + ' см', 'acc'); o.position.set((a[0] + b[0]) / 2, .35, (a[1] + b[1]) / 2); guideG.add(o); }
   need(); }
 // the floor inside the walls; nothing may stand outside it
+// change the floor size: the right and far walls move, doors and windows stay where they are
+function resizeRoom(W, D){ if (!P.walls.length){ P.walls = rectWalls(W, D); return; } const b = wallBounds(), nx = b.x0 + W, nz = b.z0 + D;
+  const at = P.ops.map(o => { const w = P.walls.find(V => V.id === o.wall); if (!w) return null; const i = wallInfo(w); return [w.a[0] + i.dx * o.pos, w.a[1] + i.dz * o.pos]; });
+  for (const V of P.walls) for (const p of [V.a, V.b]){ if (Math.abs(p[0] - b.x1) < .01) p[0] = nx; if (Math.abs(p[1] - b.z1) < .01) p[1] = nz; }
+  P.ops.forEach((o, i) => { const w = P.walls.find(V => V.id === o.wall); if (!w || !at[i]) return; const I = wallInfo(w), q = at[i];
+    o.pos = clamp((q[0] - w.a[0]) * I.dx + (q[1] - w.a[1]) * I.dz, o.w / 2 + .05, Math.max(o.w / 2 + .05, I.L - o.w / 2 - .05)); });
+  P.ops = P.ops.filter(o => { const w = P.walls.find(V => V.id === o.wall); return w && wallInfo(w).L >= o.w + .1; }); }
+// a small washroom in a free corner: two partitions, a door, a toilet and a hand sink
+function buildWc(RW = 1.5, RD = 1.8){ const L = roomLoop(); if (!L) return false; const b = wallBounds(), ht = .075, poly = innerPoly();
+  for (const [cx, sx] of [[b.x0, 1], [b.x1, -1]]) for (const [cz, sz] of [[b.z0, 1], [b.z1, -1]]){
+    const xa = Math.min(cx, cx + sx * (RW + .2)), xb = Math.max(cx, cx + sx * (RW + .2)), za = Math.min(cz, cz + sz * (RD + .2)), zb = Math.max(cz, cz + sz * (RD + .2));
+    const inR = ([x, z]) => x > xa && x < xb && z > za && z < zb;
+    if (![[cx + sx * .3, cz + sz * .3], [cx + sx * RW, cz + sz * RD]].every(q => inPoly(q, poly))) continue;
+    if (P.items.some(o => DEF[o.kind] && o.kind !== 'zone' && DEF[o.kind].place !== 'ceil' && DEF[o.kind].place !== 'hang' && (inR([o.x, o.z]) || itemPoly(o).some(inR)))) continue;
+    if (P.ops.some(o => { const w = P.walls.find(V => V.id === o.wall); if (!w) return false; const I = wallInfo(w); return [-o.w / 2, 0, o.w / 2].some(t => inR([w.a[0] + I.dx * (o.pos + t), w.a[1] + I.dz * (o.pos + t)])); })) continue;
+    const corner = [cx + sx * RW, cz + sz * RD], wa = {id:'w' + sid(), a:[cx + sx * RW, cz], b:corner, t:.1}, wb = {id:'w' + sid(), a:corner, b:[cx, cz + sz * RD], t:.1};
+    P.walls.push(wa, wb); P.ops.push(newOp('door', wb.id, .55, {w:.8}));
+    const rot = sz > 0 ? 0 : Math.PI;
+    P.items.push(newItem('toilet', cx + sx * (ht + .4), cz + sz * (ht + DEF.toilet.d / 2), rot));
+    P.items.push(newItem('handSink', cx + sx * (RW - .4), cz + sz * (ht + DEF.handSink.d / 2), rot));
+    P.items.push(newItem('zone', cx + sx * RW / 2, cz + sz * RD / 2, 0, {w:RW, d:RD, zt:'wc', text:'Санузел'}));
+    return true; }
+  return false; }
 function innerPoly(){ const L = roomLoop(); if (L){ const ws = P.walls.filter(W => loopIds.has(W.id)), t = ws.reduce((s, W) => s + (W.t || .15), 0) / Math.max(1, ws.length) / 2;
     const A = L.reduce((s, p, i) => { const q = L[(i + 1) % L.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0) > 0 ? 1 : -1, n = L.length;
     const nrm = (a, b) => { const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [A * -dz / l, A * dx / l]; };
@@ -1355,7 +1388,10 @@ function unclash(it){ if (!solid(it)) return; const skip = new Set([it.id, ...ri
       if (Math.min(y1, b1) - Math.max(y0, b0) < .015) continue;                     // different heights
       if ((SEATS.has(it.kind) && isSup(o)) || (SEATS.has(o.kind) && isSup(it))) continue;   // a chair tucks under a table
       for (const A of obbs(it)) for (const B of obbs(o)){ const m = mtv(A, B); if (m && (!worst || m.ov > worst.ov)) worst = m; } }
+    if (D0(it)) for (const W of P.walls){ if (loopIds.has(W.id)) continue; const I = wallInfo(W); if (I.L < .05) continue;
+      const B = obb({x:(W.a[0] + W.b[0]) / 2, z:(W.a[1] + W.b[1]) / 2, rot:Math.atan2(-I.dz, I.dx), w:I.L, d:W.t || .1}); for (const A of obbs(it)){ const m = mtv(A, B); if (m && (!worst || m.ov > worst.ov)) worst = m; } }
     if (!worst) return; it.x += worst.x * (worst.ov + .002); it.z += worst.z * (worst.ov + .002); } }
+const D0 = it => { const pl = DEF[it.kind]?.place; return !pl || pl === 'on'; };
 // hold X (Ч on the Russian layout) while dragging: items may go into each other
 let xHeld = false;
 addEventListener('keydown', e => { if (e.code === 'KeyX' && !e.ctrlKey && !e.metaKey && !isTyping() && !xHeld){ xHeld = true; if (drag || placing) toast('X зажата — предметы заезжают друг в друга'); } });
@@ -1386,8 +1422,8 @@ stage.addEventListener('pointerdown', e => {
   if (placing){ e.stopPropagation(); down.placed = true; finishPlace(); return; }
   if (tool === 'wall'){ e.stopPropagation(); wallClick(e); return; }
   const hp = netPtPick(e); if (hp){ ctl().enabled = false; e.stopPropagation(); drag = {t:'netpt', ...hp, gy:view === 'plan' ? 0 : hp.y, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
-  if (tool === 'hand'){ stage.style.cursor = 'grabbing'; return; }   // the hand only moves the view
-  const np = netPick(e); if (np){ const gy = view === 'plan' ? 0 : np.y, hit = floorHit(e, gy); if (!hit) return; ctl().enabled = false; e.stopPropagation(); if (sel?.t !== 'net' || sel.k !== np.k || sel.id !== np.id) select({t:'net', k:np.k, id:np.id});
+  if (tool === 'hand'){ const p0 = pick(e); if (!(p0 && sel && (p0.s.t === 'wend' || (p0.s.id === sel.id && p0.s.t === sel.t)))){ stage.style.cursor = 'grabbing'; return; } }   // the hand moves the view; only the selected thing can be grabbed
+  const np = tool === 'hand' ? null : netPick(e); if (np){ const gy = view === 'plan' ? 0 : np.y, hit = floorHit(e, gy); if (!hit) return; ctl().enabled = false; e.stopPropagation(); if (sel?.t !== 'net' || sel.k !== np.k || sel.id !== np.id) select({t:'net', k:np.k, id:np.id});
     drag = {t:'net', k:np.k, id:np.id, gy, hx:hit.x, hz:hit.z, moved:false, start:JSON.stringify(P)}; stage.setPointerCapture(e.pointerId); return; }
   const p = pick(e); if (!p) return; down.s = p.s;
   // the item is dragged in the horizontal plane at the height where it was grabbed, so it stays under the cursor
@@ -1470,6 +1506,7 @@ function cancelPlace(){ if (!placing) return; clearGuides(); const p = placing; 
 let wallPrev = null, wallPrevLbl = null;
 function wallPoint(e){ const hit = floorHit(e); if (!hit) return null; let x = snapv(hit.x), z = snapv(hit.z);
   let snapped = false; for (const W of P.walls) for (const p of [W.a, W.b]) if (Math.hypot(p[0] - hit.x, p[1] - hit.z) < .2){ x = p[0]; z = p[1]; snapped = true; }
+  if (!snapped) for (const W of P.walls){ const q = segProj([hit.x, hit.z], W.a, W.b); if (Math.hypot(q[0] - hit.x, q[1] - hit.z) < .18){ const I = wallInfo(W); if (Math.abs(I.dx) > Math.abs(I.dz)) z = q[1]; else x = q[0]; snapped = true; break; } }
   if (chain && !snapped && !e.shiftKey){ const [px, pz] = chain.last; if (Math.abs(x - px) < Math.abs(z - pz) * .18) x = px; else if (Math.abs(z - pz) < Math.abs(x - px) * .18) z = pz; }
   return [x, z]; }
 function wallClick(e){ const p = wallPoint(e); if (!p) return;
@@ -1633,7 +1670,9 @@ function roomPanel(){ const wb = wallBounds(), L = roomLoop(), area = L ? polyAr
   return `<div class="ih"><b>Помещение</b><span>Ничего не выбрано — здесь настройки всей комнаты</span></div>
     <div class="stat"><div><b>${area != null ? area.toFixed(1).replace('.', ',') : '—'}</b><span>м², по осям стен</span></div><div><b>${cnt}</b><span>предметов</span></div><div><b>${(per).toFixed(1).replace('.', ',')}</b><span>м стен</span></div><div><b>${cm(b.x1 - b.x0)}×${cm(b.z1 - b.z0)}</b><span>см габарит</span></div></div>
     <div class="grp" id="floorGrp"><h3>Размер пола, см</h3><div class="row2">${num('rw', 'Ширина', cm(wb.x1 - wb.x0))}${num('rd', 'Глубина', cm(wb.z1 - wb.z0))}</div>
-      <button class="btn" type="button" data-a="rect">Применить размер</button><p class="note">Стены встанут по краю пола. Предметы всегда остаются внутри помещения — то, что окажется снаружи, само вернётся внутрь.</p></div>
+      <button class="btn" type="button" data-a="rect">Применить размер</button><p class="note">Введите размер — стены сразу встанут по краю пола, двери и окна останутся на местах. Стену можно и потянуть мышкой на «Плане»: кликните по ней и тяните. Предметы всегда остаются внутри.</p></div>
+    <div class="grp"><h3>Стены внутри помещения</h3><button class="btn" type="button" data-a="wc">Построить санузел 150×180</button>
+      <p class="note">Встанет в свободный угол: две перегородки, дверь, унитаз и раковина. Свою перегородку рисуйте кнопкой <b>«Стены»</b> внизу: кликните на стене, потом в углах, <b>Esc</b> — закончить.</p></div>
     <div class="grp"><h3>Высота потолка, см</h3><input type="number" data-f="H" value="${cm(P.H)}" min="220" max="800" step="5"></div>
     <div class="grp"><h3>Потолок</h3><div class="chips">${Object.entries(CEILS).map(([k, n]) => `<button class="chip" type="button" data-ceil="${k}" aria-pressed="${(P.ceil || 'open') === k}">${n}</button>`).join('')}</div><p class="note">Потолок виден в режиме «Глазами гостя». Трубы и короба над подвесным потолком прячутся.</p></div>
     <div class="grp"><h3>Цвет стен</h3><div class="sw">${WALL_COLS.map(c => `<button type="button" data-rcol="${c}" aria-pressed="${P.wallCol === c}" style="background:${c}"></button>`).join('')}<label title="Свой цвет">+<input type="color" data-f="rcol" value="${P.wallCol}"></label></div></div>
@@ -1660,7 +1699,8 @@ $('inspIn').addEventListener('change', e => {
   snap(); if (d) delete d.auto;
   if (!d){   // room
     if (f === 'H') P.H = clamp(v / 100, 2.2, 8); else if (f === 'rcol') P.wallCol = v; else if (f === 'fade') P.fade = v;
-    else if (f === 'rw' || f === 'rd'){ hist.pop(); return; }
+    else if (f === 'rw' || f === 'rd'){ const W = +$('inspIn').querySelector('[data-f="rw"]').value / 100, D = +$('inspIn').querySelector('[data-f="rd"]').value / 100;
+      if (!(W >= 1 && D >= 1)){ hist.pop(); toast('Нужно хотя бы 100 × 100 см.'); return renderInsp(); } resizeRoom(W, D); fit(); }
     return changed(); }
   if (sel.t === 'item'){ const D = DEF[d.kind], [ox, oz] = origin();
     if (f === 'x') d.x = v / 100 + ox; else if (f === 'z') d.z = v / 100 + oz; else if (f === 'rot') d.rot = v * DEG;
@@ -1695,9 +1735,8 @@ $('inspIn').addEventListener('click', e => {
     if (ds.light){ snap(); P.light = ds.light; return changed(); }
     if (ds.ceil){ snap(); P.ceil = ds.ceil; return changed(); }
     if (ds.a === 'rect'){ const W = +$('inspIn').querySelector('[data-f="rw"]').value / 100, D = +$('inspIn').querySelector('[data-f="rd"]').value / 100;
-      if (!(W >= 1 && D >= 1)) return toast('Нужно хотя бы 100 × 100 см.'); snap(); const [ox, oz] = origin(), old = P.walls.map(w => w.id);
-      P.walls = rectWalls(W, D).map(w => ({...w, a:[w.a[0] + ox, w.a[1] + oz], b:[w.b[0] + ox, w.b[1] + oz]}));
-      P.ops = P.ops.filter(o => P.walls.some(w => w.id === o.wall)); toast('Комната перестроена'); fit(); return changed(); }
+      if (!(W >= 1 && D >= 1)) return toast('Нужно хотя бы 100 × 100 см.'); snap(); resizeRoom(W, D); toast('Размер пола изменён, стены по краю'); fit(); return changed(); }
+    if (ds.a === 'wc'){ snap(); if (!buildWc()){ hist.pop(); return toast('Нет свободного угла 150 × 180 см. Освободите угол или нарисуйте стены инструментом «Стены».'); } toast('Санузел построен: стены, дверь, унитаз и раковина'); return changed(); }
     return; }
   if (sel.t === 'item'){ const D = DEF[d.kind];
     if (ds.fin){ snap(); d.fin = ds.fin; return changed(); } if (ds.top){ snap(); d.top = ds.top; return changed(); }
@@ -1760,7 +1799,7 @@ function hintUpdate(){ const t = $('hintT');
   if (placing) t.innerHTML = placing.t === 'op' ? '<b>Ведите вдоль стены</b> и кликните, чтобы поставить. Esc — отмена.' : '<b>Кликните по полу</b>, чтобы поставить. <b>R</b> — повернуть, Esc — отмена. Возле стены предмет прилипает к ней.';
   else if (tool === 'wall') t.innerHTML = chain ? '<b>Кликайте</b> — следующий угол. Двойной клик, Enter или правая кнопка — закончить. Shift — любой угол.' : '<b>Кликните по полу</b> — первый угол стены. Шаг 5 см, концы липнут к другим стенам.';
   else if (sel?.t === 'item') t.innerHTML = '<b>Тяните</b>, чтобы двигать, с зажатой <b>X</b> — заедет в другой предмет. R — повернуть, Del — удалить, Ctrl+D — копия.';
-  else if (tool === 'hand') t.innerHTML = (view === 'plan' ? '<b>Рука:</b> тяните — двигать план' : '<b>Рука:</b> тяните — крутить, с Shift или правой кнопкой — двигать') + ', колесо — приблизить. <b>V</b> — стрелка, чтобы двигать предметы.';
+  else if (tool === 'hand') t.innerHTML = (view === 'plan' ? '<b>Рука:</b> тяните — двигать план. Кликните предмет или стену и тяните ещё раз — сдвинется' : '<b>Рука:</b> тяните — крутить, с Shift или правой кнопкой — двигать') + ', колесо — приблизить. <b>V</b> — стрелка, чтобы двигать предметы.';
   else if (sel?.t === 'net') t.innerHTML = '<b>Тяните отрезок линии</b>, чтобы провести её по-другому. Справа — как вести. Del — вернуть автоматический путь.';
   else if (sel?.t === 'wall') t.innerHTML = view === 'plan' ? '<b>Тяните стену</b>, чтобы сдвинуть, или кружок на конце. Справа — длина и проёмы.' : 'Длину, цвет и проёмы стены меняйте справа.';
   else t.innerHTML = 'Стрелка двигает предметы. Чтобы крутить и двигать вид — <b>Рука</b> (H) или зажмите <b>пробел</b>; колесо — приблизить, правая кнопка — сдвинуть.';
